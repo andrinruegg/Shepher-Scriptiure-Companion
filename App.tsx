@@ -214,16 +214,10 @@ const App: React.FC = () => {
     }
   };
 
-  if (!supabase) {
-    return (
-      <div className={isDarkMode ? 'dark' : ''}>
-         <SetupScreen />
-      </div>
-    );
-  }
-
   // Auth Listener
   useEffect(() => {
+    if (!supabase) return;
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoadingAuth(false);
@@ -237,6 +231,14 @@ const App: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  if (!supabase) {
+    return (
+      <div className={isDarkMode ? 'dark' : ''}>
+         <SetupScreen />
+      </div>
+    );
+  }
 
   const loadChats = async () => {
     try {
@@ -561,7 +563,7 @@ const App: React.FC = () => {
                     onSendMessage={handleSendMessage}
                     onMenuClick={() => setIsSidebarOpen(true)}
                     onRegenerate={handleRegenerate}
-                    onDeleteCurrentChat={activeChatId ? (e) => handleDeleteChat(activeChatId, undefined) : undefined}
+                    onDeleteCurrentChat={activeChatId ? () => handleDeleteChat(activeChatId) : undefined}
                     language={language}
                 />
             )}
