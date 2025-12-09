@@ -77,9 +77,8 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
 
           const user = await db.social.searchUserByShareId(searchId.trim());
           if (user) {
-              // Instead of showing small result, open full profile view immediately
               setViewingProfile(user);
-              setSearchResult(user); // Keep for reference if needed
+              setSearchResult(user); 
           } else {
               setSearchError("User not found. Check the ID.");
           }
@@ -147,9 +146,8 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
       );
   }
 
-  // --- SUB-VIEW: PROFILE DETAILS ---
+  // --- SUB-VIEW: PROFILE DETAILS (FIXED LAYOUT) ---
   if (viewingProfile) {
-      // Check if this person is already a friend
       const isFriend = friends.some(f => f.id === viewingProfile.id);
       
       return (
@@ -157,44 +155,57 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setViewingProfile(null)} />
              
              {/* Profile Card Container */}
-             <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-800 flex flex-col max-h-[85vh]">
+             <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-800 flex flex-col max-h-[85vh] h-[85vh]">
                  
-                 {/* Profile Header Image (Fixed Height) */}
-                 <div className="h-28 bg-gradient-to-r from-indigo-500 to-purple-600 relative flex-shrink-0">
-                     <button onClick={() => setViewingProfile(null)} className="absolute top-4 left-4 p-2 bg-black/20 text-white rounded-full hover:bg-black/30 backdrop-blur-sm z-10">
-                         <ArrowLeft size={20} />
-                     </button>
-                 </div>
+                 {/* ABSOLUTE BACK BUTTON - FLOATS ABOVE SCROLL AREA */}
+                 <button 
+                    onClick={() => setViewingProfile(null)} 
+                    className="absolute top-4 left-4 p-2 bg-black/20 text-white rounded-full hover:bg-black/30 backdrop-blur-sm z-20 shadow-lg"
+                 >
+                     <ArrowLeft size={20} />
+                 </button>
 
-                 {/* Scrollable Content Area */}
-                 <div className="flex-1 overflow-y-auto">
+                 {/* UNIFIED SCROLLABLE CONTENT */}
+                 <div className="flex-1 overflow-y-auto w-full">
+                     
+                     {/* Header Image (Inside Scroll) */}
+                     <div className="h-32 bg-gradient-to-r from-indigo-500 to-purple-600 relative shrink-0">
+                         {/* Optional Pattern Overlay */}
+                         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+                     </div>
+
+                     {/* Profile Content */}
                      <div className="px-6 pb-6 flex flex-col items-center text-center">
-                         {/* Avatar - Negative Margin to pull it up */}
-                         <div className="-mt-12 w-24 h-24 rounded-full border-4 border-white dark:border-slate-900 bg-white dark:bg-slate-800 overflow-hidden shadow-md mb-3 relative z-10">
+                         
+                         {/* Avatar - Negative Margin to pull it up over the header */}
+                         <div className="-mt-12 w-28 h-28 rounded-full border-4 border-white dark:border-slate-900 bg-white dark:bg-slate-800 overflow-hidden shadow-lg mb-4 relative z-10">
                              {viewingProfile.avatar ? (
                                  <img src={viewingProfile.avatar} className="w-full h-full object-cover" />
                              ) : (
                                  <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400">
-                                     <User size={40} />
+                                     <User size={48} />
                                  </div>
                              )}
                          </div>
 
-                         <h2 className="text-xl font-bold text-slate-800 dark:text-white font-serif-text">
+                         <h2 className="text-2xl font-bold text-slate-800 dark:text-white font-serif-text mb-1">
                              {viewingProfile.display_name}
                          </h2>
-                         <p className="text-sm text-indigo-500 font-mono mb-4 tracking-wide font-medium bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">
-                             {viewingProfile.share_id}
-                         </p>
+                         <div className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-full mb-6">
+                            <p className="text-sm text-indigo-600 dark:text-indigo-400 font-mono font-semibold tracking-wide">
+                                {viewingProfile.share_id}
+                            </p>
+                         </div>
 
                          {/* BIO SECTION */}
-                         <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-100 dark:border-slate-800 text-left">
+                         <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 mb-8 border border-slate-100 dark:border-slate-800 text-left shadow-sm">
+                             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">About</h4>
                              {viewingProfile.bio ? (
                                  <p className="text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed whitespace-pre-wrap">
-                                     "{viewingProfile.bio}"
+                                     {viewingProfile.bio}
                                  </p>
                              ) : (
-                                 <p className="text-xs text-slate-400 italic text-center">No bio available.</p>
+                                 <p className="text-xs text-slate-400 italic text-center py-2">No bio available.</p>
                              )}
                          </div>
 
@@ -204,13 +215,13 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                                  <>
                                      <button 
                                         onClick={() => { setActiveChatFriend(viewingProfile); setViewingProfile(null); }}
-                                        className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-sm"
+                                        className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95"
                                      >
                                          <MessageCircle size={18} /> Message
                                      </button>
                                      <button 
                                         onClick={() => handleUnfriend(viewingProfile.id)}
-                                        className="px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-xl font-medium hover:bg-red-100 dark:hover:bg-red-900/30 border border-red-100 dark:border-red-900/30"
+                                        className="px-4 py-3.5 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-xl font-medium hover:bg-red-100 dark:hover:bg-red-900/30 border border-red-100 dark:border-red-900/30 transition-colors"
                                         title="Unfriend"
                                      >
                                          <Trash2 size={20} />
@@ -219,7 +230,7 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                              ) : (
                                  <button 
                                     onClick={() => sendRequest(viewingProfile.id)}
-                                    className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-sm"
+                                    className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95"
                                  >
                                      <UserPlus size={18} /> Add Friend
                                  </button>

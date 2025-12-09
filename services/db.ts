@@ -56,7 +56,6 @@ export const db = {
 
   /**
    * Create a new chat session.
-   * Now accepts an optional 'id' to allow client-side generation (Optimistic UI).
    */
   async createChat(title: string = 'New Conversation', initialMessage?: Message, id?: string): Promise<ChatSession> {
     ensureSupabase();
@@ -89,48 +88,24 @@ export const db = {
     };
   },
 
-  /**
-   * Delete a chat and its messages.
-   */
   async deleteChat(chatId: string) {
     ensureSupabase();
-    
-    // 1. Manually delete messages first (Safe Fallback)
     // @ts-ignore
-    const { error: msgError } = await supabase
-        .from('messages')
-        .delete()
-        .eq('chat_id', chatId);
-    
+    const { error: msgError } = await supabase.from('messages').delete().eq('chat_id', chatId);
     if (msgError) console.warn("Message deletion warning:", msgError);
 
-    // 2. Delete the chat itself
     // @ts-ignore
-    const { error } = await supabase
-      .from('chats')
-      .delete()
-      .eq('id', chatId);
-    
+    const { error } = await supabase.from('chats').delete().eq('id', chatId);
     if (error) throw error;
   },
 
-  /**
-   * Rename a chat.
-   */
   async updateChatTitle(chatId: string, title: string) {
     ensureSupabase();
     // @ts-ignore
-    const { error } = await supabase
-      .from('chats')
-      .update({ title })
-      .eq('id', chatId);
-
+    const { error } = await supabase.from('chats').update({ title }).eq('id', chatId);
     if (error) throw error;
   },
 
-  /**
-   * Add a message to a chat.
-   */
   async addMessage(chatId: string, message: Message): Promise<Message[]> {
     ensureSupabase();
     // @ts-ignore
@@ -206,11 +181,7 @@ export const db = {
   async deleteSavedItem(id: string) {
       ensureSupabase();
       // @ts-ignore
-      const { error } = await supabase
-          .from('saved_items')
-          .delete()
-          .eq('id', id);
-      
+      const { error } = await supabase.from('saved_items').delete().eq('id', id);
       if (error) throw error;
   },
 
@@ -223,11 +194,7 @@ export const db = {
       if (!user) return [];
 
       // @ts-ignore
-      const { data, error } = await supabase
-          .from('highlights')
-          .select('*')
-          .eq('user_id', user.id);
-      
+      const { data, error } = await supabase.from('highlights').select('*').eq('user_id', user.id);
       if (error) throw error;
 
       return (data || []).map((h: any) => ({
@@ -244,34 +211,20 @@ export const db = {
       if (!user) throw new Error('Not authenticated');
 
       // @ts-ignore
-      const { error } = await supabase
-          .from('highlights')
-          .insert({
-              user_id: user.id,
-              ref: highlight.ref,
-              color: highlight.color
-          });
-      
+      const { error } = await supabase.from('highlights').insert({ user_id: user.id, ref: highlight.ref, color: highlight.color });
       if (error) throw error;
   },
 
   async deleteHighlight(ref: string) {
       ensureSupabase();
       // @ts-ignore
-      const { error } = await supabase
-          .from('highlights')
-          .delete()
-          .eq('ref', ref);
-      
+      const { error } = await supabase.from('highlights').delete().eq('ref', ref);
       if (error) throw error;
   },
 
   // --- SOCIAL / FRIENDS SYSTEM ---
 
   social: {
-      /**
-       * Check if a share ID is already taken.
-       */
       async checkShareIdExists(shareId: string): Promise<boolean> {
           ensureSupabase();
           // @ts-ignore
@@ -285,8 +238,9 @@ export const db = {
       },
 
       /**
-       * Syncs the current user's profile.
-       * IMPORTANT: Only updates share_id if it's currently null.
+       * Syncs profile.
+       * CRITICAL: If 'shareId' is passed, we verify if the user ALREADY has one in DB.
+       * If DB has one, we ignore the passed shareId and keep the DB one to enforce persistence.
        */
       async upsertProfile(shareId: string, displayName: string, avatar?: string, bio?: string) {
           ensureSupabase();
@@ -294,7 +248,7 @@ export const db = {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return;
 
-          // First, check if profile exists to prevent overwriting existing ID with a new one
+          // Check DB first
           // @ts-ignore
           const { data: existing } = await supabase
               .from('profiles')
@@ -302,13 +256,21 @@ export const db = {
               .eq('id', user.id)
               .maybeSingle();
 
+          // Determine the final ID to save
+          let finalIdToSave = shareId;
+          
+          if (existing && existing.share_id) {
+              // If DB already has an ID, we MUST use it. 
+              // We do not allow overwriting the ID once set.
+              finalIdToSave = existing.share_id;
+          }
+
           const updates: any = {
               id: user.id,
               display_name: displayName,
               avatar: avatar || null,
               bio: bio || null,
-              // Only set share_id if it's not already set in DB, or if we are explicitly initializing
-              ...(existing?.share_id ? { share_id: existing.share_id } : { share_id: shareId })
+              share_id: finalIdToSave
           };
 
           // @ts-ignore
@@ -319,10 +281,6 @@ export const db = {
           if (error) console.error("Profile sync failed", error);
       },
 
-      /**
-       * Get current user profile from DB.
-       * Returns null if not found.
-       */
       async getUserProfile(userId: string): Promise<UserProfile | null> {
           ensureSupabase();
           // @ts-ignore
@@ -330,15 +288,12 @@ export const db = {
               .from('profiles')
               .select('*')
               .eq('id', userId)
-              .maybeSingle(); // Safe version of single()
+              .maybeSingle(); 
           
           if (error || !data) return null;
           return data as UserProfile;
       },
 
-      /**
-       * Find a user by their unique Share ID.
-       */
       async searchUserByShareId(shareId: string): Promise<UserProfile | null> {
           ensureSupabase();
           // @ts-ignore
@@ -346,15 +301,12 @@ export const db = {
               .from('profiles')
               .select('*')
               .eq('share_id', shareId)
-              .single();
+              .maybeSingle();
 
           if (error || !data) return null;
           return data as UserProfile;
       },
 
-      /**
-       * Send a friend request to a user.
-       */
       async sendFriendRequest(targetUserId: string) {
           ensureSupabase();
           // @ts-ignore
@@ -362,31 +314,23 @@ export const db = {
           if (!user) throw new Error('Not authenticated');
           if (user.id === targetUserId) throw new Error("You cannot add yourself.");
 
-          // Check if already friends or requested
           // @ts-ignore
           const { data: existing } = await supabase
              .from('friendships')
              .select('*')
              .or(`and(requester_id.eq.${user.id},receiver_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},receiver_id.eq.${user.id})`)
-             .single();
+             .maybeSingle();
           
           if (existing) throw new Error("Request already sent or you are already friends.");
 
           // @ts-ignore
           const { error } = await supabase
               .from('friendships')
-              .insert({
-                  requester_id: user.id,
-                  receiver_id: targetUserId,
-                  status: 'pending'
-              });
+              .insert({ requester_id: user.id, receiver_id: targetUserId, status: 'pending' });
 
           if (error) throw error;
       },
 
-      /**
-       * Get pending friend requests addressed to the current user.
-       */
       async getIncomingRequests(): Promise<FriendRequest[]> {
           ensureSupabase();
           // @ts-ignore
@@ -397,16 +341,8 @@ export const db = {
           const { data, error } = await supabase
               .from('friendships')
               .select(`
-                  id,
-                  created_at,
-                  status,
-                  requester:profiles!requester_id (
-                      id,
-                      share_id,
-                      display_name,
-                      avatar,
-                      bio
-                  )
+                  id, created_at, status,
+                  requester:profiles!requester_id ( id, share_id, display_name, avatar, bio )
               `)
               .eq('receiver_id', user.id)
               .eq('status', 'pending');
@@ -414,38 +350,23 @@ export const db = {
           if (error) throw error;
           
           return (data || []).map((r: any) => ({
-              id: r.id,
-              status: r.status,
-              created_at: r.created_at,
-              requester: r.requester
+              id: r.id, status: r.status, created_at: r.created_at, requester: r.requester
           }));
       },
 
-      /**
-       * Accept or Reject a request.
-       */
       async respondToRequest(requestId: string, accept: boolean) {
           ensureSupabase();
           if (accept) {
               // @ts-ignore
-              const { error } = await supabase
-                  .from('friendships')
-                  .update({ status: 'accepted' })
-                  .eq('id', requestId);
+              const { error } = await supabase.from('friendships').update({ status: 'accepted' }).eq('id', requestId);
               if (error) throw error;
           } else {
               // @ts-ignore
-              const { error } = await supabase
-                  .from('friendships')
-                  .delete()
-                  .eq('id', requestId);
+              const { error } = await supabase.from('friendships').delete().eq('id', requestId);
               if (error) throw error;
           }
       },
 
-      /**
-       * Remove a friend (Delete friendship row).
-       */
       async removeFriend(friendId: string) {
           ensureSupabase();
           // @ts-ignore
@@ -461,23 +382,16 @@ export const db = {
           if (error) throw error;
       },
 
-      /**
-       * Get list of accepted friends.
-       */
       async getFriends(): Promise<UserProfile[]> {
           ensureSupabase();
           // @ts-ignore
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return [];
 
-          // Complex query: get rows where I am requester OR receiver, and status is accepted
           // @ts-ignore
           const { data, error } = await supabase
               .from('friendships')
-              .select(`
-                  requester:profiles!requester_id(*),
-                  receiver:profiles!receiver_id(*)
-              `)
+              .select(`requester:profiles!requester_id(*), receiver:profiles!receiver_id(*)`)
               .eq('status', 'accepted')
               .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
           
@@ -488,13 +402,8 @@ export const db = {
               if (row.requester.id !== user.id) friends.push(row.requester);
               if (row.receiver.id !== user.id) friends.push(row.receiver);
           });
-          
           return friends;
       },
-
-      /**
-       * Chat System Methods
-       */
       
       async getMessages(friendId: string): Promise<DirectMessage[]> {
           ensureSupabase();
@@ -510,7 +419,6 @@ export const db = {
               .order('created_at', { ascending: true });
           
           if (error) throw error;
-
           return data || [];
       },
 
@@ -523,12 +431,7 @@ export const db = {
           // @ts-ignore
           const { data, error } = await supabase
               .from('direct_messages')
-              .insert({
-                  sender_id: user.id,
-                  receiver_id: friendId,
-                  content: content,
-                  message_type: type
-              })
+              .insert({ sender_id: user.id, receiver_id: friendId, content: content, message_type: type })
               .select()
               .single();
           
@@ -539,17 +442,11 @@ export const db = {
       async uploadMedia(file: Blob, path: string): Promise<string> {
           ensureSupabase();
           // @ts-ignore
-          const { data, error } = await supabase.storage
-              .from('chat-media')
-              .upload(path, file);
-          
+          const { data, error } = await supabase.storage.from('chat-media').upload(path, file);
           if (error) throw error;
           
           // @ts-ignore
-          const { data: urlData } = supabase.storage
-              .from('chat-media')
-              .getPublicUrl(path);
-          
+          const { data: urlData } = supabase.storage.from('chat-media').getPublicUrl(path);
           return urlData.publicUrl;
       }
   }
