@@ -1,12 +1,47 @@
 import { GoogleGenAI, GenerateContentResponse, Content } from "@google/genai";
 import { Message } from "../types";
 
-// Initialize the API client
-// @ts-ignore - process.env.API_KEY is replaced by Vite at build time
-const apiKey = process.env.API_KEY; 
-const ai = new GoogleGenAI({ apiKey: apiKey });
+// --- KEY MANAGEMENT SYSTEM ---
 
-// We now treat this as a base template, not a const
+// 1. Get System Keys (Split by comma if multiple are provided for rotation)
+// @ts-ignore - process.env.API_KEY is replaced by Vite at build time
+const RAW_ENV_KEY = process.env.API_KEY || "";
+const SYSTEM_KEYS = RAW_ENV_KEY.split(',').map(k => k.trim()).filter(k => k.length > 0);
+
+/**
+ * Retrieves the best available API Key.
+ * Priority: 
+ * 1. User's Custom Key (LocalStorage)
+ * 2. Random System Key (Rotation)
+ */
+const getActiveApiKey = (): string | null => {
+    // Check for custom key first
+    if (typeof window !== 'undefined') {
+        const customKey = localStorage.getItem('custom_api_key');
+        if (customKey && customKey.trim().length > 0) return customKey;
+    }
+
+    // Fallback to system keys (Rotate randomly to distribute load)
+    if (SYSTEM_KEYS.length > 0) {
+        const randomIndex = Math.floor(Math.random() * SYSTEM_KEYS.length);
+        return SYSTEM_KEYS[randomIndex];
+    }
+
+    return null;
+};
+
+/**
+ * Creates a fresh AI client instance using the current best key.
+ * We must recreate this for every request to support key rotation/switching.
+ */
+const getClient = (): GoogleGenAI => {
+    const key = getActiveApiKey();
+    if (!key) throw new Error("No API Key configured. Please add a Custom Key in Settings.");
+    return new GoogleGenAI({ apiKey: key });
+};
+
+// --- SYSTEM INSTRUCTIONS ---
+
 const BASE_SYSTEM_INSTRUCTION = `
 You are "Shepherd", a warm, friendly, and encouraging Scripture Companion.
 Your visual identity is a Shepherd's Staff and a Book.
@@ -37,7 +72,7 @@ const mapHistoryToContent = (messages: Message[]): Content[] => {
     .filter((m) => !m.isError)
     .map((m) => ({
       role: m.role,
-      parts: [{ text: m.text }], // We only put the visible text in history to keep context clean
+      parts: [{ text: m.text }], 
     }));
 };
 
@@ -47,22 +82,25 @@ const mapHistoryToContent = (messages: Message[]): Content[] => {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * Wrapper to handle 429 Rate Limits with automatic retries
+ * Wrapper to handle 429 Rate Limits with automatic retries AND key rotation.
  */
 const makeRequestWithRetry = async <T>(
-    operation: () => Promise<T>, 
+    operation: (client: GoogleGenAI) => Promise<T>, 
     retries = 3, 
-    initialDelay = 2000
+    initialDelay = 1500
 ): Promise<T> => {
     try {
-        return await operation();
+        const client = getClient();
+        return await operation(client);
     } catch (error: any) {
         // Check for 429 (Resource Exhausted / Rate Limit)
-        const isRateLimit = error?.status === 429 || error?.code === 429 || error?.message?.includes('429') || error?.message?.includes('quota');
+        const errorMessage = error?.message || "";
+        const isRateLimit = error?.status === 429 || error?.code === 429 || errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED');
         
         if (isRateLimit && retries > 0) {
-            console.warn(`Rate limit hit. Retrying in ${initialDelay}ms... (${retries} retries left)`);
+            console.warn(`Rate limit hit. Rotating key/retrying in ${initialDelay}ms... (${retries} retries left)`);
             await delay(initialDelay);
+            // Recursive call will automatically pick a new random key from getClient() (if using system keys)
             return makeRequestWithRetry(operation, retries - 1, initialDelay * 2);
         }
         
@@ -71,44 +109,12 @@ const makeRequestWithRetry = async <T>(
 };
 
 /**
- * Diagnostic tool to check connection health
- */
-export const diagnoseConnection = async (): Promise<{ status: 'ok' | 'error', message: string, details?: any }> => {
-    try {
-        // 1. Check API Key presence (masked)
-        if (!apiKey || apiKey.length === 0) {
-            return { status: 'error', message: "API Key is missing or empty in the build." };
-        }
-        
-        // 2. Test Network Call
-        const response = await makeRequestWithRetry(async () => {
-            return await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: 'Ping',
-            });
-        });
-        
-        if (response && response.text) {
-            return { status: 'ok', message: "Connection Successful. API returned: " + response.text.substring(0, 10) + "..." };
-        } else {
-            return { status: 'error', message: "API Key present, but received empty response." };
-        }
-    } catch (e: any) {
-        return { 
-            status: 'error', 
-            message: e.message || "Unknown error occurred", 
-            details: e 
-        };
-    }
-};
-
-/**
  * Generates a short, smart title for the chat based on the first user message.
  */
 export const generateChatTitle = async (userMessage: string): Promise<string> => {
   try {
-    const response = await makeRequestWithRetry(async () => {
-        return await ai.models.generateContent({
+    const response = await makeRequestWithRetry(async (client) => {
+        return await client.models.generateContent({
           model: 'gemini-2.5-flash',
           contents: `Summarize this user request into a short, elegant 3-5 word title for a journal entry (no quotes): "${userMessage}"`,
         });
@@ -135,9 +141,9 @@ export const sendMessageStream = async (
   onError: (error: any) => void
 ) => {
   try {
-    const formattedHistory = mapHistoryToContent(history);
+    const recentHistory = history.length > 10 ? history.slice(history.length - 10) : history;
+    const formattedHistory = mapHistoryToContent(recentHistory);
     
-    // Inject translation preference into system instruction
     const dynamicInstruction = `${BASE_SYSTEM_INSTRUCTION}
     
     IMPORTANT PREFERENCES:
@@ -146,32 +152,32 @@ export const sendMessageStream = async (
     ${displayName ? `3. USER IDENTITY: The user's name is "${displayName}". Address them by name occasionally to build a connection.` : ''}
     `;
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
-      history: formattedHistory,
-      config: {
-        systemInstruction: dynamicInstruction,
-        temperature: 1.0, 
-      },
-    });
-    
-    // If hiddenContext exists, we append it to the prompt sent to AI
-    // NOTE: We wrap it in a system note so the AI sees it but treats the user text as primary
+    // Prompt construction
     const promptToSend = hiddenContext 
         ? `${newMessage}\n\n[System Note: ${hiddenContext}]` 
         : newMessage;
-    
+
     // Use retry wrapper for the INITIAL stream connection
-    const result = await makeRequestWithRetry(async () => {
-        return await chat.sendMessageStream({ message: promptToSend });
+    await makeRequestWithRetry(async (client) => {
+        const chat = client.chats.create({
+            model: 'gemini-2.5-flash',
+            history: formattedHistory,
+            config: {
+                systemInstruction: dynamicInstruction,
+                temperature: 1.0, 
+            },
+        });
+        
+        const result = await chat.sendMessageStream({ message: promptToSend });
+        
+        for await (const chunk of result) {
+            const responseChunk = chunk as GenerateContentResponse;
+            if (responseChunk.text) {
+                onChunk(responseChunk.text);
+            }
+        }
+        return result;
     });
-    
-    for await (const chunk of result) {
-      const responseChunk = chunk as GenerateContentResponse;
-      if (responseChunk.text) {
-        onChunk(responseChunk.text);
-      }
-    }
     
     onComplete();
   } catch (error) {

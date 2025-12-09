@@ -510,18 +510,17 @@ const App: React.FC = () => {
         }
       },
       (error) => {
-        // IMPROVED ERROR HANDLING
-        const rawMsg = error?.message || JSON.stringify(error) || "Unknown Error";
+        // FRIENDLY ERROR HANDLING
+        const rawMsg = error?.message || "Unknown Error";
         let friendlyMessage = rawMsg;
 
         // Check for 429 Rate Limit
         if (rawMsg.includes('429') || rawMsg.includes('Quota') || rawMsg.includes('RESOURCE_EXHAUSTED')) {
-            friendlyMessage = "⚠️ **High Traffic / Daily Limit Reached**\n\nThe free version of this AI has a daily message limit which has been reached. Please try again later or tomorrow.\n\n*(Technical: 429 Resource Exhausted)*";
+            friendlyMessage = "⚠️ **High Traffic / Daily Limit Reached**\n\nMany users are using the app right now. Please wait a moment and try again, or **add your own free API Key in Settings** for unlimited personal access.";
         } else if (rawMsg.includes('Failed to fetch') || rawMsg.includes('Network')) {
-            friendlyMessage = "⚠️ **Connection Error**\n\nCould not connect to the server. Please check your internet.";
+            friendlyMessage = "⚠️ **Connection Error**\n\nCould not connect to the server. Please check your internet connection.";
         } else {
-             // If it's the specific raw JSON blob, try to just show it as code block or simplify
-             friendlyMessage = `⚠️ **System Error**\n\n\`\`\`\n${rawMsg.slice(0, 150)}...\n\`\`\``;
+             friendlyMessage = "⚠️ **I encountered a problem.**\n\nPlease try again in a moment.";
         }
 
         setChats(prevChats => prevChats.map(chat => {

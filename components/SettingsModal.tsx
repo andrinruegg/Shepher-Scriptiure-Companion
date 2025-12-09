@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { X, Book, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Activity, AlertTriangle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Book, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { UserPreferences } from '../types';
 import { translations } from '../utils/translations';
-import { diagnoseConnection } from '../services/geminiService';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -46,9 +45,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(preferences.displayName || '');
   
-  // Diagnostics State
-  const [diagStatus, setDiagStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [diagMessage, setDiagMessage] = useState('');
+  // Custom API Key State
+  const [customKey, setCustomKey] = useState('');
+  const [isEditingKey, setIsEditingKey] = useState(false);
+  const [showKeyTutorial, setShowKeyTutorial] = useState(false);
+
+  useEffect(() => {
+      if (isOpen) {
+          const storedKey = localStorage.getItem('custom_api_key') || '';
+          setCustomKey(storedKey);
+      }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -59,18 +66,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setIsEditingName(false);
   };
 
-  const runDiagnostics = async () => {
-      setDiagStatus('loading');
-      setDiagMessage('Testing connection to Google Gemini...');
-      const result = await diagnoseConnection();
-      if (result.status === 'ok') {
-          setDiagStatus('success');
-          setDiagMessage(result.message);
-      } else {
-          setDiagStatus('error');
-          setDiagMessage(`Error: ${result.message}`);
-      }
+  const handleSaveKey = () => {
+      localStorage.setItem('custom_api_key', customKey.trim());
+      setIsEditingKey(false);
   };
+
+  const handleClearKey = () => {
+      localStorage.removeItem('custom_api_key');
+      setCustomKey('');
+      setIsEditingKey(false);
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -171,6 +176,80 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <hr className="border-slate-100 dark:border-slate-800" />
 
+          {/* ADVANCED: CUSTOM API KEY */}
+          <section>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                 <Key size={12} />
+                 Unlimited Access
+              </h3>
+              
+              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 leading-relaxed">
+                      For unlimited high-speed messaging, you can provide your own <strong>free</strong> Google Gemini API Key.
+                  </p>
+
+                  {isEditingKey ? (
+                      <div className="flex gap-2 mb-3">
+                           <input 
+                              type="password"
+                              value={customKey}
+                              onChange={(e) => setCustomKey(e.target.value)}
+                              placeholder="Paste API Key here..."
+                              className="flex-1 p-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded outline-none text-slate-800 dark:text-slate-200"
+                           />
+                           <button onClick={handleSaveKey} className="p-2 bg-emerald-600 text-white rounded hover:bg-emerald-700">
+                               <Check size={14} />
+                           </button>
+                           <button onClick={() => { setIsEditingKey(false); setCustomKey(localStorage.getItem('custom_api_key') || ''); }} className="p-2 bg-slate-200 dark:bg-slate-700 text-slate-600 rounded">
+                               <X size={14} />
+                           </button>
+                      </div>
+                  ) : (
+                      <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                             <div className={`w-2 h-2 rounded-full ${customKey ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
+                             <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                 {customKey ? 'Custom Key Active' : 'Using Shared Key'}
+                             </span>
+                          </div>
+                          <div className="flex gap-2">
+                              {customKey && (
+                                  <button onClick={handleClearKey} className="text-xs text-red-500 hover:text-red-600 underline">Remove</button>
+                              )}
+                              <button onClick={() => setIsEditingKey(true)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+                                  {customKey ? 'Change Key' : 'Add Key'}
+                              </button>
+                          </div>
+                      </div>
+                  )}
+                  
+                  {/* Tutorial Dropdown */}
+                  <div className="mt-2">
+                      <button 
+                        onClick={() => setShowKeyTutorial(!showKeyTutorial)}
+                        className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-indigo-500 font-medium transition-colors"
+                      >
+                         {showKeyTutorial ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
+                         How to get a free API Key
+                      </button>
+                      
+                      {showKeyTutorial && (
+                          <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-950 p-3 rounded border border-slate-100 dark:border-slate-800 animate-fade-in">
+                              <ol className="list-decimal ml-4 space-y-2">
+                                  <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline inline-flex items-center gap-0.5">Google AI Studio <ExternalLink size={10}/></a>.</li>
+                                  <li>Click the blue <strong>"Create API Key"</strong> button.</li>
+                                  <li><strong>Important:</strong> Select <strong>"Create API key in new project"</strong>.</li>
+                                  <li className="text-slate-400 italic">Note: Do not re-use the same project, or the limits will be shared!</li>
+                                  <li>Copy the key (starts with AIza...) and paste it above.</li>
+                              </ol>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          </section>
+
+          <hr className="border-slate-100 dark:border-slate-800" />
+
           {/* Account Section */}
           <section>
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
@@ -233,37 +312,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <hr className="border-slate-100 dark:border-slate-800" />
 
-          {/* Diagnostics Section */}
-          <section>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                 <Activity size={12} />
-                 System Diagnostics
-              </h3>
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-100 dark:border-slate-800">
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                      If you are experiencing connection errors, run a test below.
-                  </div>
-                  
-                  {diagStatus !== 'idle' && (
-                      <div className={`mb-3 p-2 rounded text-xs break-all font-mono ${diagStatus === 'error' ? 'bg-red-50 text-red-600 dark:bg-red-900/20' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20'}`}>
-                          {diagStatus === 'loading' && "Running..."}
-                          {diagStatus === 'error' && <div className="flex gap-2"><AlertTriangle size={14} className="flex-shrink-0" /> {diagMessage}</div>}
-                          {diagStatus === 'success' && <div className="flex gap-2"><CheckCircle size={14} className="flex-shrink-0" /> {diagMessage}</div>}
-                      </div>
-                  )}
-
-                  <button 
-                     onClick={runDiagnostics}
-                     disabled={diagStatus === 'loading'}
-                     className="w-full py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded transition-colors"
-                  >
-                      {diagStatus === 'loading' ? 'Testing...' : 'Test Connection'}
-                  </button>
-              </div>
-          </section>
-
-          <hr className="border-slate-100 dark:border-slate-800" />
-
           {/* About Section */}
           <section>
              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
@@ -277,11 +325,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 <p className="mt-2">
                   "As a Christian, he built this tool to help himself and his girlfriend, <strong className="text-emerald-700 dark:text-emerald-400 not-italic">Alexia</strong>, grow closer to God through Scripture. It stands as a testament to his love for her and the eternal truth that Jesus loves her."
                 </p>
-             </div>
-             
-             {/* DEBUG VERSION LABEL */}
-             <div className="mt-4 text-center text-[10px] text-slate-400 font-mono">
-                 App Version: Debug-1.0
              </div>
           </section>
 

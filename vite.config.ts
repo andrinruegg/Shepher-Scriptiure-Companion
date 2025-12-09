@@ -6,14 +6,17 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
-  // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, (process as any).cwd(), '')
-  const processEnv = process.env || {}; 
+  
+  // SYSTEM KEY ROTATION
+  // We combine the keys provided by the user into a single comma-separated string.
+  // The app will rotate through these to avoid hitting rate limits (429 Errors).
+  const MULTI_KEYS = "AIzaSyBq96IkhqMxLpgWVtqiM7WsGq5sr_jMuBg,AIzaSyDSoXpvhvuctDfF2oS9xjs23Wh8C4MLLRk,AIzaSyDqqaImRT8PSLw3tPsr3btwXE6y4bPXjas,AIzaSyA_rsHQzfafZxZRH-SaxhkuOrGnJVW5II8,AIzaSyCnW2OsdKS3odsH8mzpf2WCCUl8Ag_Bk40";
 
   return {
-    // Expose the API Key to the client-side code
+    // Expose the API Key(s) to the client-side code
     define: {
-      'process.env.API_KEY': JSON.stringify(processEnv.API_KEY || env.API_KEY || '')
+      'process.env.API_KEY': JSON.stringify(MULTI_KEYS)
     },
     plugins: [
       react(),
