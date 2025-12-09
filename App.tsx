@@ -441,14 +441,22 @@ const App: React.FC = () => {
           if (chat.id === activeChatId) {
               return {
                   ...chat,
+                  // Remove the last AI message (error or old) and add the empty new one
                   messages: [...chat.messages.slice(0, -1), newAiMessage]
               };
           }
           return chat;
       }));
 
-      const historyPayload = messages.slice(0, -1); 
-      const regenContext = `Regeneration-${uuidv4()} ${lastUserMessage.hiddenContext || ''}`;
+      // FIX: The history should NOT include the last User message, because we are sending it as the prompt.
+      // previous: messages.slice(0, -1) -> included Welcome, ..., User.
+      // fixed: messages.slice(0, -2) -> includes Welcome, ... (User is excluded).
+      const historyPayload = messages.slice(0, -2); 
+      
+      // We also need to preserve the hiddenContext if it exists on the user message
+      const regenContext = lastUserMessage.hiddenContext 
+        ? `${lastUserMessage.hiddenContext} (Regeneration-${uuidv4()})`
+        : undefined;
       
       await streamAIResponse(activeChatId, newAiMessageId, historyPayload, lastUserMessage.text, regenContext, newAiMessage);
   };
