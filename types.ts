@@ -25,6 +25,7 @@ export interface ChatState {
 export interface UserPreferences {
   bibleTranslation: string; // e.g., 'NIV', 'ESV', 'KJV'
   theme: 'light' | 'dark';
+  winterTheme?: boolean; // NEW: Winter Mode Toggle
   language: string;
   displayName?: string;
   savedVerses?: SavedItem[];

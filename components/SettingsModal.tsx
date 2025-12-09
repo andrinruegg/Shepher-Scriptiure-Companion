@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Book, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Book, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp, Snowflake } from 'lucide-react';
 import { UserPreferences } from '../types';
 import { translations } from '../utils/translations';
 
@@ -7,7 +7,7 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   preferences: UserPreferences;
-  onUpdatePreference: (key: keyof UserPreferences, value: string) => void;
+  onUpdatePreference: (key: keyof UserPreferences, value: string | boolean) => void;
   userEmail?: string;
   onLogout: () => void;
 }
@@ -60,6 +60,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   const t = translations[preferences.language]?.settings || translations['English'].settings;
+  // Fallback for winterMode text if translation missing
+  const winterText = translations[preferences.language]?.settings?.winterMode || "Winter Mode";
 
   const handleSaveName = () => {
     onUpdatePreference('displayName', tempName);
@@ -152,7 +154,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             {/* Appearance */}
-            <div>
+            <div className="mb-4">
                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
                   {preferences.theme === 'dark' ? <Moon size={16} className="text-indigo-500"/> : <Sun size={16} className="text-amber-500"/>}
                   {t.appearance}
@@ -172,6 +174,31 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                </div>
             </div>
+
+            {/* Winter Mode Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${preferences.winterTheme ? 'bg-blue-100 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-slate-200 text-slate-400 dark:bg-slate-700'}`}>
+                        <Snowflake size={18} />
+                    </div>
+                    <div>
+                        <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                            {winterText}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                            Falling snow animation
+                        </span>
+                    </div>
+                </div>
+                
+                <button 
+                    onClick={() => onUpdatePreference('winterTheme', !preferences.winterTheme)}
+                    className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${preferences.winterTheme ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+                >
+                    <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${preferences.winterTheme ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                </button>
+            </div>
+
           </section>
 
           <hr className="border-slate-100 dark:border-slate-800" />

@@ -8,6 +8,7 @@ import SettingsModal from './components/SettingsModal';
 import DailyVerseModal from './components/DailyVerseModal';
 import BibleReader from './components/BibleReader';
 import SavedCollection from './components/SavedCollection';
+import WinterOverlay from './components/WinterOverlay';
 import { Message, ChatSession, UserPreferences, AppView, SavedItem, BibleHighlight } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { sendMessageStream, generateChatTitle } from './services/geminiService';
@@ -48,6 +49,12 @@ const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark';
+    }
+    return false;
+  });
+  const [isWinterMode, setIsWinterMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('winterMode') === 'true';
     }
     return false;
   });
@@ -95,6 +102,12 @@ const App: React.FC = () => {
             const isDark = meta.theme === 'dark';
             setIsDarkMode(isDark);
             localStorage.setItem('theme', meta.theme);
+        }
+        
+        if (meta.winterMode !== undefined) {
+            const isWinter = meta.winterMode === 'true' || meta.winterMode === true;
+            setIsWinterMode(isWinter);
+            localStorage.setItem('winterMode', String(isWinter));
         }
     }
 
@@ -177,34 +190,41 @@ const App: React.FC = () => {
       updateCloudPreference('theme', newMode ? 'dark' : 'light');
   };
 
-  const updateCloudPreference = async (key: string, value: string) => {
+  const updateCloudPreference = async (key: string, value: string | boolean) => {
       if (!session || !supabase) return;
       try {
+          // Convert boolean to string if needed for legacy compatibility
+          const val = typeof value === 'boolean' ? String(value) : value;
           await supabase.auth.updateUser({
-              data: { [key]: value }
+              data: { [key]: val }
           });
       } catch (e) {
           console.error(`Failed to sync ${key} to cloud`, e);
       }
   };
 
-  const handleUpdatePreference = (key: keyof UserPreferences, value: string) => {
+  const handleUpdatePreference = (key: keyof UserPreferences, value: string | boolean) => {
     if (key === 'theme') {
        const isDark = value === 'dark';
        setIsDarkMode(isDark);
-       updateCloudPreference('theme', value);
+       updateCloudPreference('theme', value as string);
+    } else if (key === 'winterTheme') {
+       const isWinter = value === true;
+       setIsWinterMode(isWinter);
+       localStorage.setItem('winterMode', String(isWinter));
+       updateCloudPreference('winterMode', isWinter);
     } else if (key === 'bibleTranslation') {
-       setBibleTranslation(value);
-       localStorage.setItem('bibleTranslation', value);
-       updateCloudPreference('bibleTranslation', value);
+       setBibleTranslation(value as string);
+       localStorage.setItem('bibleTranslation', value as string);
+       updateCloudPreference('bibleTranslation', value as string);
     } else if (key === 'language') {
-       setLanguage(value);
-       localStorage.setItem('language', value);
-       updateCloudPreference('language', value);
+       setLanguage(value as string);
+       localStorage.setItem('language', value as string);
+       updateCloudPreference('language', value as string);
     } else if (key === 'displayName') {
-       setDisplayName(value);
-       localStorage.setItem('displayName', value);
-       updateCloudPreference('full_name', value);
+       setDisplayName(value as string);
+       localStorage.setItem('displayName', value as string);
+       updateCloudPreference('full_name', value as string);
     }
   };
 
@@ -671,6 +691,8 @@ const App: React.FC = () => {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} animate-fade-in`}>
+      {isWinterMode && <WinterOverlay />}
+      
       {!session ? (
          <Login 
             isDarkMode={isDarkMode} 
@@ -678,7 +700,7 @@ const App: React.FC = () => {
             language={language}
          />
       ) : (
-        <div className="flex h-screen bg-slate-200 dark:bg-slate-900 overflow-hidden">
+        <div className="flex h-screen bg-slate-200 dark:bg-slate-900 overflow-hidden relative z-0">
           <Sidebar 
             isOpen={isSidebarOpen}
             onClose={() => setIsSidebarOpen(false)}
@@ -741,6 +763,7 @@ const App: React.FC = () => {
              preferences={{
                  bibleTranslation: bibleTranslation,
                  theme: isDarkMode ? 'dark' : 'light',
+                 winterTheme: isWinterMode,
                  language: language,
                  displayName: displayName
              }}
