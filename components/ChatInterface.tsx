@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import { Send, Menu, Trash2 } from 'lucide-react';
 import { Message } from '../types';
@@ -26,18 +27,34 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   language
 }) => {
   const [inputValue, setInputValue] = useState('');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesTopRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Translations
   const t = translations[language]?.chat || translations['English'].chat;
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    // If it's a new chat (only 1 message which is the welcome msg), scroll to TOP
+    // so the user can see the beginning of the text.
+    if (messages.length <= 1) {
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = 0;
+        }
+    } else {
+        // Otherwise, scroll to BOTTOM to see latest
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isLoading]);
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -67,6 +84,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Determine if we are in the "Empty State" (just the welcome message)
   const isInitialState = messages.length === 1 && messages[0].role === 'model';
+
+  // Shorten placeholder on mobile
+  const placeholderText = isMobile ? "Ask Shepherd..." : t.placeholder;
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 relative overflow-hidden transition-colors duration-300">
@@ -100,7 +120,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </header>
 
       {/* Messages Area */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth">
+      <main 
+         ref={messagesContainerRef}
+         className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth"
+      >
+        <div ref={messagesTopRef} /> {/* Top Anchor */}
         <div className="max-w-3xl mx-auto h-full flex flex-col">
           
           {messages.map((msg, index) => (
@@ -120,7 +144,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           )}
           
-          <div ref={messagesEndRef} className="h-4" />
+          <div ref={messagesEndRef} className="h-4" /> {/* Bottom Anchor */}
         </div>
       </main>
 
@@ -133,7 +157,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               value={inputValue}
               onChange={adjustTextareaHeight}
               onKeyDown={handleKeyDown}
-              placeholder={t.placeholder}
+              placeholder={placeholderText}
               className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-[120px] min-h-[44px] py-2.5 px-3 text-slate-800 dark:text-slate-100 placeholder-slate-400"
               rows={1}
             />

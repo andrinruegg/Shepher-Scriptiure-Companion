@@ -241,11 +241,9 @@ const App: React.FC = () => {
     try {
       const userChats = await db.getUserChats();
       setChats(userChats);
-      if (userChats.length > 0) {
-        setActiveChatId(userChats[0].id);
-      } else {
-        createNewChat();
-      }
+      // ALWAYS start a new chat on load, so the user lands in an empty, fresh state
+      // instead of seeing old history immediately.
+      createNewChat();
     } catch (error) {
       console.error("Failed to load chats:", error);
     }

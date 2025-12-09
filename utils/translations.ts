@@ -43,7 +43,7 @@ export const translations: Record<string, any> = {
     },
     chat: {
       subtitle: "Scripture Companion",
-      placeholder: "Ask Shepherd for a verse, a topic, or guidance...",
+      placeholder: "Ask Shepherd for a verse, topic, or guidance...",
       regenerate: "Regenerate",
       retry: "Retry",
     },
@@ -120,7 +120,7 @@ export const translations: Record<string, any> = {
     login: {
       welcomeBack: "Bienvenido de nuevo",
       createAccount: "Crear cuenta",
-      signInText: "Inicia sesión para acceder a tu diario espiritual.",
+      signInText: "Inicia sesión para acceder a tu diario.",
       signUpText: "Regístrate para guardar tus conversaciones.",
       emailPlaceholder: "Correo electrónico",
       passwordPlaceholder: "Contraseña",
