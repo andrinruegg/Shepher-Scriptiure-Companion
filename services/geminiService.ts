@@ -8,11 +8,15 @@ const getApiKey = () => {
   if (meta && meta.env && meta.env.VITE_API_KEY) {
     return meta.env.VITE_API_KEY;
   }
-  // 2. Check process.env (Fallback for Vercel server-side)
-  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-    return process.env.API_KEY;
+  
+  // 2. Check process.env.API_KEY directly.
+  // In production builds (Vite), 'process.env.API_KEY' is replaced by the string value defined in vite.config.ts.
+  // We must access it directly without checking if 'process' exists, because 'process' is undefined in browsers.
+  try {
+    return process.env.API_KEY || '';
+  } catch (e) {
+    return '';
   }
-  return '';
 };
 
 // Initialize the API client
