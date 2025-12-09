@@ -426,6 +426,9 @@ const App: React.FC = () => {
       if (lastMessage.role !== 'model') return;
 
       // Ensure there is a preceding user message to act as the prompt
+      // SAFETY CHECK: Ensure we don't access undefined if array is too short
+      if (messages.length < 2) return;
+
       const lastUserMessage = messages[messages.length - 2];
       if (!lastUserMessage || lastUserMessage.role !== 'user') {
           // If we can't find the user prompt, we can't regenerate. Abort.
