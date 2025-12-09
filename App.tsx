@@ -58,9 +58,10 @@ const App: React.FC = () => {
 
   // Splash Screen Timer
   useEffect(() => {
+    // 5s total duration for a cinematic feel
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 2000);
+    }, 5000); 
     return () => clearTimeout(timer);
   }, []);
 
@@ -528,22 +529,113 @@ const App: React.FC = () => {
 
   if (showSplash || loadingAuth) {
     return (
-      <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-indigo-600 transition-opacity duration-500 ${!showSplash && !loadingAuth ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-         <div className="animate-scale-in">
-            <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-2xl mb-6">
-                <ShepherdLogo size={64} className="text-indigo-600" />
+      <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-black transition-all duration-1000 ease-[cubic-bezier(0.76,0,0.24,1)] ${!showSplash && !loadingAuth ? 'opacity-0 scale-110 pointer-events-none blur-2xl' : 'opacity-100 scale-100 blur-0'}`}>
+         
+         {/* Divine Background - Deeper blues and golds */}
+         <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 animate-aurora opacity-90"></div>
+         
+         {/* Animated Stars */}
+         <div className="absolute inset-0 opacity-60">
+             <div className="absolute top-[20%] left-[20%] w-1 h-1 bg-white rounded-full animate-twinkle [animation-delay:0s]"></div>
+             <div className="absolute top-[60%] left-[80%] w-1.5 h-1.5 bg-amber-200 rounded-full animate-twinkle [animation-delay:1.5s]"></div>
+             <div className="absolute top-[80%] left-[30%] w-1 h-1 bg-white rounded-full animate-twinkle [animation-delay:2.5s]"></div>
+             <div className="absolute top-[15%] right-[25%] w-1 h-1 bg-amber-100 rounded-full animate-twinkle [animation-delay:3.5s]"></div>
+         </div>
+         
+         {/* Divine Light Beams (Rotating God Rays) */}
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[60rem] bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0deg,rgba(255,215,0,0.05)_40deg,transparent_80deg,rgba(255,255,255,0.05)_160deg,transparent_200deg)] rounded-full blur-3xl animate-spin-slow opacity-80"></div>
+
+         {/* Main Centerpiece (Cross + Rings) */}
+         <div className="relative z-10 flex flex-col items-center justify-center scale-100 md:scale-110 mb-8">
+            
+            {/* 3D Gyroscope Rings centered on Cross */}
+            <div className="relative flex items-center justify-center w-64 h-64 perspective-1000 preserve-3d">
+                {/* Ring 1 (X Axis) - Gold */}
+                <div className="absolute inset-0 w-full h-full border-[1.5px] border-amber-400/30 rounded-full animate-orbit-x shadow-[0_0_15px_rgba(251,191,36,0.1)]"></div>
+                {/* Ring 2 (Y Axis) - White */}
+                <div className="absolute inset-0 w-full h-full border-[1.5px] border-white/20 rounded-full animate-orbit-y shadow-[0_0_15px_rgba(255,255,255,0.1)]"></div>
+                {/* Ring 3 (Z Axis) - Blue */}
+                <div className="absolute inset-0 w-full h-full border-[1.5px] border-indigo-400/20 rounded-full animate-orbit-z"></div>
+
+                {/* THE CROSS */}
+                <div className="relative z-20 animate-cross-pulse">
+                    <svg width="100" height="120" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-[0_0_30px_rgba(255,215,0,0.6)]">
+                         <path d="M50 10V110M30 40H70" stroke="url(#crossGradient)" strokeWidth="6" strokeLinecap="round" />
+                         <defs>
+                             <linearGradient id="crossGradient" x1="50" y1="0" x2="50" y2="120" gradientUnits="userSpaceOnUse">
+                                 <stop offset="0%" stopColor="#FFF" />
+                                 <stop offset="50%" stopColor="#FDE68A" />
+                                 <stop offset="100%" stopColor="#D97706" />
+                             </linearGradient>
+                         </defs>
+                    </svg>
+                </div>
             </div>
          </div>
-         <div className="text-center animate-slide-up">
-            <h1 className="text-3xl font-bold text-white font-serif-text mb-2">Shepherd</h1>
-            <p className="text-indigo-200 text-sm font-medium tracking-widest uppercase">Scripture Companion</p>
+
+         {/* Cinematic Typography - Shepherd Above, Lines Next to Companion */}
+         <div className="relative z-20 text-center flex flex-col items-center -mt-4">
+             {/* SHEPHERD - Big, Bold, White/Gold */}
+             <h1 className="text-6xl md:text-8xl font-bold text-white font-serif-text tracking-tight drop-shadow-[0_0_20px_rgba(255,215,0,0.4)] flex gap-1 justify-center mb-2">
+                {['S','h','e','p','h','e','r','d'].map((char, i) => (
+                    <span 
+                        key={i} 
+                        className="animate-letter-reveal inline-block" 
+                        style={{ animationDelay: `${0.3 + i * 0.08}s` }}
+                    >
+                        {char}
+                    </span>
+                ))}
+             </h1>
+             
+             {/* SCRIPTURE COMPANION - With Lines */}
+             <div className="flex items-center justify-center gap-4 animate-tracking-expand opacity-0" style={{ animationDelay: '1.2s', animationFillMode: 'forwards' }}>
+                <div className="h-[2px] w-12 md:w-24 bg-gradient-to-r from-transparent via-amber-200 to-transparent shadow-[0_0_8px_rgba(253,230,138,0.6)]"></div>
+                
+                <p className="text-amber-100 text-lg md:text-2xl font-semibold uppercase tracking-[0.25em] font-sans drop-shadow-md whitespace-nowrap">
+                    Scripture Companion
+                </p>
+                
+                <div className="h-[2px] w-12 md:w-24 bg-gradient-to-r from-transparent via-amber-200 to-transparent shadow-[0_0_8px_rgba(253,230,138,0.6)]"></div>
+             </div>
          </div>
-         <div className="absolute bottom-12">
-            <div className="flex gap-2">
-               <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-               <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-               <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce"></div>
-            </div>
+
+         {/* SHEEP ANIMATION - Larger & Running */}
+         <div className="absolute bottom-0 left-0 right-0 h-56 overflow-hidden z-30 pointer-events-none">
+             {/* Silhouette Hills */}
+             <div className="absolute bottom-[-20px] left-[-10%] right-[-10%] h-28 bg-gradient-to-t from-black via-slate-900 to-transparent opacity-60 blur-sm rounded-[100%] scale-110"></div>
+             
+             {/* Sheep 1 (Leader) - Significantly Larger */}
+             <div className="absolute bottom-10 animate-sheep-run" style={{ animationDuration: '4.5s' }}>
+                 <div className="animate-sheep-bounce">
+                    <svg width="100" height="75" viewBox="0 0 40 30" fill="white" className="drop-shadow-lg opacity-90">
+                        {/* Body */}
+                        <rect x="5" y="8" width="25" height="15" rx="8" />
+                        {/* Head */}
+                        <circle cx="32" cy="12" r="6" />
+                        {/* Ear */}
+                        <path d="M36 10 L40 12 L36 14 Z" />
+                        {/* Legs */}
+                        <rect x="8" y="20" width="3" height="8" rx="1.5" />
+                        <rect x="22" y="20" width="3" height="8" rx="1.5" />
+                    </svg>
+                 </div>
+             </div>
+
+             {/* Sheep 2 (Follower) - Significantly Larger */}
+             <div className="absolute bottom-8 animate-sheep-run" style={{ animationDuration: '4.5s', animationDelay: '0.4s' }}>
+                 <div className="animate-sheep-bounce" style={{ animationDelay: '0.1s' }}>
+                    <svg width="80" height="60" viewBox="0 0 40 30" fill="white" className="drop-shadow-lg opacity-80">
+                         {/* Body */}
+                        <rect x="5" y="8" width="25" height="15" rx="8" />
+                        {/* Head */}
+                        <circle cx="32" cy="12" r="6" />
+                        {/* Legs */}
+                        <rect x="8" y="20" width="3" height="8" rx="1.5" />
+                        <rect x="22" y="20" width="3" height="8" rx="1.5" />
+                    </svg>
+                 </div>
+             </div>
          </div>
       </div>
     );
