@@ -1,8 +1,22 @@
 import { GoogleGenAI, GenerateContentResponse, Content } from "@google/genai";
 import { Message } from "../types";
 
+// Helper to safely get API Key
+const getApiKey = () => {
+  // 1. Check Vite environment variables (Standard for this project)
+  const meta = import.meta as any;
+  if (meta && meta.env && meta.env.VITE_API_KEY) {
+    return meta.env.VITE_API_KEY;
+  }
+  // 2. Check process.env (Fallback for Vercel server-side)
+  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    return process.env.API_KEY;
+  }
+  return '';
+};
+
 // Initialize the API client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 // We now treat this as a base template, not a const
 const BASE_SYSTEM_INSTRUCTION = `

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import Sidebar from './components/Sidebar';
@@ -208,7 +207,7 @@ const App: React.FC = () => {
     }
   };
 
-  // Auth Listener - MOVED UP to avoid Rules of Hooks violation
+  // Auth Listener
   useEffect(() => {
     if (!supabase) return;
     
@@ -226,27 +225,42 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (!supabase) {
-    return (
-      <div className={isDarkMode ? 'dark' : ''}>
-         <SetupScreen />
-      </div>
-    );
-  }
-
   const loadChats = async () => {
     try {
       const userChats = await db.getUserChats();
-      setChats(userChats);
-      // ALWAYS start a new chat on load, but make it temporary
-      createNewChat();
+      // Generate the temp chat object synchronously
+      const langData = translations[language] || translations['English'];
+      const messages = langData.welcomeMessages || translations['English'].welcomeMessages;
+      const randomTemplate = messages[Math.floor(Math.random() * messages.length)];
+      const finalWelcomeText = randomTemplate.replace('{name}', displayName || (language === 'Romanian' ? 'Prieten' : 'Friend'));
+
+      const tempId = uuidv4();
+      const welcomeMsg: Message = {
+        id: uuidv4(),
+        role: 'model',
+        text: finalWelcomeText,
+        timestamp: new Date().toISOString()
+      };
+
+      const tempChat: ChatSession = {
+          id: tempId,
+          title: translations[language]?.sidebar?.newChat || 'New Conversation',
+          createdAt: Date.now(),
+          messages: [welcomeMsg],
+          isTemp: true 
+      };
+
+      // Set all chats at once to avoid black screen flickering
+      setChats([tempChat, ...userChats]);
+      setActiveChatId(tempId);
+      setCurrentView('chat');
+
     } catch (error) {
       console.error("Failed to load chats:", error);
     }
   };
 
-  // Modified to create a TEMPORARY chat that is NOT saved to DB yet
-  const createNewChat = async () => {
+  const createNewChat = () => {
     const langData = translations[language] || translations['English'];
     const messages = langData.welcomeMessages || translations['English'].welcomeMessages;
     const randomTemplate = messages[Math.floor(Math.random() * messages.length)];
@@ -274,12 +288,7 @@ const App: React.FC = () => {
     setCurrentView('chat');
   };
 
-  const handleDeleteChat = async (chatId: string, e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-    
+  const handleDeleteChat = async (chatId: string) => {
     // Optimistic UI Update
     let nextActiveId = activeChatId;
     if (activeChatId === chatId) {
@@ -298,7 +307,6 @@ const App: React.FC = () => {
     // If we deleted the last chat, create a new temp one immediately
     if (chats.length <= 1) { 
          setTimeout(() => {
-             // Check if we still have no active ID (double check state)
              if (nextActiveId === null) createNewChat();
          }, 50);
     }
@@ -334,31 +342,17 @@ const App: React.FC = () => {
      if (supabase) await supabase.auth.signOut();
   };
 
+  // --- OPTIMISTIC SEND MESSAGE HANDLER ---
   const handleSendMessage = async (text: string, hiddenContext?: string) => {
     if (!activeChatId) return;
 
     let currentChatId = activeChatId;
-    let currentChat = chats.find(c => c.id === currentChatId);
+    const currentChat = chats.find(c => c.id === currentChatId);
 
     if (!currentChat) return;
 
-    // IF CHAT IS TEMP, CREATE IT IN DB FIRST
-    if (currentChat.isTemp) {
-        try {
-            // Create in DB
-            const savedChat = await db.createChat(currentChat.title, currentChat.messages[0]);
-            
-            // Update State with Real ID and remove isTemp
-            setChats(prev => prev.map(c => c.id === currentChatId ? { ...savedChat, isTemp: false } : c));
-            setActiveChatId(savedChat.id);
-            currentChatId = savedChat.id;
-            currentChat = { ...savedChat, isTemp: false };
-        } catch (e) {
-            console.error("Failed to create real chat from temp", e);
-            return; // Stop if we can't create the chat
-        }
-    }
-
+    // 1. IMMEDIATE UI UPDATE
+    // We update the local state instantly to show the user's message and the "Thinking" state.
     const userMessage: Message = {
       id: uuidv4(),
       role: 'user',
@@ -367,50 +361,56 @@ const App: React.FC = () => {
       hiddenContext: hiddenContext
     };
 
+    const aiMessageId = uuidv4();
+    const initialAiMessage: Message = {
+      id: aiMessageId,
+      role: 'model',
+      text: '', // Empty text triggers the "Thinking" bubbles
+      timestamp: new Date().toISOString(),
+    };
+
     setChats(prevChats => prevChats.map(chat => {
       if (chat.id === currentChatId) {
         return {
           ...chat,
-          messages: [...chat.messages, userMessage]
+          messages: [...chat.messages, userMessage, initialAiMessage],
+          isTemp: false // Mark as real immediately in UI so it persists
         };
       }
       return chat;
     }));
 
     setIsLoading(true);
-    
-    // Smart Title Generation logic
-    if (currentChat && currentChat.messages.length <= 1) {
-        generateChatTitle(text).then(smartTitle => {
-            handleRenameChat(currentChatId, smartTitle);
-        });
-    }
 
-    try {
-        await db.addMessage(currentChatId, userMessage);
-    } catch (e) {
-        console.error("Failed to save user message", e);
-    }
+    // 2. BACKGROUND SYNC
+    // We handle all DB operations asynchronously without blocking the UI rendering.
+    (async () => {
+        try {
+            // If it was a temp chat, create it in DB using the SAME client-side ID.
+            // This prevents ID swapping logic which causes black screens/flickering.
+            if (currentChat.isTemp) {
+                // We pass currentChatId to db.createChat so the DB uses OUR id
+                await db.createChat(currentChat.title, currentChat.messages[0], currentChatId);
+                
+                // Smart Title Generation
+                generateChatTitle(text).then(smartTitle => {
+                    handleRenameChat(currentChatId, smartTitle);
+                });
+            }
 
-    const aiMessageId = uuidv4();
-    const initialAiMessage: Message = {
-      id: aiMessageId,
-      role: 'model',
-      text: '',
-      timestamp: new Date().toISOString(),
-    };
+            // Save the user message to DB
+            await db.addMessage(currentChatId, userMessage);
 
-    setChats(prevChats => prevChats.map(chat => 
-      chat.id === currentChatId 
-        ? { ...chat, messages: [...chat.messages, initialAiMessage] } 
-        : chat
-    ));
+            // 3. START AI STREAM
+            const historyPayload = [...currentChat.messages, userMessage];
+            
+            await streamAIResponse(currentChatId, aiMessageId, historyPayload, text, hiddenContext, initialAiMessage);
 
-    const historyPayload = currentChat 
-        ? [...currentChat.messages, userMessage] 
-        : [userMessage]; 
-
-    await streamAIResponse(currentChatId, aiMessageId, historyPayload, text, hiddenContext, initialAiMessage);
+        } catch (e) {
+            console.error("Critical error in message handling:", e);
+            // In a real app, you might show a toast error here
+        }
+    })();
   };
 
   const handleRegenerate = async () => {
@@ -510,6 +510,16 @@ const App: React.FC = () => {
     );
   };
 
+  if (!supabase) {
+    return (
+      <div className={isDarkMode ? 'dark' : ''}>
+         <SetupScreen />
+      </div>
+    );
+  }
+
+  // Safety: If activeChatId is set but doesn't exist in chats (rare race condition),
+  // fallback or render a loading state, but DO NOT CRASH.
   const activeChat = chats.find(c => c.id === activeChatId);
   const activeMessages = activeChat ? activeChat.messages.map(m => ({
     ...m,
@@ -559,7 +569,7 @@ const App: React.FC = () => {
               setIsSidebarOpen(false);
             }}
             onNewChat={() => createNewChat()}
-            onDeleteChat={handleDeleteChat}
+            onDeleteChat={(id, e) => handleDeleteChat(id)}
             onRenameChat={handleRenameChat}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenDailyVerse={() => setIsDailyVerseOpen(true)}

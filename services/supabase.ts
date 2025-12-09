@@ -12,11 +12,18 @@ const getEnv = (key: string, preconfiguredValue: string) => {
   // 1. Check Preconfigured variables (Top priority for this environment)
   if (preconfiguredValue && preconfiguredValue.length > 5) return preconfiguredValue;
 
-  // 2. Check process.env (Standard build environments)
-  const envVar = process.env[key];
-  if (envVar) return envVar;
+  // 2. Check Vite env
+  const meta = import.meta as any;
+  if (meta && meta.env && meta.env[`VITE_${key}`]) {
+      return meta.env[`VITE_${key}`];
+  }
+
+  // 3. Check process.env (Standard build environments) - SAFELY
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key];
+  }
   
-  // 3. Check LocalStorage (Fallback for browser-only setup)
+  // 4. Check LocalStorage (Fallback for browser-only setup)
   if (typeof window !== 'undefined') {
     return localStorage.getItem(key);
   }

@@ -54,17 +54,21 @@ export const db = {
 
   /**
    * Create a new chat session.
+   * Now accepts an optional 'id' to allow client-side generation (Optimistic UI).
    */
-  async createChat(title: string = 'New Conversation', initialMessage?: Message): Promise<ChatSession> {
+  async createChat(title: string = 'New Conversation', initialMessage?: Message, id?: string): Promise<ChatSession> {
     ensureSupabase();
     // @ts-ignore
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
+    const chatData: any = { user_id: user.id, title };
+    if (id) chatData.id = id;
+
     // @ts-ignore
     const { data: chat, error: chatError } = await supabase
       .from('chats')
-      .insert({ user_id: user.id, title })
+      .insert(chatData)
       .select()
       .single();
 

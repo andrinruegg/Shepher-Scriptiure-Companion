@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { Send, Menu, Trash2 } from 'lucide-react';
 import { Message } from '../types';
@@ -83,7 +82,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   // Determine if we are in the "Empty State" (just the welcome message)
-  const isInitialState = messages.length === 1 && messages[0].role === 'model';
+  // Safety check: messages might be undefined briefly during transitions
+  const safeMessages = messages || [];
+  const isInitialState = safeMessages.length === 1 && safeMessages[0].role === 'model';
 
   // Shorten placeholder on mobile
   const placeholderText = isMobile ? "Ask Shepherd..." : t.placeholder;
@@ -127,11 +128,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div ref={messagesTopRef} /> {/* Top Anchor */}
         <div className="max-w-3xl mx-auto h-full flex flex-col">
           
-          {messages.map((msg, index) => (
+          {safeMessages.map((msg, index) => (
             <ChatMessage 
                 key={msg.id} 
                 message={msg} 
-                isLast={index === messages.length - 1}
+                isLast={index === safeMessages.length - 1}
                 onRegenerate={onRegenerate}
                 isRegenerating={isLoading}
             />
