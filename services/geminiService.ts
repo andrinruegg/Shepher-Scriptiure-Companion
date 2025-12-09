@@ -42,6 +42,35 @@ const mapHistoryToContent = (messages: Message[]): Content[] => {
 };
 
 /**
+ * Helper to wait for a specified duration
+ */
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Wrapper to handle 429 Rate Limits with automatic retries
+ */
+const makeRequestWithRetry = async <T>(
+    operation: () => Promise<T>, 
+    retries = 3, 
+    initialDelay = 2000
+): Promise<T> => {
+    try {
+        return await operation();
+    } catch (error: any) {
+        // Check for 429 (Resource Exhausted / Rate Limit)
+        const isRateLimit = error?.status === 429 || error?.code === 429 || error?.message?.includes('429') || error?.message?.includes('quota');
+        
+        if (isRateLimit && retries > 0) {
+            console.warn(`Rate limit hit. Retrying in ${initialDelay}ms... (${retries} retries left)`);
+            await delay(initialDelay);
+            return makeRequestWithRetry(operation, retries - 1, initialDelay * 2);
+        }
+        
+        throw error;
+    }
+};
+
+/**
  * Diagnostic tool to check connection health
  */
 export const diagnoseConnection = async (): Promise<{ status: 'ok' | 'error', message: string, details?: any }> => {
@@ -52,9 +81,11 @@ export const diagnoseConnection = async (): Promise<{ status: 'ok' | 'error', me
         }
         
         // 2. Test Network Call
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: 'Ping',
+        const response = await makeRequestWithRetry(async () => {
+            return await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: 'Ping',
+            });
         });
         
         if (response && response.text) {
@@ -76,9 +107,11 @@ export const diagnoseConnection = async (): Promise<{ status: 'ok' | 'error', me
  */
 export const generateChatTitle = async (userMessage: string): Promise<string> => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Summarize this user request into a short, elegant 3-5 word title for a journal entry (no quotes): "${userMessage}"`,
+    const response = await makeRequestWithRetry(async () => {
+        return await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: `Summarize this user request into a short, elegant 3-5 word title for a journal entry (no quotes): "${userMessage}"`,
+        });
     });
     return response.text ? response.text.trim() : 'New Entry';
   } catch (error) {
@@ -128,7 +161,10 @@ export const sendMessageStream = async (
         ? `${newMessage}\n\n[System Note: ${hiddenContext}]` 
         : newMessage;
     
-    const result = await chat.sendMessageStream({ message: promptToSend });
+    // Use retry wrapper for the INITIAL stream connection
+    const result = await makeRequestWithRetry(async () => {
+        return await chat.sendMessageStream({ message: promptToSend });
+    });
     
     for await (const chunk of result) {
       const responseChunk = chunk as GenerateContentResponse;

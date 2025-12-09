@@ -47,7 +47,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
                  <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce"></div>
               </div>
             ) : (
-              <div className={`markdown-content ${isUser ? 'text-white' : 'text-slate-800 dark:text-slate-100'} ${message.isError ? 'font-mono text-xs' : ''}`}>
+              <div className={`markdown-content ${isUser ? 'text-white' : 'text-slate-800 dark:text-slate-100'} ${message.isError ? 'font-sans text-xs' : ''}`}>
                 <ReactMarkdown
                    components={{
                       blockquote: ({node, ...props}) => (
@@ -62,6 +62,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
                       ol: ({node, ...props}) => <ol className="list-decimal ml-4 mb-2 space-y-1" {...props} />,
                       h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-2" {...props} />,
                       h2: ({node, ...props}) => <h2 className="text-base font-bold mb-2" {...props} />,
+                      // Ensure code blocks from error messages wrap properly
+                      code: ({node, ...props}) => <code className="bg-black/10 dark:bg-white/10 px-1 rounded break-all whitespace-pre-wrap" {...props} />
                    }}
                 >
                   {message.text}
