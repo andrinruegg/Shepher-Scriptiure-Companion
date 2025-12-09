@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Users, Bell, Search, Check, AlertCircle, Copy, User, MessageCircle } from 'lucide-react';
+import { X, UserPlus, Users, Bell, Search, Check, AlertCircle, Copy, User, MessageCircle, ArrowLeft, Trash2, Shield, Info } from 'lucide-react';
 import { UserProfile, FriendRequest, AppUpdate } from '../types';
 import { db } from '../services/db';
 import FriendChat from './FriendChat';
@@ -21,23 +22,28 @@ const UPDATES_LOG: AppUpdate[] = [
 
 const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserShareId, isDarkMode }) => {
   const [activeTab, setActiveTab] = useState<'inbox' | 'friends' | 'add'>('inbox');
+  
+  // Navigation States
   const [activeChatFriend, setActiveChatFriend] = useState<UserProfile | null>(null);
+  const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
 
+  // Search States
   const [searchId, setSearchId] = useState('');
   const [searchResult, setSearchResult] = useState<UserProfile | null>(null);
   const [searchError, setSearchError] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   
+  // Data Lists
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<UserProfile[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
   useEffect(() => {
-      if (isOpen && !activeChatFriend) {
+      if (isOpen && !activeChatFriend && !viewingProfile) {
           loadSocialData();
       }
-  }, [isOpen, activeTab, activeChatFriend]);
+  }, [isOpen, activeTab, activeChatFriend, viewingProfile]);
 
   const loadSocialData = async () => {
       setLoadingData(true);
@@ -71,7 +77,9 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
 
           const user = await db.social.searchUserByShareId(searchId.trim());
           if (user) {
-              setSearchResult(user);
+              // Instead of showing small result, open full profile view immediately
+              setViewingProfile(user);
+              setSearchResult(user); // Keep for reference if needed
           } else {
               setSearchError("User not found. Check the ID.");
           }
@@ -82,14 +90,15 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
       }
   };
 
-  const sendRequest = async () => {
-      if (!searchResult) return;
+  const sendRequest = async (targetId: string) => {
       setSearchLoading(true);
       try {
-          await db.social.sendFriendRequest(searchResult.id);
+          await db.social.sendFriendRequest(targetId);
           setRequestSent(true);
+          alert("Friend Request Sent!");
+          setViewingProfile(null); // Go back
       } catch (e: any) {
-          setSearchError(e.message || "Failed to send request.");
+          alert(e.message || "Failed to send request.");
       } finally {
           setSearchLoading(false);
       }
@@ -104,13 +113,25 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
       }
   };
 
+  const handleUnfriend = async (friendId: string) => {
+      if (confirm("Are you sure you want to remove this friend?")) {
+          try {
+              await db.social.removeFriend(friendId);
+              setFriends(prev => prev.filter(f => f.id !== friendId));
+              setViewingProfile(null); // Go back
+          } catch (e) {
+              alert("Failed to remove friend.");
+          }
+      }
+  }
+
   const copyMyId = () => {
       navigator.clipboard.writeText(currentUserShareId);
   };
 
   if (!isOpen) return null;
 
-  // Render Chat Interface if active
+  // --- SUB-VIEW: CHAT ---
   if (activeChatFriend) {
       return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -126,6 +147,87 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
       );
   }
 
+  // --- SUB-VIEW: PROFILE DETAILS ---
+  if (viewingProfile) {
+      // Check if this person is already a friend
+      const isFriend = friends.some(f => f.id === viewingProfile.id);
+      
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+             <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-800 flex flex-col">
+                 
+                 {/* Profile Header Image */}
+                 <div className="h-24 bg-gradient-to-r from-indigo-500 to-purple-600 relative">
+                     <button onClick={() => setViewingProfile(null)} className="absolute top-4 left-4 p-2 bg-black/20 text-white rounded-full hover:bg-black/30 backdrop-blur-sm">
+                         <ArrowLeft size={20} />
+                     </button>
+                 </div>
+
+                 {/* Avatar & Info */}
+                 <div className="px-6 pb-6 -mt-12 flex flex-col items-center text-center">
+                     <div className="w-24 h-24 rounded-full border-4 border-white dark:border-slate-900 bg-white dark:bg-slate-800 overflow-hidden shadow-md mb-3">
+                         {viewingProfile.avatar ? (
+                             <img src={viewingProfile.avatar} className="w-full h-full object-cover" />
+                         ) : (
+                             <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400">
+                                 <User size={40} />
+                             </div>
+                         )}
+                     </div>
+
+                     <h2 className="text-xl font-bold text-slate-800 dark:text-white font-serif-text">
+                         {viewingProfile.display_name}
+                     </h2>
+                     <p className="text-sm text-indigo-500 font-mono mb-4 tracking-wide font-medium bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">
+                         {viewingProfile.share_id}
+                     </p>
+
+                     {/* BIO SECTION */}
+                     <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-100 dark:border-slate-800">
+                         {viewingProfile.bio ? (
+                             <p className="text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed">
+                                 "{viewingProfile.bio}"
+                             </p>
+                         ) : (
+                             <p className="text-xs text-slate-400 italic">No bio available.</p>
+                         )}
+                     </div>
+
+                     {/* Actions */}
+                     <div className="flex gap-3 w-full">
+                         {isFriend ? (
+                             <>
+                                 <button 
+                                    onClick={() => { setActiveChatFriend(viewingProfile); setViewingProfile(null); }}
+                                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 flex items-center justify-center gap-2"
+                                 >
+                                     <MessageCircle size={18} /> Message
+                                 </button>
+                                 <button 
+                                    onClick={() => handleUnfriend(viewingProfile.id)}
+                                    className="px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-xl font-medium hover:bg-red-100 dark:hover:bg-red-900/30 border border-red-100 dark:border-red-900/30"
+                                    title="Unfriend"
+                                 >
+                                     <Trash2 size={18} />
+                                 </button>
+                             </>
+                         ) : (
+                             <button 
+                                onClick={() => sendRequest(viewingProfile.id)}
+                                className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 flex items-center justify-center gap-2"
+                             >
+                                 <UserPlus size={18} /> Add Friend
+                             </button>
+                         )}
+                     </div>
+                 </div>
+             </div>
+        </div>
+      );
+  }
+
+  // --- MAIN MODAL ---
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div 
@@ -238,18 +340,22 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                         </div>
                      ) : (
                         friends.map(friend => (
-                            <div key={friend.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+                            <div 
+                                key={friend.id} 
+                                onClick={() => setViewingProfile(friend)}
+                                className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow cursor-pointer group"
+                            >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+                                    <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-indigo-400 transition-colors">
                                         {friend.avatar ? <img src={friend.avatar} className="w-full h-full object-cover"/> : <User size={24} className="text-slate-400"/>}
                                     </div>
                                     <div>
-                                        <div className="font-medium text-slate-800 dark:text-white">{friend.display_name}</div>
-                                        <div className="text-xs text-slate-500">{friend.share_id}</div>
+                                        <div className="font-medium text-slate-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{friend.display_name}</div>
+                                        <div className="text-xs text-slate-500 truncate max-w-[120px]">{friend.bio || friend.share_id}</div>
                                     </div>
                                 </div>
                                 <button 
-                                    onClick={() => setActiveChatFriend(friend)}
+                                    onClick={(e) => { e.stopPropagation(); setActiveChatFriend(friend); }}
                                     className="p-2 bg-indigo-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-slate-600 transition-colors"
                                     title="Chat"
                                 >
@@ -297,35 +403,6 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                         </div>
                         {searchError && <div className="mt-2 text-xs text-red-500 flex items-center gap-1"><AlertCircle size={12}/> {searchError}</div>}
                     </div>
-
-                    {/* Search Result */}
-                    {searchResult && (
-                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 animate-scale-in">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-14 h-14 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
-                                     {searchResult.avatar ? <img src={searchResult.avatar} className="w-full h-full object-cover"/> : <User size={24} className="text-slate-400"/>}
-                                </div>
-                                <div>
-                                    <div className="font-bold text-lg text-slate-800 dark:text-white">{searchResult.display_name}</div>
-                                    <div className="text-xs text-slate-500">ID: {searchResult.share_id}</div>
-                                </div>
-                            </div>
-                            
-                            {requestSent ? (
-                                <div className="w-full py-2 bg-emerald-100 text-emerald-700 text-sm font-medium rounded-lg text-center flex items-center justify-center gap-2">
-                                    <Check size={16}/> Request Sent
-                                </div>
-                            ) : (
-                                <button 
-                                    onClick={sendRequest} 
-                                    disabled={searchLoading}
-                                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <UserPlus size={16} /> Send Friend Request
-                                </button>
-                            )}
-                        </div>
-                    )}
                 </div>
             )}
 

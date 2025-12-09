@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Book, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp, Snowflake, Camera, Trash2 } from 'lucide-react';
+import { X, Book, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp, Snowflake, Camera, Trash2, AlignLeft } from 'lucide-react';
 import { UserPreferences } from '../types';
 import { translations } from '../utils/translations';
 
@@ -45,6 +46,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(preferences.displayName || '');
+  const [tempBio, setTempBio] = useState(preferences.bio || '');
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Custom API Key State
@@ -56,8 +60,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       if (isOpen) {
           const storedKey = localStorage.getItem('custom_api_key') || '';
           setCustomKey(storedKey);
+          setTempBio(preferences.bio || '');
       }
-  }, [isOpen]);
+  }, [isOpen, preferences.bio]);
 
   if (!isOpen) return null;
 
@@ -69,6 +74,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onUpdatePreference('displayName', tempName);
     setIsEditingName(false);
   };
+
+  const handleSaveBio = () => {
+      onUpdatePreference('bio', tempBio);
+      setIsEditingBio(false);
+  }
 
   const handleSaveKey = () => {
       localStorage.setItem('custom_api_key', customKey.trim());
@@ -337,9 +347,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               {t.account}
             </h3>
             
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-start gap-4 mb-4">
                  {/* Profile Picture Upload */}
-                 <div className="relative group cursor-pointer" onClick={triggerFileUpload}>
+                 <div className="relative group cursor-pointer mt-1" onClick={triggerFileUpload}>
                      <div className={`w-16 h-16 rounded-full flex items-center justify-center overflow-hidden border-2 ${preferences.avatar ? 'border-indigo-600' : 'border-slate-200 dark:border-slate-700 bg-indigo-100 dark:bg-slate-700 text-indigo-600 dark:text-slate-300'}`}>
                          {preferences.avatar ? (
                              <img src={preferences.avatar} alt="Avatar" className="w-full h-full object-cover" />
@@ -359,8 +369,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                      />
                  </div>
 
-                 <div className="flex-1">
-                     <div className="mb-2">
+                 <div className="flex-1 space-y-3">
+                     {/* Name */}
+                     <div>
                         <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Display Name</label>
                         <div className="flex gap-2">
                             {isEditingName ? (
@@ -388,6 +399,41 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             )}
                         </div>
                      </div>
+
+                     {/* BIO SECTION */}
+                     <div>
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                            <AlignLeft size={10} /> Bio / Description
+                        </label>
+                        {isEditingBio ? (
+                            <div className="flex flex-col gap-2">
+                                <textarea
+                                    value={tempBio}
+                                    onChange={(e) => setTempBio(e.target.value)}
+                                    placeholder="Share a bit about yourself..."
+                                    rows={3}
+                                    className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-sm text-slate-800 dark:text-slate-200 outline-none resize-none"
+                                />
+                                <div className="flex justify-end gap-2">
+                                     <button onClick={() => setIsEditingBio(false)} className="text-xs px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300">Cancel</button>
+                                     <button onClick={handleSaveBio} className="text-xs px-2 py-1 bg-indigo-600 text-white rounded">Save</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="group relative">
+                                <p className="text-sm text-slate-700 dark:text-slate-300 italic min-h-[1.5rem] p-2 bg-slate-50 dark:bg-slate-800/50 rounded border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+                                    {preferences.bio || "No description yet."}
+                                </p>
+                                <button 
+                                    onClick={() => { setTempBio(preferences.bio || ''); setIsEditingBio(true); }}
+                                    className="absolute top-2 right-2 p-1 text-slate-400 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Edit2 size={12} />
+                                </button>
+                            </div>
+                        )}
+                     </div>
+
                      <div className="text-xs text-slate-500">{userEmail || 'Not logged in'}</div>
                      
                      {preferences.avatar && (

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import Sidebar from './components/Sidebar';
@@ -57,6 +58,11 @@ const App: React.FC = () => {
     if (typeof window !== 'undefined') return localStorage.getItem('userAvatar') || undefined;
     return undefined;
   });
+  const [bio, setBio] = useState<string | undefined>(() => {
+      if (typeof window !== 'undefined') return localStorage.getItem('userBio') || undefined;
+      return undefined;
+  });
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark';
@@ -91,27 +97,50 @@ const App: React.FC = () => {
 
   // Sync session metadata & Load Cloud Data
   useEffect(() => {
-    if (session?.user?.user_metadata) {
-        const meta = session.user.user_metadata;
-        
-        let currentShareId = meta.share_id;
-        let currentDisplayName = displayName || meta.full_name || '';
+    const initSession = async () => {
+        if (!session?.user?.user_metadata) return;
 
-        // 1. GENERATE SHARE ID IF MISSING
-        if (!currentShareId && currentDisplayName) {
-            const cleanName = currentDisplayName.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 8) || 'USER';
-            const randomCode = Math.floor(1000 + Math.random() * 9000);
-            currentShareId = `${cleanName}-${randomCode}`;
-            
-            // Save to Auth Metadata
-            supabase?.auth.updateUser({
-                data: { share_id: currentShareId }
-            });
+        const meta = session.user.user_metadata;
+        let currentShareId = meta.share_id;
+        
+        // --- 1. ID CONSISTENCY CHECK ---
+        // Instead of blindly trusting local metadata or generating a new one immediately,
+        // we check the DB first to see if this user already has an ID.
+        try {
+            const existingProfile = await db.social.getUserProfile(session.user.id);
+            if (existingProfile && existingProfile.share_id) {
+                // If DB has ID, force use it
+                currentShareId = existingProfile.share_id;
+                
+                // If local metadata was missing/different, update it now
+                if (meta.share_id !== currentShareId) {
+                     supabase?.auth.updateUser({ data: { share_id: currentShareId } });
+                }
+
+                // Also load Bio from DB if available
+                if (existingProfile.bio) {
+                    setBio(existingProfile.bio);
+                    localStorage.setItem('userBio', existingProfile.bio);
+                }
+            } else {
+                // No profile in DB? Generate one now.
+                if (!currentShareId && (displayName || meta.full_name)) {
+                     const nameToUse = displayName || meta.full_name || 'USER';
+                     const cleanName = nameToUse.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 8);
+                     const randomCode = Math.floor(1000 + Math.random() * 9000);
+                     currentShareId = `${cleanName}-${randomCode}`;
+                     
+                     // Save to Auth Metadata
+                     supabase?.auth.updateUser({ data: { share_id: currentShareId } });
+                }
+            }
+        } catch (e) {
+            console.error("ID Check failed", e);
         }
 
         if (currentShareId) setShareId(currentShareId);
 
-        // 2. LOAD PREFERENCES
+        // --- 2. LOAD PREFERENCES ---
         if (meta.full_name) {
             setDisplayName(meta.full_name);
             localStorage.setItem('displayName', meta.full_name);
@@ -143,16 +172,21 @@ const App: React.FC = () => {
             setAvatar(meta.avatar);
             localStorage.setItem('userAvatar', meta.avatar);
         }
-
-        // 3. SYNC TO PUBLIC PROFILES TABLE
-        // This ensures the user is searchable by others
-        if (currentShareId && currentDisplayName) {
-            db.social.upsertProfile(currentShareId, currentDisplayName, meta.avatar);
+        
+        if (meta.bio) {
+            setBio(meta.bio);
+            localStorage.setItem('userBio', meta.bio);
         }
-    }
 
-    // Load Cloud Data when session is active
+        // --- 3. SYNC TO PUBLIC PROFILES TABLE ---
+        if (currentShareId) {
+            // We use the current state values (or fallbacks)
+            db.social.upsertProfile(currentShareId, displayName || meta.full_name, avatar || meta.avatar, bio || meta.bio);
+        }
+    };
+
     if (session) {
+        initSession();
         loadCloudData();
         loadChats();
         loadSocialNotifications();
@@ -162,7 +196,7 @@ const App: React.FC = () => {
         setSavedItems([]);
         setHighlights([]);
     }
-  }, [session]);
+  }, [session]); // Dependency on session ensures this runs on login
 
   const loadCloudData = async () => {
       try {
@@ -276,7 +310,7 @@ const App: React.FC = () => {
        localStorage.setItem('displayName', value as string);
        updateCloudPreference('full_name', value as string);
        // Also update public profile
-       if (shareId) db.social.upsertProfile(shareId, value as string, avatar);
+       if (shareId) db.social.upsertProfile(shareId, value as string, avatar, bio);
     } else if (key === 'avatar') {
        setAvatar(value as string);
        if (value) {
@@ -286,7 +320,12 @@ const App: React.FC = () => {
        }
        updateCloudPreference('avatar', value as string);
        // Also update public profile
-       if (shareId) db.social.upsertProfile(shareId, displayName, value as string);
+       if (shareId) db.social.upsertProfile(shareId, displayName, value as string, bio);
+    } else if (key === 'bio') {
+        setBio(value as string);
+        localStorage.setItem('userBio', value as string);
+        updateCloudPreference('bio', value as string);
+        if (shareId) db.social.upsertProfile(shareId, displayName, avatar, value as string);
     }
   };
 
@@ -831,7 +870,8 @@ const App: React.FC = () => {
                  winterTheme: isWinterMode,
                  language: language,
                  displayName: displayName,
-                 avatar: avatar
+                 avatar: avatar,
+                 bio: bio
              }}
              onUpdatePreference={handleUpdatePreference}
              userEmail={session.user.email}

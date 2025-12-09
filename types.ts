@@ -1,4 +1,5 @@
 
+
 export interface Message {
   id: string;
   role: 'user' | 'model';
@@ -29,6 +30,7 @@ export interface UserPreferences {
   language: string;
   displayName?: string;
   avatar?: string; // NEW: Base64 string for profile picture
+  bio?: string; // NEW: User description
   savedVerses?: SavedItem[];
 }
 
@@ -39,6 +41,7 @@ export interface UserProfile {
   share_id: string;
   display_name: string;
   avatar?: string;
+  bio?: string; // NEW: User description
 }
 
 export interface FriendRequest {

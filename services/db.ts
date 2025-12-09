@@ -1,4 +1,5 @@
 
+
 import { supabase } from './supabase';
 import { ChatSession, Message, SavedItem, BibleHighlight, UserProfile, FriendRequest, DirectMessage } from '../types';
 
@@ -271,7 +272,7 @@ export const db = {
       /**
        * Syncs the current user's profile to the public table so they can be found.
        */
-      async upsertProfile(shareId: string, displayName: string, avatar?: string) {
+      async upsertProfile(shareId: string, displayName: string, avatar?: string, bio?: string) {
           ensureSupabase();
           // @ts-ignore
           const { data: { user } } = await supabase.auth.getUser();
@@ -284,10 +285,24 @@ export const db = {
                   id: user.id,
                   share_id: shareId,
                   display_name: displayName,
-                  avatar: avatar || null
+                  avatar: avatar || null,
+                  bio: bio || null
               }, { onConflict: 'id' });
           
           if (error) console.error("Profile sync failed", error);
+      },
+
+      async getUserProfile(userId: string): Promise<UserProfile | null> {
+          ensureSupabase();
+          // @ts-ignore
+          const { data, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userId)
+              .single();
+          
+          if (error || !data) return null;
+          return data as UserProfile;
       },
 
       /**
@@ -358,7 +373,8 @@ export const db = {
                       id,
                       share_id,
                       display_name,
-                      avatar
+                      avatar,
+                      bio
                   )
               `)
               .eq('receiver_id', user.id)
@@ -394,6 +410,24 @@ export const db = {
                   .eq('id', requestId);
               if (error) throw error;
           }
+      },
+
+      /**
+       * Remove a friend (Delete friendship row).
+       */
+      async removeFriend(friendId: string) {
+          ensureSupabase();
+          // @ts-ignore
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error("Not authenticated");
+
+          // @ts-ignore
+          const { error } = await supabase
+              .from('friendships')
+              .delete()
+              .or(`and(requester_id.eq.${user.id},receiver_id.eq.${friendId}),and(requester_id.eq.${friendId},receiver_id.eq.${user.id})`);
+
+          if (error) throw error;
       },
 
       /**
