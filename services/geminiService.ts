@@ -11,11 +11,12 @@ const getApiKey = () => {
   
   // 2. Check process.env.API_KEY directly.
   // In production builds (Vite), 'process.env.API_KEY' is replaced by the string value defined in vite.config.ts.
-  // We must access it directly without checking if 'process' exists, because 'process' is undefined in browsers.
+  // We use this pattern to ensure the bundler replaces it, while being safe if 'process' is undefined.
   try {
-    return process.env.API_KEY || '';
-  } catch (e) {
-    return '';
+     // @ts-ignore
+     return process.env.API_KEY || '';
+  } catch {
+     return '';
   }
 };
 

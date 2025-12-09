@@ -133,7 +133,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 key={msg.id} 
                 message={msg} 
                 isLast={index === safeMessages.length - 1}
-                onRegenerate={onRegenerate}
+                // Only allow regenerate if it's NOT the first message (index 0)
+                onRegenerate={index > 0 ? onRegenerate : undefined}
                 isRegenerating={isLoading}
             />
           ))}

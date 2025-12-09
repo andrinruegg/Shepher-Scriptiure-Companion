@@ -422,10 +422,15 @@ const App: React.FC = () => {
       const messages = currentChat.messages;
       const lastMessage = messages[messages.length - 1];
       
+      // Ensure we are regenerating a model message
       if (lastMessage.role !== 'model') return;
 
+      // Ensure there is a preceding user message to act as the prompt
       const lastUserMessage = messages[messages.length - 2];
-      if (!lastUserMessage || lastUserMessage.role !== 'user') return;
+      if (!lastUserMessage || lastUserMessage.role !== 'user') {
+          // If we can't find the user prompt, we can't regenerate. Abort.
+          return;
+      }
 
       setIsLoading(true);
 
