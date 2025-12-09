@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import { Send, Menu, Trash2 } from 'lucide-react';
 import { Message } from '../types';
@@ -14,6 +15,7 @@ interface ChatInterfaceProps {
   onRegenerate: () => void;
   onDeleteCurrentChat?: () => void; 
   language: string;
+  userAvatar?: string;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
@@ -23,7 +25,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onMenuClick,
   onRegenerate,
   onDeleteCurrentChat,
-  language
+  language,
+  userAvatar
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -136,6 +139,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 // Only allow regenerate if it's NOT the first message (index 0)
                 onRegenerate={index > 0 ? onRegenerate : undefined}
                 isRegenerating={isLoading}
+                userAvatar={userAvatar}
             />
           ))}
           

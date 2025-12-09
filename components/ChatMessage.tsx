@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Message } from '../types';
@@ -9,9 +10,10 @@ interface ChatMessageProps {
   isLast: boolean;
   onRegenerate?: () => void;
   isRegenerating?: boolean;
+  userAvatar?: string;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate, isRegenerating }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate, isRegenerating, userAvatar }) => {
   const isUser = message.role === 'user';
 
   // "Thinking" state check: If it's the model, text is empty/whitespace, and it's the last message
@@ -94,12 +96,22 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
 
         {/* User Avatar - Only show if user */}
         {isUser && (
-          <div className={`
-            flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mb-1 shadow-sm
-            bg-indigo-600 text-white
-          `}>
-            <User size={16} />
-          </div>
+           <>
+              {userAvatar ? (
+                  <img 
+                    src={userAvatar} 
+                    alt="User" 
+                    className="flex-shrink-0 w-8 h-8 rounded-full mb-1 shadow-sm object-cover border-2 border-indigo-600 bg-slate-200"
+                  />
+              ) : (
+                <div className={`
+                    flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mb-1 shadow-sm
+                    bg-indigo-600 text-white
+                `}>
+                    <User size={16} />
+                </div>
+              )}
+           </>
         )}
       </div>
     </div>

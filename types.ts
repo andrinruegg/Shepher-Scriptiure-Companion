@@ -28,6 +28,7 @@ export interface UserPreferences {
   winterTheme?: boolean; // NEW: Winter Mode Toggle
   language: string;
   displayName?: string;
+  avatar?: string; // NEW: Base64 string for profile picture
   savedVerses?: SavedItem[];
 }
 

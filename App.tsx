@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import Sidebar from './components/Sidebar';
@@ -45,6 +46,10 @@ const App: React.FC = () => {
   const [displayName, setDisplayName] = useState<string>(() => {
     if (typeof window !== 'undefined') return localStorage.getItem('displayName') || '';
     return '';
+  });
+  const [avatar, setAvatar] = useState<string | undefined>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('userAvatar') || undefined;
+    return undefined;
   });
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -108,6 +113,11 @@ const App: React.FC = () => {
             const isWinter = meta.winterMode === 'true' || meta.winterMode === true;
             setIsWinterMode(isWinter);
             localStorage.setItem('winterMode', String(isWinter));
+        }
+
+        if (meta.avatar) {
+            setAvatar(meta.avatar);
+            localStorage.setItem('userAvatar', meta.avatar);
         }
     }
 
@@ -225,6 +235,16 @@ const App: React.FC = () => {
        setDisplayName(value as string);
        localStorage.setItem('displayName', value as string);
        updateCloudPreference('full_name', value as string);
+    } else if (key === 'avatar') {
+       setAvatar(value as string);
+       if (value) {
+           localStorage.setItem('userAvatar', value as string);
+       } else {
+           localStorage.removeItem('userAvatar');
+       }
+       // We typically don't sync huge base64 strings to Supabase metadata heavily, 
+       // but for small optimized avatars it's okay for now.
+       updateCloudPreference('avatar', value as string);
     }
   };
 
@@ -733,6 +753,7 @@ const App: React.FC = () => {
                     onRegenerate={handleRegenerate}
                     onDeleteCurrentChat={activeChatId ? () => handleDeleteChat(activeChatId) : undefined}
                     language={language}
+                    userAvatar={avatar}
                 />
             )}
             
@@ -765,7 +786,8 @@ const App: React.FC = () => {
                  theme: isDarkMode ? 'dark' : 'light',
                  winterTheme: isWinterMode,
                  language: language,
-                 displayName: displayName
+                 displayName: displayName,
+                 avatar: avatar
              }}
              onUpdatePreference={handleUpdatePreference}
              userEmail={session.user.email}

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { X, Book, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp, Snowflake } from 'lucide-react';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Book, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp, Snowflake, Camera, Trash2 } from 'lucide-react';
 import { UserPreferences } from '../types';
 import { translations } from '../utils/translations';
 
@@ -44,6 +45,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(preferences.displayName || '');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Custom API Key State
   const [customKey, setCustomKey] = useState('');
@@ -78,6 +80,58 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setCustomKey('');
       setIsEditingKey(false);
   }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Compress and resize image
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 200; // Resize to 200x200 max
+          
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            // Export as JPEG with 0.8 quality
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            onUpdatePreference('avatar', dataUrl);
+          }
+        };
+        if (event.target?.result) {
+            img.src = event.target.result as string;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRemoveAvatar = () => {
+      onUpdatePreference('avatar', '');
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -283,46 +337,65 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               {t.account}
             </h3>
             
-            {/* Display Name Editor */}
-            <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Display Name</label>
-                <div className="flex gap-2">
-                    {isEditingName ? (
-                        <>
-                            <input 
-                                type="text" 
-                                value={tempName}
-                                onChange={(e) => setTempName(e.target.value)}
-                                className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 outline-none"
-                            />
-                            <button onClick={handleSaveName} className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                                <Check size={16} />
-                            </button>
-                            <button onClick={() => setIsEditingName(false)} className="p-2 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg">
-                                <X size={16} />
-                            </button>
-                        </>
-                    ) : (
-                        <div className="flex-1 flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-lg">
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{preferences.displayName || 'Not Set'}</span>
-                            <button onClick={() => { setTempName(preferences.displayName || ''); setIsEditingName(true); }} className="text-slate-400 hover:text-indigo-500">
-                                <Edit2 size={14} />
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
+            <div className="flex items-center gap-4 mb-4">
+                 {/* Profile Picture Upload */}
+                 <div className="relative group cursor-pointer" onClick={triggerFileUpload}>
+                     <div className={`w-16 h-16 rounded-full flex items-center justify-center overflow-hidden border-2 ${preferences.avatar ? 'border-indigo-600' : 'border-slate-200 dark:border-slate-700 bg-indigo-100 dark:bg-slate-700 text-indigo-600 dark:text-slate-300'}`}>
+                         {preferences.avatar ? (
+                             <img src={preferences.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                         ) : (
+                             <User size={32} />
+                         )}
+                     </div>
+                     <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Camera size={20} className="text-white" />
+                     </div>
+                     <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        accept="image/*" 
+                        className="hidden" 
+                     />
+                 </div>
 
-            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800 mb-4">
-               <div className="w-10 h-10 bg-indigo-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-indigo-600 dark:text-slate-300">
-                  <User size={20} />
-               </div>
-               <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                    {userEmail || 'Guest User'}
-                  </p>
-                  <p className="text-xs text-slate-500">{t.loggedIn}</p>
-               </div>
+                 <div className="flex-1">
+                     <div className="mb-2">
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Display Name</label>
+                        <div className="flex gap-2">
+                            {isEditingName ? (
+                                <>
+                                    <input 
+                                        type="text" 
+                                        value={tempName}
+                                        onChange={(e) => setTempName(e.target.value)}
+                                        className="flex-1 p-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-sm text-slate-800 dark:text-slate-200 outline-none"
+                                    />
+                                    <button onClick={handleSaveName} className="p-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                                        <Check size={14} />
+                                    </button>
+                                    <button onClick={() => setIsEditingName(false)} className="p-1.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">
+                                        <X size={14} />
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold text-slate-900 dark:text-white">{preferences.displayName || 'Guest User'}</span>
+                                    <button onClick={() => { setTempName(preferences.displayName || ''); setIsEditingName(true); }} className="text-slate-400 hover:text-indigo-500">
+                                        <Edit2 size={12} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                     </div>
+                     <div className="text-xs text-slate-500">{userEmail || 'Not logged in'}</div>
+                     
+                     {preferences.avatar && (
+                         <button onClick={(e) => { e.stopPropagation(); handleRemoveAvatar(); }} className="mt-2 text-[10px] text-red-500 hover:underline flex items-center gap-1">
+                             <Trash2 size={10} /> Remove Picture
+                         </button>
+                     )}
+                 </div>
             </div>
 
             <button
