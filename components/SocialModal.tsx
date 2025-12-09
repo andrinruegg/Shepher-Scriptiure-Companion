@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Users, Bell, Search, Check, AlertCircle, Copy, User, MessageCircle, ArrowLeft, Trash2, Shield, Info } from 'lucide-react';
 import { UserProfile, FriendRequest, AppUpdate } from '../types';

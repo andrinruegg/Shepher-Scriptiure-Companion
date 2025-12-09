@@ -1,5 +1,4 @@
 
-
 import { supabase } from './supabase';
 import { ChatSession, Message, SavedItem, BibleHighlight, UserProfile, FriendRequest, DirectMessage } from '../types';
 
@@ -225,6 +224,9 @@ export const db = {
   // --- SOCIAL / FRIENDS SYSTEM ---
 
   social: {
+      /**
+       * Checks if a Share ID is already taken by ANY user.
+       */
       async checkShareIdExists(shareId: string): Promise<boolean> {
           ensureSupabase();
           // @ts-ignore
@@ -239,8 +241,8 @@ export const db = {
 
       /**
        * Syncs profile.
-       * CRITICAL: If 'shareId' is passed, we verify if the user ALREADY has one in DB.
-       * If DB has one, we ignore the passed shareId and keep the DB one to enforce persistence.
+       * CRITICAL: Before saving, it checks if the DB already has a share_id.
+       * If yes, it KEEPS the DB version to ensure persistence across devices.
        */
       async upsertProfile(shareId: string, displayName: string, avatar?: string, bio?: string) {
           ensureSupabase();
@@ -248,7 +250,7 @@ export const db = {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return;
 
-          // Check DB first
+          // 1. Fetch current DB profile to see if ID exists
           // @ts-ignore
           const { data: existing } = await supabase
               .from('profiles')
@@ -256,12 +258,11 @@ export const db = {
               .eq('id', user.id)
               .maybeSingle();
 
-          // Determine the final ID to save
+          // 2. Determine which ID to save
           let finalIdToSave = shareId;
           
           if (existing && existing.share_id) {
-              // If DB already has an ID, we MUST use it. 
-              // We do not allow overwriting the ID once set.
+              // DATABASE IS TRUTH: If DB has an ID, use it. Ignore local.
               finalIdToSave = existing.share_id;
           }
 
@@ -279,6 +280,8 @@ export const db = {
               .upsert(updates, { onConflict: 'id' });
           
           if (error) console.error("Profile sync failed", error);
+          
+          return finalIdToSave;
       },
 
       async getUserProfile(userId: string): Promise<UserProfile | null> {

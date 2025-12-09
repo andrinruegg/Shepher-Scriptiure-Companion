@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import Sidebar from './components/Sidebar';
@@ -90,15 +89,16 @@ const App: React.FC = () => {
         
         try {
             // 1. QUERY DATABASE FOR EXISTING ID (Source of Truth)
+            // We prioritize the DB ID over any local or metadata ID to ensure cross-device consistency.
             const existingProfile = await db.social.getUserProfile(session.user.id);
             
             let finalShareId = '';
             
             if (existingProfile && existingProfile.share_id) {
-                // CASE A: User has an ID in DB. Use it.
+                // CASE A: User has an ID in DB. We MUST use it.
                 finalShareId = existingProfile.share_id;
                 
-                // Also load persistent profile data
+                // Also load persistent profile data from DB
                 if (existingProfile.bio) {
                     setBio(existingProfile.bio);
                     localStorage.setItem('userBio', existingProfile.bio);
@@ -107,33 +107,33 @@ const App: React.FC = () => {
                     setAvatar(existingProfile.avatar);
                     localStorage.setItem('userAvatar', existingProfile.avatar);
                 }
+                if (existingProfile.display_name) {
+                    setDisplayName(existingProfile.display_name);
+                    localStorage.setItem('displayName', existingProfile.display_name);
+                }
             } else {
-                // CASE B: User has NO ID in DB. We must generate one.
-                // Try getting from metadata first (legacy fallback)
-                let candidateId = meta.share_id;
-
-                if (!candidateId) {
-                    // Generate a truly unique ID loop
-                    let isUnique = false;
-                    const nameToUse = displayName || meta.full_name || 'USER';
-                    const cleanName = nameToUse.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 8);
-                    
-                    while (!isUnique) {
-                        const randomCode = Math.floor(1000 + Math.random() * 9000);
-                        candidateId = `${cleanName}-${randomCode}`;
-                        // Verify uniqueness
-                        const taken = await db.social.checkShareIdExists(candidateId);
-                        if (!taken) isUnique = true;
+                // CASE B: User has NO ID in DB. We must generate one safely.
+                let isUnique = false;
+                const nameToUse = displayName || meta.full_name || 'USER';
+                const cleanName = nameToUse.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 8);
+                
+                // Retry loop to ensure uniqueness
+                while (!isUnique) {
+                    const randomCode = Math.floor(1000 + Math.random() * 9000);
+                    const candidateId = `${cleanName}-${randomCode}`;
+                    // Verify uniqueness in DB
+                    const taken = await db.social.checkShareIdExists(candidateId);
+                    if (!taken) {
+                        finalShareId = candidateId;
+                        isUnique = true;
                     }
                 }
-                finalShareId = candidateId;
             }
 
             setShareId(finalShareId);
 
             // 2. SYNC PROFILE TO DB (Safe Upsert)
-            // Note: db.social.upsertProfile internal logic prevents overwriting 
-            // an existing share_id if we passed a new one but DB has an old one.
+            // db.social.upsertProfile now contains logic to prevent overwriting share_id
             const name = displayName || meta.full_name || 'Guest';
             await db.social.upsertProfile(finalShareId, name, avatar || meta.avatar, bio || meta.bio);
 
@@ -141,8 +141,8 @@ const App: React.FC = () => {
             console.error("ID Initialization failed", e);
         }
 
-        // Load local preferences
-        if (meta.full_name) {
+        // Load local preferences if not already set by DB logic above
+        if (!displayName && meta.full_name) {
             setDisplayName(meta.full_name);
             localStorage.setItem('displayName', meta.full_name);
         }
