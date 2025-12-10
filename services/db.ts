@@ -279,13 +279,13 @@ export const db = {
       async sendFriendRequest(targetUserId: string) {
           ensureSupabase();
           // @ts-ignore
-          const { data: { user } } = await supabase.auth.getUser();
+          const { data: { user } } = await supabase!.auth.getUser();
           if (!user) throw new Error('Not authenticated');
           if (user.id === targetUserId) throw new Error("You cannot add yourself.");
 
           // --- SELF HEALING START ---
           // Ensure sender profile exists. If missing (due to init errors), creation fails with FK violation.
-          const { data: profile } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle();
+          const { data: profile } = await supabase!.from('profiles').select('id').eq('id', user.id).maybeSingle();
           if (!profile) {
               console.log("Profile missing for sender. Auto-creating...");
               const metaName = user.user_metadata.full_name || 'User';
@@ -296,7 +296,7 @@ export const db = {
               const autoShareId = `${cleanName}-${randomCode}`;
               
               // Attempt to create missing profile
-              const { error: createError } = await supabase.from('profiles').upsert({
+              const { error: createError } = await supabase!.from('profiles').upsert({
                   id: user.id,
                   display_name: metaName,
                   share_id: autoShareId,
@@ -311,11 +311,11 @@ export const db = {
           // --- SELF HEALING END ---
 
           // @ts-ignore
-          const { data: existing } = await supabase.from('friendships').select('*').or(`and(requester_id.eq.${user.id},receiver_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},receiver_id.eq.${user.id})`).maybeSingle();
+          const { data: existing } = await supabase!.from('friendships').select('*').or(`and(requester_id.eq.${user.id},receiver_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},receiver_id.eq.${user.id})`).maybeSingle();
           if (existing) throw new Error("Request already sent or you are already friends.");
 
           // @ts-ignore
-          const { error } = await supabase.from('friendships').insert({ requester_id: user.id, receiver_id: targetUserId, status: 'pending' });
+          const { error } = await supabase!.from('friendships').insert({ requester_id: user.id, receiver_id: targetUserId, status: 'pending' });
           if (error) throw error;
       },
 
