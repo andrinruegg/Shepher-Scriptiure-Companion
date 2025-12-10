@@ -305,7 +305,11 @@ export const db = {
 
               if (createError) {
                    console.error("Auto-create profile failed", createError);
-                   throw new Error("Could not initialize your social profile. Please try logging out and back in.");
+                   // Check for duplicate key errors specifically
+                   if (createError.code === '23505') {
+                      throw new Error("Could not initialize profile: ID already exists. Please try again.");
+                   }
+                   throw new Error(`Could not initialize your social profile. Error: ${createError.message}. Please try logging out and back in.`);
               }
           }
           // --- SELF HEALING END ---
@@ -316,7 +320,12 @@ export const db = {
 
           // @ts-ignore
           const { error } = await supabase!.from('friendships').insert({ requester_id: user.id, receiver_id: targetUserId, status: 'pending' });
-          if (error) throw error;
+          if (error) {
+              if (error.code === '23503') { // Foreign Key Violation
+                  throw new Error("Friend request failed: Your user profile is incomplete. Please log out and back in to fix it.");
+              }
+              throw error;
+          }
       },
 
       async getIncomingRequests(): Promise<FriendRequest[]> {

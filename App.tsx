@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import Sidebar from './components/Sidebar';
@@ -429,7 +430,26 @@ const App: React.FC = () => {
      }
   };
 
-  const handleLogout = async () => { if (supabase) await supabase.auth.signOut(); };
+  const handleLogout = async () => { 
+      if (supabase) await supabase.auth.signOut(); 
+      // Clear all user-specific items from local storage to prevent identity bleed
+      localStorage.removeItem('userAvatar');
+      localStorage.removeItem('userBio');
+      localStorage.removeItem('displayName');
+      
+      // Clear preferences that might be user-specific
+      localStorage.removeItem('bibleTranslation');
+      localStorage.removeItem('theme');
+      localStorage.removeItem('winterMode');
+      localStorage.removeItem('winterSnow');
+      localStorage.removeItem('winterLights');
+      localStorage.removeItem('winterIcicles');
+      localStorage.removeItem('language');
+      
+      // Keep SUPABASE_URL and SUPABASE_ANON_KEY for connection stability if set manually
+
+      window.location.reload(); 
+  };
 
   const handleSendMessage = async (text: string, hiddenContext?: string) => {
     if (!activeChatId) return;
