@@ -76,7 +76,7 @@ export interface DirectMessage {
 
 // --- NEW TYPES FOR BIBLE READER & SAVED ITEMS ---
 
-export type AppView = 'chat' | 'bible' | 'saved';
+export type AppView = 'chat' | 'bible' | 'saved' | 'prayer';
 
 export interface BibleBook {
   id: string;   // e.g. 'GEN'
@@ -108,10 +108,10 @@ export interface BibleHighlight {
 
 export interface SavedItem {
   id: string;
-  type: 'verse' | 'chat'; // Is it a Bible Verse or a Chat Message?
+  type: 'verse' | 'chat' | 'prayer'; // Added 'prayer'
   content: string;        // The text content
   reference?: string;     // e.g. "John 3:16" (Only for verses)
   date: number;           // Timestamp
   tags?: string[];
-  metadata?: any;         // Extra data (book, chapter, etc)
+  metadata?: any;         // Extra data (book, chapter, answered status for prayers)
 }

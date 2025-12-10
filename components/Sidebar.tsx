@@ -1,6 +1,7 @@
 
+
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Trash2, X, Edit2, Check, Settings, Calendar, Flame, Book, Heart, MessageCircle, Bell } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, X, Edit2, Check, Settings, Calendar, Flame, Book, Heart, MessageCircle, Bell, Headphones, Feather } from 'lucide-react';
 import { ChatSession, AppView } from '../types';
 import ShepherdLogo from './ShepherdLogo';
 import { translations } from '../utils/translations';
@@ -16,8 +17,9 @@ interface SidebarProps {
   onRenameChat: (id: string, newTitle: string) => void;
   onOpenSettings: () => void;
   onOpenDailyVerse: () => void;
-  onOpenSocial: () => void; // New Prop
-  pendingRequestsCount: number; // New Prop
+  onOpenSocial: () => void;
+  onOpenSanctuary: () => void; // New
+  pendingRequestsCount: number;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   language: string;
@@ -38,6 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenSettings,
   onOpenDailyVerse,
   onOpenSocial,
+  onOpenSanctuary,
   pendingRequestsCount,
   language,
   dailyStreak = 0,
@@ -120,6 +123,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             
             <div className="flex items-center gap-2">
                 <button 
+                    onClick={() => { onOpenSanctuary(); }} 
+                    className="relative p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-indigo-400 transition-colors hover:scale-110 active:scale-95"
+                    title={t.sanctuary}
+                >
+                    <Headphones size={20} />
+                </button>
+                <button 
                     onClick={() => { onOpenSocial(); if(window.innerWidth < 768) onClose(); }} 
                     className="relative p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors hover:scale-110 active:scale-95"
                     title="Inbox & Friends"
@@ -136,24 +146,34 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* MAIN TABS */}
-          <div className="flex bg-slate-800 rounded-lg p-1">
+          <div className="grid grid-cols-4 bg-slate-800 rounded-lg p-1 gap-1">
              <button 
                 onClick={() => onChangeView('chat')}
-                className={`flex-1 flex items-center justify-center py-2 rounded-md transition-all text-xs font-medium gap-1 ${currentView === 'chat' ? 'bg-slate-700 text-white shadow-sm scale-105' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`flex items-center justify-center py-2 rounded-md transition-all text-xs font-medium ${currentView === 'chat' ? 'bg-slate-700 text-white shadow-sm scale-105' : 'text-slate-400 hover:text-slate-200'}`}
+                title={t.tabs.chat}
              >
-                <MessageCircle size={14} /> {t.tabs.chat}
+                <MessageCircle size={16} />
              </button>
              <button 
                 onClick={() => onChangeView('bible')}
-                className={`flex-1 flex items-center justify-center py-2 rounded-md transition-all text-xs font-medium gap-1 ${currentView === 'bible' ? 'bg-slate-700 text-white shadow-sm scale-105' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`flex items-center justify-center py-2 rounded-md transition-all text-xs font-medium ${currentView === 'bible' ? 'bg-slate-700 text-white shadow-sm scale-105' : 'text-slate-400 hover:text-slate-200'}`}
+                title={t.tabs.bible}
              >
-                <Book size={14} /> {t.tabs.bible}
+                <Book size={16} />
+             </button>
+             <button 
+                onClick={() => onChangeView('prayer')}
+                className={`flex items-center justify-center py-2 rounded-md transition-all text-xs font-medium ${currentView === 'prayer' ? 'bg-slate-700 text-white shadow-sm scale-105' : 'text-slate-400 hover:text-slate-200'}`}
+                title={t.tabs.prayer}
+             >
+                <Feather size={16} />
              </button>
              <button 
                 onClick={() => onChangeView('saved')}
-                className={`flex-1 flex items-center justify-center py-2 rounded-md transition-all text-xs font-medium gap-1 ${currentView === 'saved' ? 'bg-slate-700 text-white shadow-sm scale-105' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`flex items-center justify-center py-2 rounded-md transition-all text-xs font-medium ${currentView === 'saved' ? 'bg-slate-700 text-white shadow-sm scale-105' : 'text-slate-400 hover:text-slate-200'}`}
+                title={t.tabs.saved}
              >
-                <Heart size={14} /> {t.tabs.saved}
+                <Heart size={16} />
              </button>
           </div>
         </div>

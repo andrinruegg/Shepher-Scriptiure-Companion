@@ -10,6 +10,8 @@ import SettingsModal from './components/SettingsModal';
 import DailyVerseModal from './components/DailyVerseModal';
 import BibleReader from './components/BibleReader';
 import SavedCollection from './components/SavedCollection';
+import PrayerList from './components/PrayerList';
+import Sanctuary from './components/Sanctuary';
 import WinterOverlay from './components/WinterOverlay';
 import SocialModal from './components/SocialModal';
 import { Message, ChatSession, UserPreferences, AppView, SavedItem, BibleHighlight } from './types';
@@ -33,6 +35,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDailyVerseOpen, setIsDailyVerseOpen] = useState(false);
   const [isSocialOpen, setIsSocialOpen] = useState(false); 
+  const [isSanctuaryOpen, setIsSanctuaryOpen] = useState(false);
   const [dailyStreak, setDailyStreak] = useState(0);
   
   const [shareId, setShareId] = useState<string>('');
@@ -186,6 +189,19 @@ const App: React.FC = () => {
   const handleSaveItem = async (item: SavedItem) => {
       setSavedItems(prev => [item, ...prev]);
       try { await db.saveItem(item); } catch (e) { console.error(e); }
+  };
+
+  // Helper to update an existing item (e.g. Prayer answered status)
+  const handleUpdateItem = async (updatedItem: SavedItem) => {
+      setSavedItems(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+      // Database update - since db.saveItem does an insert, for updates we might need to delete/insert or use upsert if supported. 
+      // db.ts currently only has insert. A cleaner way for now is delete then insert to ensure data integrity without changing db.ts schema too much
+      // or check if we can add an upsert. 
+      // For now, let's just do delete + save to be safe with existing codebase constraints.
+      try {
+          await db.deleteSavedItem(updatedItem.id);
+          await db.saveItem(updatedItem);
+      } catch(e) { console.error(e); }
   };
 
   const handleRemoveSavedItem = async (id: string) => {
@@ -566,6 +582,7 @@ const App: React.FC = () => {
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenDailyVerse={() => setIsDailyVerseOpen(true)}
             onOpenSocial={() => { setIsSocialOpen(true); loadSocialNotifications(); }}
+            onOpenSanctuary={() => setIsSanctuaryOpen(true)} // NEW
             pendingRequestsCount={totalNotifications}
             isDarkMode={isDarkMode}
             toggleDarkMode={toggleDarkMode}
@@ -580,7 +597,11 @@ const App: React.FC = () => {
             )}
             {currentView === 'bible' && ( <BibleReader language={language} onSaveItem={handleSaveItem} onMenuClick={() => setIsSidebarOpen(true)} highlights={highlights} onAddHighlight={handleAddHighlight} onRemoveHighlight={handleRemoveHighlight} /> )}
             {currentView === 'saved' && ( <SavedCollection savedItems={savedItems} onRemoveItem={handleRemoveSavedItem} language={language} onMenuClick={() => setIsSidebarOpen(true)} /> )}
+            {currentView === 'prayer' && ( <PrayerList savedItems={savedItems} onSaveItem={handleSaveItem} onUpdateItem={handleUpdateItem} onRemoveItem={handleRemoveSavedItem} language={language} onMenuClick={() => setIsSidebarOpen(true)} /> )}
           </div>
+
+          <Sanctuary isOpen={isSanctuaryOpen} onClose={() => setIsSanctuaryOpen(false)} language={language} />
+
           <SettingsModal 
             isOpen={isSettingsOpen} 
             onClose={() => setIsSettingsOpen(false)} 

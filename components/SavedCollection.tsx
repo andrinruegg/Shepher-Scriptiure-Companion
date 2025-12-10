@@ -1,6 +1,7 @@
 
+
 import React, { useState } from 'react';
-import { Trash2, Heart, MessageSquare, BookOpen, Filter, Menu } from 'lucide-react';
+import { Trash2, Heart, MessageSquare, BookOpen, Filter, Menu, Feather } from 'lucide-react';
 import { SavedItem } from '../types';
 import { translations } from '../utils/translations';
 
@@ -12,12 +13,19 @@ interface SavedCollectionProps {
 }
 
 const SavedCollection: React.FC<SavedCollectionProps> = ({ savedItems, onRemoveItem, language, onMenuClick }) => {
-  const [filter, setFilter] = useState<'all' | 'verse' | 'chat'>('all');
+  const [filter, setFilter] = useState<'all' | 'verse' | 'chat' | 'prayer'>('all');
   const t = translations[language]?.saved || translations['English'].saved;
 
   const filteredItems = savedItems.filter(item => 
     filter === 'all' ? true : item.type === filter
   );
+
+  const getTypeLabel = (type: string) => {
+      if (type === 'verse') return t.bibleVerse;
+      if (type === 'chat') return t.chatMessage;
+      if (type === 'prayer') return 'Prayer';
+      return 'Item';
+  }
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900">
@@ -39,24 +47,30 @@ const SavedCollection: React.FC<SavedCollectionProps> = ({ savedItems, onRemoveI
                  </div>
              </div>
 
-             <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+             <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-x-auto">
                  <button 
                     onClick={() => setFilter('all')}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${filter === 'all' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap ${filter === 'all' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                  >
                     {t.filterAll}
                  </button>
                  <button 
                     onClick={() => setFilter('verse')}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${filter === 'verse' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap ${filter === 'verse' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                  >
                     {t.filterVerse}
                  </button>
                  <button 
                     onClick={() => setFilter('chat')}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${filter === 'chat' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap ${filter === 'chat' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                  >
                     {t.filterChat}
+                 </button>
+                 <button 
+                    onClick={() => setFilter('prayer')}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap ${filter === 'prayer' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                 >
+                    Prayers
                  </button>
              </div>
          </div>
@@ -75,15 +89,19 @@ const SavedCollection: React.FC<SavedCollectionProps> = ({ savedItems, onRemoveI
                         <div className="flex items-start gap-4">
                             <div className={`
                                 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
-                                ${item.type === 'verse' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600'}
+                                ${item.type === 'verse' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 
+                                  item.type === 'prayer' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' :
+                                  'bg-blue-100 dark:bg-blue-900/30 text-blue-600'}
                             `}>
-                                {item.type === 'verse' ? <BookOpen size={20} /> : <MessageSquare size={20} />}
+                                {item.type === 'verse' ? <BookOpen size={20} /> : 
+                                 item.type === 'prayer' ? <Feather size={20} /> :
+                                 <MessageSquare size={20} />}
                             </div>
                             
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                        {item.type === 'verse' ? t.bibleVerse : t.chatMessage}
+                                        {getTypeLabel(item.type)}
                                     </span>
                                     <span className="text-xs text-slate-400">
                                         {new Date(item.date).toLocaleDateString()}
