@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Users, Bell, Search, Check, AlertCircle, Copy, User, MessageCircle, ArrowLeft, Trash2, Shield, Info, Circle } from 'lucide-react';
 import { UserProfile, FriendRequest, AppUpdate } from '../types';
@@ -49,6 +50,11 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
 
   const loadSocialData = async () => {
       setLoadingData(true);
+      // Timeout fallback to prevent infinite loading state
+      const timer = setTimeout(() => {
+          if (loadingData) setLoadingData(false);
+      }, 8000);
+
       try {
           // Always load both to keep badges updated, but optimize if needed
           const [reqs, friendsList] = await Promise.all([
@@ -83,6 +89,7 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
       } catch (e) {
           console.error("Failed to load social data", e);
       } finally {
+          clearTimeout(timer);
           setLoadingData(false);
       }
   };
@@ -248,11 +255,11 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                          </div>
 
                          <h2 className="text-2xl font-bold text-slate-800 dark:text-white font-serif-text mb-1">
-                             {viewingProfile.display_name}
+                             {viewingProfile.display_name || "Unknown"}
                          </h2>
                          <div className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-full mb-6">
                             <p className="text-sm text-indigo-600 dark:text-indigo-400 font-mono font-semibold tracking-wide">
-                                {viewingProfile.share_id}
+                                {viewingProfile.share_id || "ID-ERROR"}
                             </p>
                          </div>
 
@@ -371,11 +378,11 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
-                                                {req.requester.avatar ? <img src={req.requester.avatar} className="w-full h-full object-cover" /> : <User size={20} className="text-indigo-600 dark:text-slate-300"/>}
+                                                {req.requester?.avatar ? <img src={req.requester.avatar} className="w-full h-full object-cover" /> : <User size={20} className="text-indigo-600 dark:text-slate-300"/>}
                                             </div>
                                             <div>
-                                                <div className="text-sm font-semibold text-slate-800 dark:text-white">{req.requester.display_name}</div>
-                                                <div className="text-xs text-slate-500">ID: {req.requester.share_id}</div>
+                                                <div className="text-sm font-semibold text-slate-800 dark:text-white">{req.requester?.display_name || "Unknown User"}</div>
+                                                <div className="text-xs text-slate-500">ID: {req.requester?.share_id || "?"}</div>
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
@@ -421,6 +428,7 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                         </div>
                      ) : (
                         friends.map((friend, i) => {
+                            if (!friend) return null; // Safe check
                             const online = isOnline(friend.last_seen);
                             const hasUnread = (friend.unread_count || 0) > 0;
                             
@@ -450,7 +458,7 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <div className={`font-medium transition-colors ${hasUnread ? 'text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-800 dark:text-white group-hover:text-indigo-600'}`}>
-                                                    {friend.display_name}
+                                                    {friend.display_name || "Friend"}
                                                 </div>
                                             </div>
                                             <div className={`text-xs truncate max-w-[120px] ${hasUnread ? 'text-indigo-500 font-medium' : 'text-slate-500'}`}>

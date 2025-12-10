@@ -1,4 +1,5 @@
 
+
 import { supabase } from './supabase';
 import { ChatSession, Message, SavedItem, BibleHighlight, UserProfile, FriendRequest, DirectMessage } from '../types';
 
@@ -282,6 +283,33 @@ export const db = {
           if (!user) throw new Error('Not authenticated');
           if (user.id === targetUserId) throw new Error("You cannot add yourself.");
 
+          // --- SELF HEALING START ---
+          // Ensure sender profile exists. If missing (due to init errors), creation fails with FK violation.
+          const { data: profile } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle();
+          if (!profile) {
+              console.log("Profile missing for sender. Auto-creating...");
+              const metaName = user.user_metadata.full_name || 'User';
+              const cleanName = metaName.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 8) || 'USER';
+              
+              // Generate a highly random ID to avoid collision during auto-heal
+              const randomCode = Math.floor(10000 + Math.random() * 90000);
+              const autoShareId = `${cleanName}-${randomCode}`;
+              
+              // Attempt to create missing profile
+              const { error: createError } = await supabase.from('profiles').upsert({
+                  id: user.id,
+                  display_name: metaName,
+                  share_id: autoShareId,
+                  last_seen: new Date().toISOString()
+              });
+
+              if (createError) {
+                   console.error("Auto-create profile failed", createError);
+                   throw new Error("Could not initialize your social profile. Please try logging out and back in.");
+              }
+          }
+          // --- SELF HEALING END ---
+
           // @ts-ignore
           const { data: existing } = await supabase.from('friendships').select('*').or(`and(requester_id.eq.${user.id},receiver_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},receiver_id.eq.${user.id})`).maybeSingle();
           if (existing) throw new Error("Request already sent or you are already friends.");
@@ -300,7 +328,11 @@ export const db = {
           // @ts-ignore
           const { data, error } = await supabase.from('friendships').select(`id, created_at, status, requester:profiles!requester_id ( id, share_id, display_name, avatar, bio )`).eq('receiver_id', user.id).eq('status', 'pending');
           if (error) throw error;
-          return (data || []).map((r: any) => ({ id: r.id, status: r.status, created_at: r.created_at, requester: r.requester }));
+          
+          // Safer mapping: Filter out requests where requester profile is missing (null)
+          return (data || [])
+            .filter((r: any) => r.requester !== null)
+            .map((r: any) => ({ id: r.id, status: r.status, created_at: r.created_at, requester: r.requester }));
       },
 
       async respondToRequest(requestId: string, accept: boolean) {
@@ -340,8 +372,13 @@ export const db = {
 
           const friends: UserProfile[] = [];
           (data || []).forEach((row: any) => {
-              if (row.requester.id !== user.id) friends.push(row.requester);
-              if (row.receiver.id !== user.id) friends.push(row.receiver);
+              // Defensive coding: Check for nulls before accessing properties
+              // This happens if a user is deleted but the friendship row remains
+              if (row.requester && row.requester.id !== user.id) {
+                  friends.push(row.requester);
+              } else if (row.receiver && row.receiver.id !== user.id) {
+                  friends.push(row.receiver);
+              }
           });
 
           // @ts-ignore
@@ -349,8 +386,14 @@ export const db = {
           const unreadMap = new Map();
           unreadData?.forEach((m: any) => { unreadMap.set(m.sender_id, (unreadMap.get(m.sender_id) || 0) + 1); });
 
+          // Optimization: Limit the latest message fetch to 200 rows to prevent hanging on huge datasets
           // @ts-ignore
-          const { data: latestMsgs } = await supabase.from('direct_messages').select('sender_id, receiver_id, created_at').or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`).order('created_at', { ascending: false });
+          const { data: latestMsgs } = await supabase.from('direct_messages')
+            .select('sender_id, receiver_id, created_at')
+            .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+            .order('created_at', { ascending: false })
+            .limit(200);
+            
           const latestMap = new Map();
           latestMsgs?.forEach((m: any) => {
               const otherId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
