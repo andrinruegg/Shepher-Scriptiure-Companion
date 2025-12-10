@@ -73,11 +73,11 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
     } catch (error: any) {
         let msg = error.message || "Authentication failed.";
         
-        // Handle "Database error" (Trigger failure)
-        if (msg.includes("Database error") || msg.includes("row is too large")) {
-            msg = "System busy. Please try again or use a simpler name.";
+        // Specific handling for Database Trigger errors
+        if (msg.includes("Database error")) {
+            console.error("Signup DB Error:", error);
+            msg = "Account conflict. Please run the SQL Cleanup Script in Supabase.";
         }
-        // Handle "User already registered" - Helpful for ghost accounts
         else if (msg.includes("already registered")) {
             msg = "This email is already registered. Please Sign In instead.";
             // Auto-switch to sign in to help the user
