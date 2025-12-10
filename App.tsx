@@ -25,6 +25,9 @@ const App: React.FC = () => {
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
   
+  // Sync Lock: Prevents user from entering app until Profile is confirmed in DB
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const [currentView, setCurrentView] = useState<AppView>('chat');
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -100,9 +103,19 @@ const App: React.FC = () => {
   useEffect(() => {
     const initSession = async () => {
         if (!session?.user) return;
+        
+        setIsSyncing(true);
         const meta = session.user.user_metadata;
         
         try {
+            // 0. SECURITY CHECK: Verify user actually exists in Auth (handles deleted users)
+            const { data: { user: freshUser }, error: authError } = await supabase!.auth.getUser();
+            if (authError || !freshUser) {
+                console.warn("User deleted from DB. Force logout.");
+                handleLogout();
+                return;
+            }
+
             // 1. QUERY DATABASE FOR EXISTING ID (Source of Truth)
             // We prioritize the DB ID over any local or metadata ID to ensure cross-device consistency.
             const existingProfile = await db.social.getUserProfile(session.user.id);
@@ -157,6 +170,8 @@ const App: React.FC = () => {
 
         } catch (e) {
             console.error("ID Initialization failed", e);
+        } finally {
+            setIsSyncing(false);
         }
 
         // Load local preferences if not already set by DB logic above
@@ -338,10 +353,13 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!supabase) return;
+    
+    // Check session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoadingAuth(false);
     });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
@@ -613,11 +631,11 @@ const App: React.FC = () => {
           />
       )}
       
-      {loadingAuth ? (
+      {loadingAuth || isSyncing ? (
           <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-50">
                <div className="flex flex-col items-center gap-4">
                   <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="text-slate-400 text-sm animate-pulse">Checking access...</p>
+                  <p className="text-slate-400 text-sm animate-pulse">{isSyncing ? 'Syncing Profile...' : 'Checking access...'}</p>
                </div>
           </div>
       ) : !session ? ( 
