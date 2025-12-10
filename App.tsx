@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import Sidebar from './components/Sidebar';
@@ -118,10 +117,39 @@ const App: React.FC = () => {
 
             // 1. QUERY DATABASE FOR EXISTING ID (Source of Truth)
             // We prioritize the DB ID over any local or metadata ID to ensure cross-device consistency.
-            const existingProfile = await db.social.getUserProfile(session.user.id);
-            
+            let existingProfile = await db.social.getUserProfile(session.user.id);
             let finalShareId = '';
             
+            // --- GHOST ACCOUNT RECOVERY START ---
+            // If user is authenticated but has NO profile (deleted manually), we must create one NOW.
+            if (!existingProfile) {
+                console.log("[App] Ghost account detected. Attempting recovery...");
+                const nameToUse = displayName || meta.full_name || 'User';
+                const cleanName = nameToUse.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 8) || 'USER';
+                
+                // Generate a unique ID
+                let isUnique = false;
+                let attempt = 0;
+                while (!isUnique && attempt < 5) {
+                   const randomCode = Math.floor(1000 + Math.random() * 9000);
+                   const candidateId = `${cleanName}-${randomCode}`;
+                   const taken = await db.social.checkShareIdExists(candidateId);
+                   if (!taken) {
+                       finalShareId = candidateId;
+                       isUnique = true;
+                   }
+                   attempt++;
+                }
+                
+                if (finalShareId) {
+                   // Force create the profile
+                   await db.social.upsertProfile(finalShareId, nameToUse, avatar || meta.avatar, bio || meta.bio);
+                   // Refetch to confirm
+                   existingProfile = await db.social.getUserProfile(session.user.id);
+                }
+            }
+            // --- GHOST ACCOUNT RECOVERY END ---
+
             if (existingProfile && existingProfile.share_id) {
                 // CASE A: User has an ID in DB. We MUST use it.
                 finalShareId = existingProfile.share_id;
@@ -139,23 +167,10 @@ const App: React.FC = () => {
                     setDisplayName(existingProfile.display_name);
                     localStorage.setItem('displayName', existingProfile.display_name);
                 }
-            } else {
-                // CASE B: User has NO ID in DB. We must generate one safely.
-                let isUnique = false;
-                const nameToUse = displayName || meta.full_name || 'USER';
-                const cleanName = nameToUse.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 8);
-                
-                // Retry loop to ensure uniqueness
-                while (!isUnique) {
-                    const randomCode = Math.floor(1000 + Math.random() * 9000);
-                    const candidateId = `${cleanName}-${randomCode}`;
-                    // Verify uniqueness in DB
-                    const taken = await db.social.checkShareIdExists(candidateId);
-                    if (!taken) {
-                        finalShareId = candidateId;
-                        isUnique = true;
-                    }
-                }
+            } else if (!finalShareId) {
+                // Fallback if everything fails
+                 console.warn("Could not generate share ID");
+                 finalShareId = 'ERROR-ID'; 
             }
 
             setShareId(finalShareId);
@@ -635,7 +650,7 @@ const App: React.FC = () => {
           <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-50">
                <div className="flex flex-col items-center gap-4">
                   <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="text-slate-400 text-sm animate-pulse">{isSyncing ? 'Syncing Profile...' : 'Checking access...'}</p>
+                  <p className="text-slate-400 text-sm animate-pulse">{isSyncing ? 'Fixing Profile...' : 'Connecting...'}</p>
                </div>
           </div>
       ) : !session ? ( 
