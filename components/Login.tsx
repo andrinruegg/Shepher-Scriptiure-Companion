@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
 import { ArrowRight, Mail, Lock, AlertCircle, CheckCircle2, Moon, Sun, Eye, EyeOff, User } from 'lucide-react';
@@ -45,12 +46,17 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
 
     try {
         if (authMode === 'signup') {
+            // Sanitize Name: Remove emojis and special chars to prevent DB trigger issues
+            const cleanName = displayName.trim().replace(/[^a-zA-Z0-9\s]/g, '');
+            const finalName = cleanName.length > 0 ? cleanName : 'User';
+
             const { error } = await supabase!.auth.signUp({
                 email,
                 password,
                 options: {
                     data: {
-                        full_name: displayName, // Save name to metadata
+                        full_name: displayName, // Save original display name
+                        clean_name: finalName   // Save cleaned name just in case
                     }
                 }
             });
@@ -65,7 +71,12 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
             if (error) throw error;
         }
     } catch (error: any) {
-        setErrorMsg(error.message || "Authentication failed.");
+        let msg = error.message || "Authentication failed.";
+        // Handle the specific DB error gracefully
+        if (msg.includes("Database error saving new user")) {
+            msg = "System busy or ID conflict. Please wait 10 seconds and try again.";
+        }
+        setErrorMsg(msg);
     } finally {
         setLoading(false);
     }
