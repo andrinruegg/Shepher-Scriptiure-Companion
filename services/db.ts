@@ -3,26 +3,39 @@ import { supabase } from './supabase';
 import { ChatSession, Message, SavedItem, BibleHighlight, UserProfile, FriendRequest, DirectMessage, Achievement } from '../types';
 
 /* 
-   IMPORTANT: SUPABASE RLS SETUP REQUIRED
+   IMPORTANT: SUPABASE SQL SETUP REQUIRED
    
-   For the Prayer Wall to work for other users, you must enable Row Level Security (RLS) 
-   and add policies to your 'saved_items' table in Supabase.
+   1. FOR PRAYER WALL (Database):
+      Run this SQL in your Supabase SQL Editor:
+      
+      -- Enable RLS
+      ALTER TABLE saved_items ENABLE ROW LEVEL SECURITY;
 
-   Run this SQL in your Supabase SQL Editor:
+      -- Allow users to see their own items (Read/Write)
+      CREATE POLICY "Users can manage own items" ON saved_items
+      USING (auth.uid() = user_id);
 
-   -- 1. Enable RLS
-   ALTER TABLE saved_items ENABLE ROW LEVEL SECURITY;
+      -- Allow users to READ 'prayer' type items created by others
+      CREATE POLICY "Users can read community prayers" ON saved_items
+      FOR SELECT
+      USING (type = 'prayer');
 
-   -- 2. Allow users to see their own items (Read/Write)
-   CREATE POLICY "Users can manage own items" ON saved_items
-   USING (auth.uid() = user_id);
+   2. FOR CHAT MEDIA - VOICE & DRAWINGS (Storage):
+      You MUST create a storage bucket named 'chat-media' for uploads to work.
+      
+      -- 2a. Create Bucket (or do it via Dashboard -> Storage -> New Bucket -> 'chat-media' -> Public)
+      insert into storage.buckets (id, name, public) values ('chat-media', 'chat-media', true);
 
-   -- 3. Allow users to READ 'prayer' type items created by others
-   -- (The application logic filters these by visibility, but the DB must return them first)
-   CREATE POLICY "Users can read community prayers" ON saved_items
-   FOR SELECT
-   USING (type = 'prayer');
+      -- 2b. Add Storage Policies
+      create policy "Authenticated users can upload chat media"
+      on storage.objects for insert
+      to authenticated
+      with check ( bucket_id = 'chat-media' );
 
+      create policy "Public access to chat media"
+      on storage.objects for select
+      to public
+      using ( bucket_id = 'chat-media' );
 */
 
 const ensureSupabase = () => {
@@ -643,7 +656,12 @@ export const db = {
           ensureSupabase();
           // @ts-ignore
           const { data, error } = await supabase.storage.from('chat-media').upload(path, file, { upsert: true });
-          if (error) throw error;
+          
+          if (error) {
+              console.error("Storage upload error:", error);
+              throw new Error(`Upload Failed: ${error.message || 'Check storage bucket permissions'}`);
+          }
+          
           // @ts-ignore
           const { data: urlData } = supabase.storage.from('chat-media').getPublicUrl(path);
           return `${urlData.publicUrl}?t=${Date.now()}`; 

@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { ArrowLeft, Send, Image as ImageIcon, Mic, Loader2, Trash2, Check, CheckCheck, Palette } from 'lucide-react';
 import { UserProfile, DirectMessage } from '../types';
@@ -180,7 +179,9 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
           await db.social.sendMessage(friend.id, url, 'image');
           fetchMessages(false);
           setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 500);
-      } catch (e) { alert("Failed to upload image"); } finally { setUploading(false); }
+      } catch (e: any) { 
+          alert("Image Upload Failed: " + (e.message || "Unknown error")); 
+      } finally { setUploading(false); }
   };
 
   // --- GRAFFITI HANDLERS ---
@@ -202,66 +203,90 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
   }
 
   const handleSaveGraffiti = async (blob: Blob) => {
-      console.log("[FriendChat] handleSaveGraffiti called. Blob size:", blob.size);
-      if (uploading) {
-          console.warn("[FriendChat] Upload already in progress. Ignoring.");
-          return; 
-      }
+      if (uploading) return;
       setUploading(true);
       
-      const timeoutDuration = 10000; // 10 seconds timeout
-      const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Upload timed out (10s). check your connection.")), timeoutDuration)
-      );
-
       try {
-          console.log("[FriendChat] Starting upload...");
           // Race the upload against the timeout
           const url = await Promise.race([
               db.social.uploadGraffiti(friend.id, blob),
-              timeoutPromise
+              new Promise((_, reject) => setTimeout(() => reject(new Error("Upload timed out (10s). Check connection.")), 10000))
           ]) as string;
           
-          console.log("[FriendChat] Upload success! URL:", url);
-
-          // SUCCESS PATH
           lastUploadTimeRef.current = Date.now();
           setGraffitiUrl(url); 
-          closeGraffiti(); // Force close UI on success
+          closeGraffiti(); 
       } catch (e: any) {
-          // ERROR PATH
-          console.error("[FriendChat] Save failed:", e);
-          alert(`Could not save drawing: ${e.message || "Unknown error"}`);
+          // This catches "Unexpected token h..." HTML errors from Supabase if bucket is missing
+          let msg = e.message || "Unknown error";
+          if (msg.includes("Unexpected token")) {
+              msg = "Server Error (404/500). Please ensure 'chat-media' bucket exists in Supabase.";
+          }
+          alert(`Could not save drawing: ${msg}`);
       } finally {
-          // ALWAYS UNLOCK UI
           setUploading(false);
       }
   };
 
+  // --- AUDIO HANDLERS ---
+  const getSupportedMimeType = () => {
+      const types = ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/wav'];
+      for (const type of types) {
+          if (MediaRecorder.isTypeSupported(type)) return type;
+      }
+      return ''; // Let browser default
+  }
+
   const startRecording = async () => {
       try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          const recorder = new MediaRecorder(stream);
+          const mimeType = getSupportedMimeType();
+          const options = mimeType ? { mimeType } : undefined;
+          
+          const recorder = new MediaRecorder(stream, options);
           const chunks: BlobPart[] = [];
-          recorder.ondataavailable = (e) => chunks.push(e.data);
+          
+          recorder.ondataavailable = (e) => {
+              if (e.data.size > 0) chunks.push(e.data);
+          };
+          
           recorder.onstop = async () => {
-              const blob = new Blob(chunks, { type: 'audio/webm' });
+              // Create blob with correct type
+              const finalType = mimeType || 'audio/webm';
+              const blob = new Blob(chunks, { type: finalType });
+              
+              if (blob.size < 100) {
+                  // Too small, probably empty
+                  stream.getTracks().forEach(track => track.stop());
+                  return;
+              }
+
               setUploading(true);
               try {
-                  const fileName = `voice-${currentUserShareId}-${Date.now()}.webm`;
+                  const ext = finalType.split('/')[1] || 'webm';
+                  const fileName = `voice-${currentUserShareId}-${Date.now()}.${ext}`;
                   const url = await db.social.uploadMedia(blob, fileName);
                   await db.social.sendMessage(friend.id, url, 'audio');
                   fetchMessages(false);
                   setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 200);
-              } catch (e) { alert("Failed to send voice message"); } finally { setUploading(false); }
+              } catch (e: any) { 
+                  let msg = e.message || "Unknown error";
+                  if (msg.includes("Unexpected token")) {
+                      msg = "Server Error (Missing Bucket?). Please check Supabase Setup.";
+                  }
+                  alert(`Voice Send Failed: ${msg}`); 
+              } finally { 
+                  setUploading(false); 
+              }
               stream.getTracks().forEach(track => track.stop());
           };
+          
           recorder.start();
           setMediaRecorder(recorder);
           setIsRecording(true);
           setRecordingTime(0);
           timerRef.current = setInterval(() => setRecordingTime(p => p + 1), 1000);
-      } catch (e) { alert("Microphone access denied"); }
+      } catch (e) { alert("Microphone access denied or not supported."); }
   };
 
   const stopRecording = () => {
