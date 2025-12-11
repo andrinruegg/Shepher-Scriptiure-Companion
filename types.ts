@@ -1,5 +1,4 @@
 
-
 export interface Message {
   id: string;
   role: 'user' | 'model';
@@ -30,6 +29,10 @@ export interface UserPreferences {
   winterSnow?: boolean;    // Sub Toggle: Falling Snow
   winterLights?: boolean;  // Sub Toggle: Christmas Lights
   winterIcicles?: boolean; // Sub Toggle: Corner Icicles
+  princessMode?: boolean;  // NEW: Princess Mode Toggle
+  princessHearts?: boolean;   // NEW: Sub Toggle
+  princessGlitter?: boolean;  // NEW: Sub Toggle (Fairy Dust)
+  princessVignette?: boolean; // NEW: Sub Toggle (Background Tint)
   language: string;
   displayName?: string;
   avatar?: string; // NEW: Base64 string for profile picture

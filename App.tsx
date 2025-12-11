@@ -12,6 +12,7 @@ import SavedCollection from './components/SavedCollection';
 import PrayerList from './components/PrayerList';
 import Sanctuary from './components/Sanctuary';
 import WinterOverlay from './components/WinterOverlay';
+import PrincessOverlay from './components/PrincessOverlay'; // NEW
 import SocialModal from './components/SocialModal';
 import QuizMode from './components/QuizMode';
 import PasswordResetModal from './components/PasswordResetModal';
@@ -71,6 +72,10 @@ const App: React.FC = () => {
     if (typeof window !== 'undefined') return localStorage.getItem('winterMode') === 'true';
     return false;
   });
+  const [isPrincessMode, setIsPrincessMode] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('princessMode') === 'true';
+    return false;
+  });
   
   // Granular Winter Settings (Default true if not set)
   const [isWinterSnow, setIsWinterSnow] = useState(() => {
@@ -83,6 +88,20 @@ const App: React.FC = () => {
   });
   const [isWinterIcicles, setIsWinterIcicles] = useState(() => {
       const val = localStorage.getItem('winterIcicles');
+      return val === null ? true : val === 'true';
+  });
+
+  // Granular Princess Settings (Default true)
+  const [isPrincessHearts, setIsPrincessHearts] = useState(() => {
+      const val = localStorage.getItem('princessHearts');
+      return val === null ? true : val === 'true';
+  });
+  const [isPrincessGlitter, setIsPrincessGlitter] = useState(() => {
+      const val = localStorage.getItem('princessGlitter');
+      return val === null ? true : val === 'true';
+  });
+  const [isPrincessVignette, setIsPrincessVignette] = useState(() => {
+      const val = localStorage.getItem('princessVignette');
       return val === null ? true : val === 'true';
   });
 
@@ -123,6 +142,33 @@ const App: React.FC = () => {
             // 2. Heartbeat
             db.social.heartbeat();
 
+            // 3. SPECIAL HANDLING: PRINCESS ACHIEVEMENT
+            const ALEXIA_UID = '67acc5e4-87ae-483b-8db1-122d97f1e84a';
+            const ANDRIN_UID = '4f794724-48f5-454c-a374-c053324bc6c0';
+
+            // Grant to Alexia
+            if (session.user.id === ALEXIA_UID) {
+                 db.social.addAchievement({
+                    id: 'princess-crown',
+                    icon: 'Crown',
+                    title: 'Princess',
+                    description: 'Daughter of the King',
+                    date_earned: Date.now(),
+                    difficulty_level: 'Hard'
+                 }).catch(e => console.error("Could not grant Princess crown:", e));
+            }
+
+            // REMOVE from Andrin (as requested)
+            if (session.user.id === ANDRIN_UID && existingProfile && existingProfile.achievements) {
+                const hasPrincess = existingProfile.achievements.some(a => a.id === 'princess-crown');
+                if (hasPrincess) {
+                    const cleanedAchievements = existingProfile.achievements.filter(a => a.id !== 'princess-crown');
+                    // Force update to remove it
+                    await supabase.from('profiles').update({ achievements: cleanedAchievements }).eq('id', session.user.id);
+                    console.log("Removed Princess achievement from Andrin's profile.");
+                }
+            }
+
         } catch (e) {
             console.error("Initialization error:", e);
         }
@@ -135,11 +181,17 @@ const App: React.FC = () => {
         if (meta.language) setLanguage(meta.language);
         if (meta.theme) setIsDarkMode(meta.theme === 'dark');
         if (meta.winterMode !== undefined) setIsWinterMode(meta.winterMode === 'true' || meta.winterMode === true);
+        if (meta.princessMode !== undefined) setIsPrincessMode(meta.princessMode === 'true' || meta.princessMode === true);
         
         // Winter Sub-settings
         if (meta.winterSnow !== undefined) setIsWinterSnow(meta.winterSnow === 'true' || meta.winterSnow === true);
         if (meta.winterLights !== undefined) setIsWinterLights(meta.winterLights === 'true' || meta.winterLights === true);
         if (meta.winterIcicles !== undefined) setIsWinterIcicles(meta.winterIcicles === 'true' || meta.winterIcicles === true);
+
+        // Princess Sub-settings
+        if (meta.princessHearts !== undefined) setIsPrincessHearts(meta.princessHearts === 'true' || meta.princessHearts === true);
+        if (meta.princessGlitter !== undefined) setIsPrincessGlitter(meta.princessGlitter === 'true' || meta.princessGlitter === true);
+        if (meta.princessVignette !== undefined) setIsPrincessVignette(meta.princessVignette === 'true' || meta.princessVignette === true);
     };
 
     if (session) {
@@ -277,6 +329,11 @@ const App: React.FC = () => {
        setIsWinterMode(isWinter);
        localStorage.setItem('winterMode', String(isWinter));
        updateCloudPreference('winterMode', isWinter);
+    } else if (key === 'princessMode') {
+       const isPrincess = value === true;
+       setIsPrincessMode(isPrincess);
+       localStorage.setItem('princessMode', String(isPrincess));
+       updateCloudPreference('princessMode', isPrincess);
     } else if (key === 'winterSnow') {
         const val = value === true;
         setIsWinterSnow(val);
@@ -292,6 +349,21 @@ const App: React.FC = () => {
         setIsWinterIcicles(val);
         localStorage.setItem('winterIcicles', String(val));
         updateCloudPreference('winterIcicles', val);
+    } else if (key === 'princessHearts') {
+        const val = value === true;
+        setIsPrincessHearts(val);
+        localStorage.setItem('princessHearts', String(val));
+        updateCloudPreference('princessHearts', val);
+    } else if (key === 'princessGlitter') {
+        const val = value === true;
+        setIsPrincessGlitter(val);
+        localStorage.setItem('princessGlitter', String(val));
+        updateCloudPreference('princessGlitter', val);
+    } else if (key === 'princessVignette') {
+        const val = value === true;
+        setIsPrincessVignette(val);
+        localStorage.setItem('princessVignette', String(val));
+        updateCloudPreference('princessVignette', val);
     } else if (key === 'language') {
        setLanguage(value as string);
        localStorage.setItem('language', value as string);
@@ -600,6 +672,14 @@ const App: React.FC = () => {
           />
       )}
       
+      {isPrincessMode && (
+          <PrincessOverlay 
+            showHearts={isPrincessHearts}
+            showGlitter={isPrincessGlitter}
+            showVignette={isPrincessVignette}
+          />
+      )}
+      
       {loadingAuth ? (
           <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-50">
                <div className="flex flex-col items-center gap-4">
@@ -623,7 +703,7 @@ const App: React.FC = () => {
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenDailyVerse={() => setIsDailyVerseOpen(true)}
             onOpenSocial={() => { setIsSocialOpen(true); loadSocialNotifications(); }}
-            onOpenSanctuary={() => setIsSanctuaryOpen(true)} // NEW
+            onOpenSanctuary={() => setIsSanctuaryOpen(true)}
             pendingRequestsCount={totalNotifications}
             isDarkMode={isDarkMode}
             toggleDarkMode={toggleDarkMode}
@@ -678,6 +758,10 @@ const App: React.FC = () => {
                 winterSnow: isWinterSnow,
                 winterLights: isWinterLights,
                 winterIcicles: isWinterIcicles,
+                princessMode: isPrincessMode, 
+                princessHearts: isPrincessHearts,
+                princessGlitter: isPrincessGlitter,
+                princessVignette: isPrincessVignette,
                 language, 
                 displayName, 
                 avatar, 
@@ -685,6 +769,7 @@ const App: React.FC = () => {
             }} 
             onUpdatePreference={handleUpdatePreference} 
             userEmail={session.user.email} 
+            userId={session.user.id} 
             onLogout={handleLogout} 
           />
           <DailyVerseModal isOpen={isDailyVerseOpen} onClose={() => setIsDailyVerseOpen(false)} isDarkMode={isDarkMode} language={language} />

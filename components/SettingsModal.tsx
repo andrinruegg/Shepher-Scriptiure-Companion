@@ -1,7 +1,6 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Book, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp, Snowflake, Camera, Trash2, AlignLeft, CloudSnow, Sparkles, Droplets } from 'lucide-react';
+import { X, Book, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp, Snowflake, Camera, Trash2, AlignLeft, CloudSnow, Sparkles, Droplets, Crown, Heart, Wand2, Palette } from 'lucide-react';
 import { UserPreferences } from '../types';
 import { translations } from '../utils/translations';
 
@@ -11,6 +10,7 @@ interface SettingsModalProps {
   preferences: UserPreferences;
   onUpdatePreference: (key: keyof UserPreferences, value: string | boolean) => void;
   userEmail?: string;
+  userId?: string; // NEW PROP
   onLogout: () => void;
 }
 
@@ -25,12 +25,19 @@ const LANGUAGES = [
   // { id: 'Romanian', name: 'Română' },
 ];
 
+// IDs allowed to see Princess Mode
+const PRINCESS_ACCESS_IDS = [
+    '67acc5e4-87ae-483b-8db1-122d97f1e84a', // Alexia
+    '4f794724-48f5-454c-a374-c053324bc6c0'  // Andrin
+];
+
 const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
   preferences,
   onUpdatePreference,
   userEmail,
+  userId,
   onLogout
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
@@ -44,6 +51,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [customKey, setCustomKey] = useState('');
   const [isEditingKey, setIsEditingKey] = useState(false);
   const [showKeyTutorial, setShowKeyTutorial] = useState(false);
+
+  // Check access
+  const hasPrincessAccess = userId && PRINCESS_ACCESS_IDS.includes(userId);
 
   useEffect(() => {
       if (isOpen) {
@@ -270,6 +280,73 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                 )}
             </div>
+
+            {/* PRINCESS MODE TOGGLE (Restricted) */}
+            {hasPrincessAccess && (
+                <div className="mb-4 space-y-2">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-pink-50 dark:bg-pink-900/10 border border-pink-100 dark:border-pink-900/30">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${preferences.princessMode ? 'bg-pink-100 text-pink-500 dark:bg-pink-900/50 dark:text-pink-300' : 'bg-slate-200 text-slate-400 dark:bg-slate-700'}`}>
+                                <Crown size={18} />
+                            </div>
+                            <div>
+                                <span className="block text-sm font-medium text-pink-700 dark:text-pink-200">
+                                    Princess Mode
+                                </span>
+                                <span className="text-[10px] text-pink-500/70 dark:text-pink-400/60">
+                                    A royal theme for His Princess
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            onClick={() => onUpdatePreference('princessMode', !preferences.princessMode)}
+                            className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${preferences.princessMode ? 'bg-pink-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                        >
+                            <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${preferences.princessMode ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                        </button>
+                    </div>
+
+                    {/* Sub-toggles for Princess Mode */}
+                    {preferences.princessMode && (
+                        <div className="pl-14 space-y-2 animate-slide-up">
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                    <Heart size={12} className="text-pink-400"/> Floating Hearts
+                                </label>
+                                <input 
+                                    type="checkbox" 
+                                    checked={preferences.princessHearts ?? true} 
+                                    onChange={(e) => onUpdatePreference('princessHearts', e.target.checked)}
+                                    className="w-4 h-4 rounded text-pink-500 focus:ring-pink-500 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600"
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                    <Wand2 size={12} className="text-amber-400"/> Fairy Dust
+                                </label>
+                                <input 
+                                    type="checkbox" 
+                                    checked={preferences.princessGlitter ?? true} 
+                                    onChange={(e) => onUpdatePreference('princessGlitter', e.target.checked)}
+                                    className="w-4 h-4 rounded text-pink-500 focus:ring-pink-500 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600"
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                    <Palette size={12} className="text-purple-400"/> Royal Tint
+                                </label>
+                                <input 
+                                    type="checkbox" 
+                                    checked={preferences.princessVignette ?? true} 
+                                    onChange={(e) => onUpdatePreference('princessVignette', e.target.checked)}
+                                    className="w-4 h-4 rounded text-pink-500 focus:ring-pink-500 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
           </section>
 

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Users, Bell, Search, Check, AlertCircle, Copy, User, MessageCircle, ArrowLeft, Trash2, Shield, Info, Circle, Flame, Award, Book, Scroll, Trophy } from 'lucide-react';
+import { X, UserPlus, Users, Bell, Search, Check, AlertCircle, Copy, User, MessageCircle, ArrowLeft, Trash2, Shield, Info, Circle, Flame, Award, Book, Scroll, Trophy, Crown } from 'lucide-react';
 import { UserProfile, FriendRequest, AppUpdate, Achievement } from '../types';
 import { db } from '../services/db';
 import FriendChat from './FriendChat';
@@ -20,6 +20,14 @@ const UPDATES_LOG: AppUpdate[] = [
     { version: "1.2.0", date: "2025-12-09", title: "Winter Update", changes: ["Added festive Winter Mode", "Improved splash screen visuals", "Bug fixes for API connectivity"] },
     { version: "1.1.0", date: "2025-12-08", title: "Bible Reader", changes: ["Added full Bible reader", "Highlighting support", "Save verses to collection"] },
     { version: "1.0.0", date: "2025-12-08", title: "Initial Launch", changes: ["Shepherd AI Chat", "Supabase Integration"] }
+];
+
+// Master list of all possible achievements for display purposes
+const MASTER_ACHIEVEMENTS = [
+    { id: 'perfect-easy', icon: 'Book', title: 'Bible Scholar', description: 'Score 100% on Easy Quiz' },
+    { id: 'perfect-medium', icon: 'Scroll', title: 'Disciple', description: 'Score 100% on Medium Quiz' },
+    { id: 'perfect-hard', icon: 'Trophy', title: 'Theologian', description: 'Score 100% on Hard Quiz' },
+    { id: 'princess-crown', icon: 'Crown', title: 'Princess', description: 'Unobtainable' }
 ];
 
 const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserShareId, isDarkMode, onUpdateNotifications }) => {
@@ -207,6 +215,78 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
       loadSocialData();
   };
 
+  // HELPER: Renders the full achievement grid (Locked & Unlocked)
+  const renderAchievementGrid = (userAchievements: Achievement[] = [], profileId: string) => {
+      const unlockedIds = new Set(userAchievements.map(a => a.id));
+      
+      // FORCE UNLOCK PRINCESS FOR ALEXIA
+      const ALEXIA_UID = '67acc5e4-87ae-483b-8db1-122d97f1e84a';
+      if (profileId === ALEXIA_UID) {
+          unlockedIds.add('princess-crown');
+      }
+
+      const unlockedList = MASTER_ACHIEVEMENTS.filter(a => unlockedIds.has(a.id));
+      const lockedList = MASTER_ACHIEVEMENTS.filter(a => !unlockedIds.has(a.id));
+
+      const renderItem = (ach: typeof MASTER_ACHIEVEMENTS[0], isUnlocked: boolean) => {
+          let tooltipText = ach.description;
+          // Special logic for Princess achievement
+          if (ach.id === 'princess-crown') {
+              if (isUnlocked) tooltipText = "Awarded for being Andrin's princess of God ❤️ ✝️";
+              else tooltipText = "Unobtainable";
+          }
+
+          return (
+              <div key={ach.id} className={`flex flex-col items-center gap-1 text-center group relative cursor-help ${isUnlocked ? '' : 'opacity-50 grayscale'}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border transition-transform group-hover:scale-110 ${isUnlocked ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 border-slate-300 dark:border-slate-700'}`}>
+                      {ach.icon === 'Book' && <Book size={18} />}
+                      {ach.icon === 'Scroll' && <Scroll size={18} />}
+                      {ach.icon === 'Trophy' && <Trophy size={18} />}
+                      {ach.icon === 'Award' && <Award size={18} />}
+                      {ach.icon === 'Crown' && <Crown size={18} className={isUnlocked ? "text-rose-500 fill-rose-200 dark:fill-rose-900/50" : ""} />}
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400 leading-tight">{ach.title}</span>
+                  
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 w-32 shadow-xl border border-slate-700">
+                      {tooltipText}
+                      {/* Triangle pointer */}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
+                  </div>
+              </div>
+          );
+      };
+
+      return (
+          <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-100 dark:border-slate-800 text-left shadow-sm">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                  <Trophy size={12} /> Achievements
+              </h4>
+              
+              {/* Unlocked Section */}
+              {unlockedList.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 mb-4">
+                      {unlockedList.map(ach => renderItem(ach, true))}
+                  </div>
+              )}
+
+              {/* Locked Section */}
+              {lockedList.length > 0 && (
+                  <>
+                    <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 opacity-70">Locked</h5>
+                    <div className="grid grid-cols-4 gap-2">
+                        {lockedList.map(ach => renderItem(ach, false))}
+                    </div>
+                  </>
+              )}
+
+              {unlockedList.length === 0 && lockedList.length === 0 && (
+                  <div className="text-center py-4 text-slate-400 italic text-xs">No achievements available.</div>
+              )}
+          </div>
+      );
+  };
+
   if (!isOpen) return null;
 
   // --- SUB-VIEW: CHAT ---
@@ -289,27 +369,8 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                              )}
                          </div>
 
-                         {/* Achievements Section */}
-                         {viewingProfile.achievements && viewingProfile.achievements.length > 0 && (
-                            <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-100 dark:border-slate-800 text-left shadow-sm">
-                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                                    <Trophy size={12} /> Achievements
-                                </h4>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {viewingProfile.achievements.map((ach) => (
-                                        <div key={ach.id} className="flex flex-col items-center gap-1 text-center" title={`${ach.title}: ${ach.description}`}>
-                                            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                                                {ach.icon === 'Book' && <Book size={18} />}
-                                                {ach.icon === 'Scroll' && <Scroll size={18} />}
-                                                {ach.icon === 'Trophy' && <Trophy size={18} />}
-                                                {ach.icon === 'Award' && <Award size={18} />}
-                                            </div>
-                                            <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400 leading-tight">{ach.title}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                         )}
+                         {/* Enhanced Achievements Section (Showing Locked & Unlocked) */}
+                         {renderAchievementGrid(viewingProfile.achievements || [], viewingProfile.id)}
 
                          <div className="flex gap-3 w-full mt-auto">
                              {isFriend ? (
@@ -614,36 +675,8 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                          </div>
                      </div>
 
-                     <div className="w-full bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm">
-                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                             <Award size={14} /> My Trophy Case
-                         </h4>
-                         
-                         {(currentUserProfile.achievements && currentUserProfile.achievements.length > 0) ? (
-                            <div className="grid grid-cols-4 gap-3">
-                                {currentUserProfile.achievements.map((ach) => (
-                                    <div key={ach.id} className="flex flex-col items-center gap-1 text-center group relative cursor-help">
-                                        <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 transition-transform group-hover:scale-110">
-                                            {ach.icon === 'Book' && <Book size={20} />}
-                                            {ach.icon === 'Scroll' && <Scroll size={20} />}
-                                            {ach.icon === 'Trophy' && <Trophy size={20} />}
-                                            {ach.icon === 'Award' && <Award size={20} />}
-                                        </div>
-                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 leading-tight mt-1">{ach.title}</span>
-                                        
-                                        {/* Tooltip */}
-                                        <div className="absolute bottom-full mb-2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                                            {ach.description}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                         ) : (
-                             <div className="text-center py-6 text-slate-400 italic text-sm">
-                                 No trophies yet. Play Trivia to earn them!
-                             </div>
-                         )}
-                     </div>
+                     {/* My Achievements (Enhanced Grid) */}
+                     {renderAchievementGrid(currentUserProfile.achievements || [], currentUserProfile.id)}
                 </div>
             )}
 

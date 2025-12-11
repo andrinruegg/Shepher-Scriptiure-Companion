@@ -33,17 +33,19 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({ isOpen, onClose
     setLoading(true);
 
     try {
-        if (!supabase) throw new Error("Database not connected");
+        // Fix for TS18047: Assign to local variable to ensure type narrowing persists
+        const client = supabase;
+        if (!client) throw new Error("Database not connected");
 
         // Update the password
-        const { error } = await supabase.auth.updateUser({ password: password });
+        const { error } = await client.auth.updateUser({ password: password });
         if (error) throw error;
 
         setSuccess(true);
         
         // Wait 2 seconds then sign out to force re-login with new password
         setTimeout(async () => {
-            await supabase.auth.signOut();
+            await client.auth.signOut();
             window.location.reload(); // Force reload to clear state and show login
         }, 2000);
 
