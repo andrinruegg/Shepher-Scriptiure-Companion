@@ -15,9 +15,9 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
   const [loading, setLoading] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   
-  // Pre-filled credentials for testing convenience
-  const [email, setEmail] = useState('andrinruegg732@gmail.com');
-  const [password, setPassword] = useState('Kingbro88');
+  // Removed pre-filled credentials for production
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState(''); 
   
   const [showPassword, setShowPassword] = useState(false);
