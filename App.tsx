@@ -118,6 +118,7 @@ const App: React.FC = () => {
     setDailyStreak(streak);
     // Sync streak to cloud so friends can see it
     if (session?.user) {
+        // Safe fire-and-forget update
         db.social.updateProfileStats(streak).catch(console.error);
     }
   }, [session]);
@@ -151,19 +152,23 @@ const App: React.FC = () => {
             const ALEXIA_UID = '67acc5e4-87ae-483b-8db1-122d97f1e84a';
             const ANDRIN_UID = '4f794724-48f5-454c-a374-c053324bc6c0';
 
-            // Safe Grant to Alexia (Don't await, don't crash)
+            // Safe Grant to Alexia - Wrapped in try/catch to avoid build errors with promises
             if (session.user.id === ALEXIA_UID) {
-                 db.social.addAchievement({
-                    id: 'princess-crown',
-                    icon: 'Crown',
-                    title: 'Princess',
-                    description: 'Daughter of the King',
-                    date_earned: Date.now(),
-                    difficulty_level: 'Hard'
-                 }).catch(e => {
-                     // Suppress error so it doesn't break the app
-                     console.warn("Achievement grant check:", e.message);
-                 });
+                 const grant = async () => {
+                     try {
+                        await db.social.addAchievement({
+                            id: 'princess-crown',
+                            icon: 'Crown',
+                            title: 'Princess',
+                            description: 'Daughter of the King',
+                            date_earned: Date.now(),
+                            difficulty_level: 'Hard'
+                        });
+                     } catch(e) {
+                         console.warn("Achievement grant check:", e);
+                     }
+                 };
+                 grant();
             }
 
             // Safe Remove from Andrin
@@ -524,15 +529,24 @@ const App: React.FC = () => {
 
     (async () => {
         try {
-            if (currentChat.isTemp) {
-                await db.createChat(currentChat.title, currentChat.messages[0], currentChatId);
-                generateChatTitle(text).then(smartTitle => { handleRenameChat(currentChatId, smartTitle); });
+            // DATABASE OPERATIONS (FAIL-SAFE)
+            // If saving to DB fails, we still want the AI to reply.
+            try {
+                if (currentChat.isTemp) {
+                    await db.createChat(currentChat.title, currentChat.messages[0], currentChatId);
+                    generateChatTitle(text).then(smartTitle => { handleRenameChat(currentChatId, smartTitle); });
+                }
+                await db.addMessage(currentChatId, userMessage);
+            } catch (dbError) {
+                console.error("DB Save failed, continuing locally:", dbError);
+                // DO NOT THROW. Continue to AI response.
             }
-            await db.addMessage(currentChatId, userMessage);
+
+            // AI GENERATION (CRITICAL PATH)
             const historyPayload = [...currentChat.messages, userMessage];
             await streamAIResponse(currentChatId, aiMessageId, historyPayload, text, hiddenContext, initialAiMessage);
         } catch (e) { 
-            console.error("Message send failed:", e);
+            console.error("Message send critical failure:", e);
             setIsLoading(false); // Ensure loading state is turned off on error
         }
     })();
@@ -579,7 +593,7 @@ const App: React.FC = () => {
       async () => {
         setIsLoading(false);
         const finalAiMessage = { ...baseAiMessage, text: accumulatedText };
-        try { await db.addMessage(chatId, finalAiMessage); } catch(e) { console.error(e); }
+        try { await db.addMessage(chatId, finalAiMessage); } catch(e) { console.error("Failed to save AI response", e); }
       },
       (error) => {
         const rawMsg = error?.message || "Unknown Error";
