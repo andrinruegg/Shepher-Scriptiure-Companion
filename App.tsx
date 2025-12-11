@@ -249,13 +249,18 @@ const App: React.FC = () => {
   };
   
   const loadSocialNotifications = async () => {
+      // Don't spam logs if offline
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+
       try {
           const [requests, unreadCount] = await Promise.all([
               db.social.getIncomingRequests(),
               db.social.getTotalUnreadCount()
           ]);
           setTotalNotifications(requests.length + unreadCount);
-      } catch (e) {
+      } catch (e: any) {
+          // Suppress known fetch errors to avoid console noise
+          if (e.message && e.message.includes('Failed to fetch')) return;
           console.warn("Failed to load requests (minor)", e);
       }
   };

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { ArrowLeft, Send, Image as ImageIcon, Mic, Loader2, Trash2, Check, CheckCheck, Palette } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, Mic, Loader2, Trash2, Check, CheckCheck, Palette, Database, Copy, X, AlertCircle, Settings } from 'lucide-react';
 import { UserProfile, DirectMessage } from '../types';
 import { db } from '../services/db';
 import DrawingCanvas from './DrawingCanvas';
@@ -12,11 +12,35 @@ interface FriendChatProps {
   onMessagesRead?: () => void; 
 }
 
+const STORAGE_SQL = `-- Run this in Supabase SQL Editor to fix Media Uploads:
+
+-- 1. Create the 'chat-media' bucket
+insert into storage.buckets (id, name, public) 
+values ('chat-media', 'chat-media', true)
+on conflict (id) do nothing;
+
+-- 2. Allow authenticated users to upload
+create policy "Authenticated users can upload chat media"
+on storage.objects for insert
+to authenticated
+with check ( bucket_id = 'chat-media' );
+
+-- 3. Allow everyone to view images/audio
+create policy "Public access to chat media"
+on storage.objects for select
+to public
+using ( bucket_id = 'chat-media' );`;
+
 const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShareId, onMessagesRead }) => {
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [requestingMic, setRequestingMic] = useState(false);
+  
+  // SQL Help Modal State
+  const [showSqlHelp, setShowSqlHelp] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Graffiti State
   const [showGraffitiCanvas, setShowGraffitiCanvas] = useState(false);
@@ -180,17 +204,15 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
           fetchMessages(false);
           setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 500);
       } catch (e: any) { 
-          alert("Image Upload Failed: " + (e.message || "Unknown error")); 
+          handleUploadError(e, "Image Upload Failed");
       } finally { setUploading(false); }
   };
 
   // --- GRAFFITI HANDLERS ---
   const startGraffiti = () => {
       if (messagesContainerRef.current) {
-          // Calculate safe dimensions
           const w = messagesContainerRef.current.scrollWidth || window.innerWidth;
           const h = Math.max(messagesContainerRef.current.scrollHeight, window.innerHeight);
-          
           setCanvasDimensions({ width: w, height: h });
           setShowGraffitiCanvas(true);
           isDrawingRef.current = true; 
@@ -207,22 +229,16 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
       setUploading(true);
       
       try {
-          // Race the upload against the timeout
           const url = await Promise.race([
               db.social.uploadGraffiti(friend.id, blob),
-              new Promise((_, reject) => setTimeout(() => reject(new Error("Upload timed out (10s). Check connection.")), 10000))
+              new Promise((_, reject) => setTimeout(() => reject(new Error("Upload timed out. Check connection.")), 10000))
           ]) as string;
           
           lastUploadTimeRef.current = Date.now();
           setGraffitiUrl(url); 
           closeGraffiti(); 
       } catch (e: any) {
-          // This catches "Unexpected token h..." HTML errors from Supabase if bucket is missing
-          let msg = e.message || "Unknown error";
-          if (msg.includes("Unexpected token")) {
-              msg = "Server Error (404/500). Please ensure 'chat-media' bucket exists in Supabase.";
-          }
-          alert(`Could not save drawing: ${msg}`);
+          handleUploadError(e, "Could not save drawing");
       } finally {
           setUploading(false);
       }
@@ -234,16 +250,38 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
       for (const type of types) {
           if (MediaRecorder.isTypeSupported(type)) return type;
       }
-      return ''; // Let browser default
+      return '';
   }
 
   const startRecording = async () => {
+      setErrorMessage(null); // Clear previous errors
+      setRequestingMic(true);
+      
+      // 1. Check Browser Support
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setRequestingMic(false);
+          setErrorMessage("Microphone not supported. Please use HTTPS or a modern browser.");
+          return;
+      }
+
       try {
+          // This line triggers the browser permission prompt
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          
+          // If we get here, user clicked "Allow"
+          setRequestingMic(false);
+          
           const mimeType = getSupportedMimeType();
           const options = mimeType ? { mimeType } : undefined;
           
-          const recorder = new MediaRecorder(stream, options);
+          let recorder;
+          try {
+              recorder = new MediaRecorder(stream, options);
+          } catch (err) {
+              console.warn("MediaRecorder creation failed with options, trying defaults", err);
+              recorder = new MediaRecorder(stream); // Fallback
+          }
+
           const chunks: BlobPart[] = [];
           
           recorder.ondataavailable = (e) => {
@@ -255,9 +293,10 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
               const finalType = mimeType || 'audio/webm';
               const blob = new Blob(chunks, { type: finalType });
               
-              if (blob.size < 100) {
-                  // Too small, probably empty
-                  stream.getTracks().forEach(track => track.stop());
+              stream.getTracks().forEach(track => track.stop()); // Stop mic immediately
+
+              if (blob.size < 500) { // < 500 bytes is likely empty/noise
+                  console.warn("Audio too short, discarded.");
                   return;
               }
 
@@ -270,15 +309,10 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
                   fetchMessages(false);
                   setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 200);
               } catch (e: any) { 
-                  let msg = e.message || "Unknown error";
-                  if (msg.includes("Unexpected token")) {
-                      msg = "Server Error (Missing Bucket?). Please check Supabase Setup.";
-                  }
-                  alert(`Voice Send Failed: ${msg}`); 
+                  handleUploadError(e, "Voice Send Failed");
               } finally { 
                   setUploading(false); 
               }
-              stream.getTracks().forEach(track => track.stop());
           };
           
           recorder.start();
@@ -286,14 +320,47 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
           setIsRecording(true);
           setRecordingTime(0);
           timerRef.current = setInterval(() => setRecordingTime(p => p + 1), 1000);
-      } catch (e) { alert("Microphone access denied or not supported."); }
+      } catch (e: any) { 
+          setRequestingMic(false);
+          console.error("Mic Access Error:", e);
+          
+          // Improved Permission Error Detection
+          const isPermissionError = 
+              e.name === 'NotAllowedError' || 
+              e.name === 'PermissionDeniedError' || 
+              (typeof e.message === 'string' && e.message.toLowerCase().includes('permission denied'));
+
+          if (isPermissionError) {
+              setErrorMessage("Microphone blocked. Click the Lock icon 🔒 in your address bar to Allow.");
+          } else {
+              setErrorMessage(`Mic Error: ${e.message || "Unknown error"}`);
+          }
+      }
   };
 
   const stopRecording = () => {
       if (mediaRecorder && isRecording) {
-          mediaRecorder.stop();
+          if (mediaRecorder.state !== 'inactive') {
+              mediaRecorder.stop();
+          }
           setIsRecording(false);
           clearInterval(timerRef.current);
+      }
+  };
+
+  const handleUploadError = (e: any, context: string) => {
+      const msg = e.message || "Unknown error";
+      // Detect missing bucket or RLS policy errors
+      if (msg.includes("row not found") || msg.includes("Unexpected token") || msg.includes("violates row-level security") || msg.includes("new row violates")) {
+          setShowSqlHelp(true);
+      } else {
+          // If it's a fetch error, it's usually network
+          if (msg.includes('Failed to fetch')) {
+              setErrorMessage(`${context}: Network connection failed.`);
+          } else {
+              setErrorMessage(`${context}: ${msg}`);
+          }
+          setTimeout(() => setErrorMessage(null), 5000);
       }
   };
 
@@ -309,8 +376,18 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
   };
   const isOnline = getStatusText() === 'Online';
 
+  // --- RENDER ---
   return (
-    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 overflow-hidden">
+    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 overflow-hidden relative">
+      {/* Error Toast */}
+      {errorMessage && (
+          <div className="absolute top-16 left-4 right-4 z-50 bg-red-100 dark:bg-red-900/90 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-100 p-4 rounded-xl shadow-xl flex items-start gap-3 animate-slide-up backdrop-blur-md">
+              <AlertCircle size={20} className="mt-0.5 shrink-0 animate-pulse" />
+              <div className="flex-1 text-sm font-medium">{errorMessage}</div>
+              <button onClick={() => setErrorMessage(null)} className="p-1 hover:bg-red-200/50 rounded-full"><X size={18}/></button>
+          </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3 p-4 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shadow-sm z-30 relative shrink-0">
          <button onClick={handleBack} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
@@ -372,7 +449,7 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
                         )}
 
                         {msg.message_type === 'audio' && (
-                            <audio controls src={msg.content} className="h-8 max-w-[200px]" />
+                            <audio controls src={msg.content} className="h-10 w-[200px]" />
                         )}
                         
                         <div className={`text-[10px] mt-1 flex items-center gap-2 ${isMe ? 'justify-end text-indigo-200' : 'justify-start text-slate-400'}`}>
@@ -417,13 +494,13 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
       {/* Input Area */}
       <div className="p-3 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 z-30 relative shrink-0">
          {isRecording ? (
-             <div className="flex-1 flex items-center justify-between bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-full border border-red-200 dark:border-red-900">
-                 <div className="flex items-center gap-2 text-red-600 animate-pulse">
-                     <div className="w-3 h-3 bg-red-600 rounded-full"></div>
-                     <span className="font-mono">{Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</span>
+             <div className="flex-1 flex items-center justify-between bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-full border border-red-200 dark:border-red-900 transition-all animate-pulse">
+                 <div className="flex items-center gap-2 text-red-600">
+                     <div className="w-3 h-3 bg-red-600 rounded-full animate-bounce"></div>
+                     <span className="font-mono font-bold">{Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</span>
                  </div>
-                 <button onClick={stopRecording} className="p-1 bg-red-600 text-white rounded-full">
-                     <Send size={16} />
+                 <button onClick={stopRecording} className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 shadow-lg">
+                     <Send size={18} />
                  </button>
              </div>
          ) : (
@@ -457,8 +534,12 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
                          {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
                      </button>
                  ) : (
-                     <button onClick={startRecording} className="p-2.5 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full hover:bg-slate-300 dark:hover:bg-slate-700">
-                         <Mic size={20} />
+                     <button 
+                        onClick={startRecording} 
+                        disabled={requestingMic}
+                        className={`p-2.5 rounded-full transition-all ${requestingMic ? 'bg-indigo-100 text-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700 active:scale-95'}`}
+                     >
+                         {requestingMic ? <Loader2 size={20} className="animate-spin" /> : <Mic size={20} />}
                      </button>
                  )}
              </>
@@ -469,7 +550,46 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
           <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-50">
               <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xl flex items-center gap-3">
                   <Loader2 className="animate-spin text-indigo-600" />
-                  <span className="text-sm font-medium dark:text-white">Processing...</span>
+                  <span className="text-sm font-medium dark:text-white">Sending...</span>
+              </div>
+          </div>
+      )}
+
+      {/* SQL HELP MODAL */}
+      {showSqlHelp && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSqlHelp(false)} />
+              <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-6 border border-red-200 dark:border-red-900 animate-scale-in">
+                  <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                          <Database size={24} />
+                          <h3 className="text-lg font-bold">Database Setup Required</h3>
+                      </div>
+                      <button onClick={() => setShowSqlHelp(false)} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><X size={20}/></button>
+                  </div>
+                  
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                      The "chat-media" storage bucket is missing in Supabase. Please copy the code below and run it in the Supabase <strong>SQL Editor</strong>.
+                  </p>
+
+                  <div className="relative group">
+                      <pre className="bg-slate-950 text-slate-200 p-4 rounded-lg text-[10px] md:text-xs overflow-x-auto font-mono border border-slate-800">
+                          {STORAGE_SQL}
+                      </pre>
+                      <button 
+                        onClick={() => { navigator.clipboard.writeText(STORAGE_SQL); alert("Copied to clipboard!"); }}
+                        className="absolute top-2 right-2 p-2 bg-white/10 hover:bg-white/20 text-white rounded-md transition-colors"
+                        title="Copy SQL"
+                      >
+                          <Copy size={14} />
+                      </button>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                      <button onClick={() => setShowSqlHelp(false)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700">
+                          Done
+                      </button>
+                  </div>
               </div>
           </div>
       )}
