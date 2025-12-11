@@ -118,6 +118,11 @@ const PrayerList: React.FC<PrayerListProps> = ({
         setSelectedFriends([]);
         setIsAnonymous(false);
         setShowVisibilityMenu(false);
+        
+        // Refresh community list if posting publicly while on community tab
+        if (activeTab === 'community' && visibility !== 'private') {
+            setTimeout(loadCommunityPrayers, 500);
+        }
     };
 
     const toggleAnswered = (prayer: SavedItem) => {
@@ -145,29 +150,44 @@ const PrayerList: React.FC<PrayerListProps> = ({
     };
 
     const handleAmen = async (prayer: SavedItem) => {
-        if (activeTab === 'community') {
-            setCommunityPrayers(prev => prev.map(p => {
-                if (p.id === prayer.id) {
-                     const interactions = p.metadata?.interactions || { type: 'amen', count: 0, user_ids: [] };
-                     return { 
-                         ...p, 
-                         metadata: { 
-                             ...p.metadata, 
-                             interactions: { 
-                                 ...interactions,
-                                 type: 'amen',
-                                 count: interactions.count + 1 
-                             } 
-                         } 
-                     };
-                }
-                return p;
-            }));
+        // Optimistic Update
+        setCommunityPrayers(prev => prev.map(p => {
+            if (p.id === prayer.id) {
+                 const interactions = p.metadata?.interactions || { type: 'amen', count: 0, user_ids: [] };
+                 // Check if user already liked, though we don't have perfect user ID sync in map, we assume toggle
+                 const currentUserIdLocal = currentUserId || "";
+                 const hasAmened = interactions.user_ids.includes(currentUserIdLocal);
+                 
+                 let newCount = interactions.count;
+                 let newIds = interactions.user_ids;
 
-            try {
-                await db.prayers.toggleAmen(prayer.id, prayer.metadata);
-            } catch (e) { console.error(e); }
-        }
+                 if (hasAmened) {
+                     newCount = Math.max(0, newCount - 1);
+                     newIds = newIds.filter((id: string) => id !== currentUserIdLocal);
+                 } else {
+                     newCount = newCount + 1;
+                     newIds = [...newIds, currentUserIdLocal];
+                 }
+
+                 return { 
+                     ...p, 
+                     metadata: { 
+                         ...p.metadata, 
+                         interactions: { 
+                             ...interactions,
+                             type: 'amen',
+                             count: newCount,
+                             user_ids: newIds
+                         } 
+                     } 
+                 };
+            }
+            return p;
+        }));
+
+        try {
+            await db.prayers.toggleAmen(prayer.id, prayer.metadata);
+        } catch (e) { console.error(e); }
     };
 
     const VisibilityIcon = ({ vis }: { vis: PrayerVisibility }) => {
@@ -406,6 +426,7 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                      const isOwner = currentUserId && prayer.user_id === currentUserId;
                                      const isAnon = prayer.metadata?.is_anonymous;
                                      const isAnswered = prayer.metadata?.answered;
+                                     const isAmened = prayer.metadata?.interactions?.user_ids?.includes(currentUserId || "");
 
                                      return (
                                          <div key={prayer.id} className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
@@ -452,12 +473,12 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                               <div className="flex items-center justify-between border-t border-slate-50 dark:border-slate-700 pt-3">
                                                   <button 
                                                     onClick={() => handleAmen(prayer)}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors active:scale-95"
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors active:scale-95 ${isAmened ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
                                                   >
                                                       <span>🙏</span>
                                                       <span className="text-sm font-bold">{t.amen}</span>
                                                       {prayer.metadata?.interactions?.count ? (
-                                                          <span className="bg-indigo-200 dark:bg-indigo-800 px-1.5 rounded text-xs ml-1">{prayer.metadata.interactions.count}</span>
+                                                          <span className={`px-1.5 rounded text-xs ml-1 ${isAmened ? 'bg-indigo-200 dark:bg-indigo-800' : 'bg-slate-200 dark:bg-slate-700'}`}>{prayer.metadata.interactions.count}</span>
                                                       ) : null}
                                                   </button>
                                               </div>

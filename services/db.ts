@@ -2,6 +2,29 @@
 import { supabase } from './supabase';
 import { ChatSession, Message, SavedItem, BibleHighlight, UserProfile, FriendRequest, DirectMessage, Achievement } from '../types';
 
+/* 
+   IMPORTANT: SUPABASE RLS SETUP REQUIRED
+   
+   For the Prayer Wall to work for other users, you must enable Row Level Security (RLS) 
+   and add policies to your 'saved_items' table in Supabase.
+
+   Run this SQL in your Supabase SQL Editor:
+
+   -- 1. Enable RLS
+   ALTER TABLE saved_items ENABLE ROW LEVEL SECURITY;
+
+   -- 2. Allow users to see their own items (Read/Write)
+   CREATE POLICY "Users can manage own items" ON saved_items
+   USING (auth.uid() = user_id);
+
+   -- 3. Allow users to READ 'prayer' type items created by others
+   -- (The application logic filters these by visibility, but the DB must return them first)
+   CREATE POLICY "Users can read community prayers" ON saved_items
+   FOR SELECT
+   USING (type = 'prayer');
+
+*/
+
 const ensureSupabase = () => {
     if (!supabase) throw new Error("Database not connected.");
 }
@@ -176,7 +199,6 @@ export const db = {
       }
   },
 
-  // NEW: Update function to prevent delete/insert duplication
   async updateSavedItem(id: string, updates: Partial<SavedItem>) {
       ensureSupabase();
       // @ts-ignore
@@ -192,7 +214,7 @@ export const db = {
           .from('saved_items')
           .update(dbUpdates)
           .eq('id', id)
-          .eq('user_id', user.id); // Security: ensure ownership
+          .eq('user_id', user.id); 
 
       if (error) throw error;
   },
@@ -244,20 +266,32 @@ export const db = {
           ensureSupabase();
           // @ts-ignore
           const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return [];
+
+          // 1. Fetch current user's friends to validate 'friends' visibility
+          // @ts-ignore
+          const { data: friendshipData } = await supabase
+              .from('friendships')
+              .select('requester_id, receiver_id')
+              .eq('status', 'accepted')
+              .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
           
+          const friendIds = (friendshipData || []).map((f: any) => 
+              f.requester_id === user.id ? f.receiver_id : f.requester_id
+          );
+
+          // 2. Fetch ALL prayers (limit to recent 100)
+          // RLS POLICY MUST ALLOW SELECT ON type='prayer' FOR THIS TO WORK
           // @ts-ignore
           const { data, error } = await supabase
               .from('saved_items')
               .select('*')
               .eq('type', 'prayer')
-              // removed neq user_id so users can see their own public prayers to verify it works
-              .limit(50)
+              .limit(100)
               .order('created_at', { ascending: false });
 
           if (error) {
-              if (error.code === 'PGRST204' || error.message.includes('metadata')) {
-                 console.error("CRITICAL SQL FIX REQUIRED: Please run 'ALTER TABLE saved_items ADD COLUMN metadata jsonb DEFAULT '{}'::jsonb;' in your Supabase SQL Editor.");
-              }
+              console.error("Error fetching community prayers:", error);
               return []; 
           }
 
@@ -266,37 +300,40 @@ export const db = {
           for (const item of (data || [])) {
               const meta = item.metadata || {};
               const vis = meta.visibility || 'private';
+              const ownerId = item.user_id;
               
-              if (vis === 'public') {
+              let isVisible = false;
+
+              // Always see my own prayers
+              if (ownerId === user.id) {
+                  isVisible = true;
+              } 
+              // Public prayers
+              else if (vis === 'public') {
+                  isVisible = true;
+              } 
+              // Friends only prayers
+              else if (vis === 'friends') {
+                  if (friendIds.includes(ownerId)) {
+                      isVisible = true;
+                  }
+              } 
+              // Specific people
+              else if (vis === 'specific' && meta.allowed_users) {
+                  if (Array.isArray(meta.allowed_users) && meta.allowed_users.includes(user.id)) {
+                      isVisible = true;
+                  }
+              }
+
+              if (isVisible) {
                   accessiblePrayers.push({ 
                       id: item.id,
-                      user_id: item.user_id, // Map owner ID
+                      user_id: item.user_id,
                       type: 'prayer',
                       content: item.content,
                       date: new Date(item.created_at).getTime(),
                       metadata: meta
                   });
-              } else if (vis === 'friends') {
-                  // In a real app, verify friendship here on backend or RLS
-                  accessiblePrayers.push({ 
-                      id: item.id,
-                      user_id: item.user_id, 
-                      type: 'prayer',
-                      content: item.content,
-                      date: new Date(item.created_at).getTime(),
-                      metadata: meta
-                  });
-              } else if (vis === 'specific' && meta.allowed_users && user) {
-                   if (meta.allowed_users.includes(user.id)) {
-                       accessiblePrayers.push({ 
-                           id: item.id,
-                           user_id: item.user_id,
-                           type: 'prayer',
-                           content: item.content,
-                           date: new Date(item.created_at).getTime(),
-                           metadata: meta
-                       });
-                   }
               }
           }
           
