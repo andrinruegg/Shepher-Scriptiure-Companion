@@ -127,12 +127,16 @@ const cleanJson = (text: string): string => {
 /**
  * Generates a short, smart title for the chat based on the first user message.
  */
-export const generateChatTitle = async (userMessage: string): Promise<string> => {
+export const generateChatTitle = async (userMessage: string, language: string = 'English'): Promise<string> => {
   try {
     const response = await makeRequestWithRetry(async (client) => {
         return await client.models.generateContent({
           model: 'gemini-2.5-flash',
-          contents: `Summarize this user request into a short, elegant 3-5 word title for a journal entry (no quotes): "${userMessage}"`,
+          contents: `Summarize this user request into a short, elegant 3-5 word title for a journal entry (no quotes).
+          
+          CRITICAL INSTRUCTION: You MUST output the title in the "${language}" language, regardless of the language of the user's message.
+          
+          User Message: "${userMessage}"`,
         });
     });
     return response.text ? response.text.trim() : 'New Entry';
@@ -160,11 +164,14 @@ export const sendMessageStream = async (
     const recentHistory = history.length > 10 ? history.slice(history.length - 10) : history;
     const formattedHistory = mapHistoryToContent(recentHistory);
     
+    // Default fallback if language is missing
+    const userLanguage = language || "English";
+
     const dynamicInstruction = `${BASE_SYSTEM_INSTRUCTION}
     
     IMPORTANT PREFERENCES:
     1. Unless the user explicitly asks for a different version, YOU MUST QUOTE ALL SCRIPTURE USING THE ${bibleTranslation} TRANSLATION. Label the verses accordingly.
-    2. LANGUAGE RULE: Detect the language of the user's message and respond in that same language. (e.g., if user says "Salut", respond in Romanian; if "Hola", respond in Spanish).
+    2. LANGUAGE RULE: The user has set their app language to "${userLanguage}". YOU MUST RESPOND IN ${userLanguage}, even if they type in a different language.
     ${displayName ? `3. USER IDENTITY: The user's name is "${displayName}". Address them by name occasionally to build a connection.` : ''}
     `;
 
@@ -200,6 +207,19 @@ export const sendMessageStream = async (
     console.error("Gemini API Error:", error);
     onError(error);
   }
+};
+
+/**
+ * Translates content to the target language.
+ */
+export const translateContent = async (text: string, targetLanguage: string): Promise<string> => {
+    return await makeRequestWithRetry(async (client) => {
+        const response = await client.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Translate the following text into ${targetLanguage}. Keep the tone and meaning exactly as is. Only return the translated text, no preamble.\n\nText: "${text}"`
+        });
+        return response.text || "Translation failed.";
+    });
 };
 
 /**
@@ -255,5 +275,71 @@ export const generateQuizQuestion = async (
         }
         
         return json;
+    });
+};
+
+/**
+ * Generates the text for a specific Bible chapter using AI.
+ * Used as a fallback when standard APIs fail.
+ */
+export const getBibleChapterFromAI = async (
+    bookName: string, 
+    chapter: number, 
+    translation: string,
+    language: string
+): Promise<{ verse: number, text: string }[]> => {
+    return await makeRequestWithRetry(async (client) => {
+        const prompt = `Generate the full text of the Bible chapter: ${bookName} Chapter ${chapter}.
+        
+        Language: ${language}
+        Translation Version: ${translation} (e.g. Cornilescu for Romanian, Luther for German, NIV for English)
+        
+        Output Format:
+        A strictly valid JSON array of objects. Each object must have a 'verse' (number) and 'text' (string).
+        Do NOT include any introduction, markdown formatting, or notes. ONLY the JSON array.
+        
+        Example:
+        [
+          { "verse": 1, "text": "In the beginning..." },
+          { "verse": 2, "text": "And the earth was..." }
+        ]`;
+
+        const response = await client.models.generateContent({
+            model: 'gemini-2.5-flash', // Flash is fast and good enough for reciting known text
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            verse: { type: Type.INTEGER },
+                            text: { type: Type.STRING }
+                        }
+                    }
+                }
+            }
+        });
+
+        const text = response.text || "[]";
+        try {
+            const json = JSON.parse(cleanJson(text));
+            if (Array.isArray(json) && json.length > 0) {
+                return json;
+            }
+            throw new Error("Invalid AI Bible response");
+        } catch (e) {
+            console.error("AI Bible Parsing Error", e);
+            // FAILSAFE: If JSON parsing fails but text exists, return raw text as verse 1
+            // This ensures the user sees SOMETHING rather than an error.
+            if (text && text.length > 50) {
+                return [{
+                    verse: 1,
+                    text: text.replace(/[\{\}\[\]"]/g, '') // Light cleanup
+                }];
+            }
+            return [];
+        }
     });
 };

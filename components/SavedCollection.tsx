@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Trash2, Heart, MessageSquare, BookOpen, Filter, Menu, Feather } from 'lucide-react';
 import { SavedItem } from '../types';
@@ -23,7 +22,7 @@ const SavedCollection: React.FC<SavedCollectionProps> = ({ savedItems, onRemoveI
   const getTypeLabel = (type: string) => {
       if (type === 'verse') return t.bibleVerse;
       if (type === 'chat') return t.chatMessage;
-      if (type === 'prayer') return 'Prayer';
+      if (type === 'prayer') return t.prayerItem;
       return 'Item';
   }
 
@@ -70,7 +69,7 @@ const SavedCollection: React.FC<SavedCollectionProps> = ({ savedItems, onRemoveI
                     onClick={() => setFilter('prayer')}
                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap ${filter === 'prayer' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                  >
-                    Prayers
+                    {t.filterPrayer}
                  </button>
              </div>
          </div>

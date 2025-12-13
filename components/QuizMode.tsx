@@ -67,7 +67,10 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
 
     const startQuiz = (diff: 'Easy' | 'Medium' | 'Hard') => {
         setDifficulty(diff);
-        const allQuestions = [...STATIC_QUIZ_DATA[diff]];
+        
+        // Select language data or fallback to English
+        const langData = STATIC_QUIZ_DATA[language] || STATIC_QUIZ_DATA['English'];
+        const allQuestions = [...langData[diff]];
         
         // 1. Shuffle the order of questions
         const shuffledQuestions = allQuestions.sort(() => 0.5 - Math.random());
@@ -185,7 +188,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-serif-text">{t.title}</h1>
-                        {gameState === 'playing' && <span className="text-xs text-slate-400 font-medium tracking-wider uppercase">{difficulty} Mode</span>}
+                        {gameState === 'playing' && <span className="text-xs text-slate-400 font-medium tracking-wider uppercase">{difficulty} {t.mode}</span>}
                     </div>
                 </div>
             </header>
@@ -216,10 +219,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
                                                     <CheckCircle2 size={18} className="text-emerald-500 fill-emerald-100 dark:fill-emerald-900/30" />
                                                 )}
                                             </div>
-                                            <span className="text-xs text-slate-400">Perfect for beginners</span>
                                         </div>
                                     </div>
-                                    <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-500">{STATIC_QUIZ_DATA.Easy.length} Qs</span>
+                                    <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-500">{(STATIC_QUIZ_DATA[language]?.Easy || STATIC_QUIZ_DATA['English'].Easy).length} Qs</span>
                                     <ArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity text-purple-500" size={18} />
                                 </button>
                                 
@@ -232,10 +234,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
                                                     <CheckCircle2 size={18} className="text-emerald-500 fill-emerald-100 dark:fill-emerald-900/30" />
                                                 )}
                                             </div>
-                                            <span className="text-xs text-slate-400">Test your knowledge</span>
                                         </div>
                                     </div>
-                                    <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-500">{STATIC_QUIZ_DATA.Medium.length} Qs</span>
+                                    <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-500">{(STATIC_QUIZ_DATA[language]?.Medium || STATIC_QUIZ_DATA['English'].Medium).length} Qs</span>
                                     <ArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity text-purple-500" size={18} />
                                 </button>
                                 
@@ -248,10 +249,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
                                                     <CheckCircle2 size={18} className="text-emerald-500 fill-emerald-100 dark:fill-emerald-900/30" />
                                                 )}
                                             </div>
-                                            <span className="text-xs text-slate-400">For true scholars</span>
                                         </div>
                                     </div>
-                                    <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-500">{STATIC_QUIZ_DATA.Hard.length} Qs</span>
+                                    <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-500">{(STATIC_QUIZ_DATA[language]?.Hard || STATIC_QUIZ_DATA['English'].Hard).length} Qs</span>
                                     <ArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity text-purple-500" size={18} />
                                 </button>
                             </div>
@@ -267,7 +267,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
                                 </div>
                                 
                                 <div className="flex justify-between items-center mb-4 mt-2">
-                                    <span className="text-xs font-bold text-slate-400">Question {currentIndex + 1} / {sessionQuestions.length}</span>
+                                    <span className="text-xs font-bold text-slate-400">{t.question} {currentIndex + 1} / {sessionQuestions.length}</span>
                                     {streak > 1 && !showResult && (
                                         <div className="inline-flex items-center gap-1 text-xs font-bold text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full animate-bounce">
                                             <Flame size={12} fill="currentColor" /> {streak} Streak
@@ -327,7 +327,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
                                         onClick={nextQuestion}
                                         className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-lg shadow-purple-500/30 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2"
                                     >
-                                        {currentIndex < sessionQuestions.length - 1 ? t.next : "See Results"} <ArrowRight size={20} />
+                                        {currentIndex < sessionQuestions.length - 1 ? t.next : t.results} <ArrowRight size={20} />
                                     </button>
                                 </div>
                             )}
@@ -342,20 +342,20 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
                              </div>
                              
                              <div>
-                                 <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-2 font-serif-text">Congratulations!</h2>
+                                 <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-2 font-serif-text">{t.correct}</h2>
                                  <p className="text-slate-500 dark:text-slate-400">You completed the {difficulty} Quiz</p>
                              </div>
 
                              <div className="grid grid-cols-2 gap-4">
                                  <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center">
-                                     <span className="text-xs font-bold text-slate-400 uppercase mb-1">Time Taken</span>
+                                     <span className="text-xs font-bold text-slate-400 uppercase mb-1">{t.time}</span>
                                      <div className="flex items-center gap-2">
                                         <Timer size={18} className="text-purple-500"/>
                                         <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">{formatTime(endTime - startTime)}</span>
                                      </div>
                                  </div>
                                  <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center">
-                                     <span className="text-xs font-bold text-slate-400 uppercase mb-1">Accuracy</span>
+                                     <span className="text-xs font-bold text-slate-400 uppercase mb-1">{t.accuracy}</span>
                                      <div className="flex items-center gap-2">
                                         <CheckCircle2 size={18} className="text-emerald-500"/>
                                         <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{correctCount}/{sessionQuestions.length}</span>
@@ -378,10 +378,10 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
 
                              <div className="flex gap-3 pt-4">
                                 <button onClick={() => setGameState('menu')} className="flex-1 py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
-                                    Home
+                                    {t.home}
                                 </button>
                                 <button onClick={() => startQuiz(difficulty)} className="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2">
-                                    <RotateCw size={18} /> Play Again
+                                    <RotateCw size={18} /> {t.playAgain}
                                 </button>
                              </div>
                          </div>

@@ -1,146 +1,288 @@
 
-
 import { BibleBook, BibleChapter } from '../types';
+import { getBibleChapterFromAI } from './geminiService';
 
-// Static list of all 66 Bible books with metadata
-export const BIBLE_BOOKS: BibleBook[] = [
+// Static list of all 66 Bible books with metadata and translations
+// ORDER IS CRITICAL: Matches Standard Protestant Canon (Genesis=0, Revelation=65)
+export const BIBLE_BOOKS: (BibleBook & { names: { en: string, ro: string, de: string } })[] = [
   // OLD TESTAMENT
-  { id: 'GEN', name: 'Genesis', chapters: 50, testament: 'OT' },
-  { id: 'EXO', name: 'Exodus', chapters: 40, testament: 'OT' },
-  { id: 'LEV', name: 'Leviticus', chapters: 27, testament: 'OT' },
-  { id: 'NUM', name: 'Numbers', chapters: 36, testament: 'OT' },
-  { id: 'DEU', name: 'Deuteronomy', chapters: 34, testament: 'OT' },
-  { id: 'JOS', name: 'Joshua', chapters: 24, testament: 'OT' },
-  { id: 'JDG', name: 'Judges', chapters: 21, testament: 'OT' },
-  { id: 'RUT', name: 'Ruth', chapters: 4, testament: 'OT' },
-  { id: '1SA', name: '1 Samuel', chapters: 31, testament: 'OT' },
-  { id: '2SA', name: '2 Samuel', chapters: 24, testament: 'OT' },
-  { id: '1KI', name: '1 Kings', chapters: 22, testament: 'OT' },
-  { id: '2KI', name: '2 Kings', chapters: 25, testament: 'OT' },
-  { id: '1CH', name: '1 Chronicles', chapters: 29, testament: 'OT' },
-  { id: '2CH', name: '2 Chronicles', chapters: 36, testament: 'OT' },
-  { id: 'EZR', name: 'Ezra', chapters: 10, testament: 'OT' },
-  { id: 'NEH', name: 'Nehemiah', chapters: 13, testament: 'OT' },
-  { id: 'EST', name: 'Esther', chapters: 10, testament: 'OT' },
-  { id: 'JOB', name: 'Job', chapters: 42, testament: 'OT' },
-  { id: 'PSA', name: 'Psalms', chapters: 150, testament: 'OT' },
-  { id: 'PRO', name: 'Proverbs', chapters: 31, testament: 'OT' },
-  { id: 'ECC', name: 'Ecclesiastes', chapters: 12, testament: 'OT' },
-  { id: 'SNG', name: 'Song of Solomon', chapters: 8, testament: 'OT' },
-  { id: 'ISA', name: 'Isaiah', chapters: 66, testament: 'OT' },
-  { id: 'JER', name: 'Jeremiah', chapters: 52, testament: 'OT' },
-  { id: 'LAM', name: 'Lamentations', chapters: 5, testament: 'OT' },
-  { id: 'EZK', name: 'Ezekiel', chapters: 48, testament: 'OT' },
-  { id: 'DAN', name: 'Daniel', chapters: 12, testament: 'OT' },
-  { id: 'HOS', name: 'Hosea', chapters: 14, testament: 'OT' },
-  { id: 'JOL', name: 'Joel', chapters: 3, testament: 'OT' },
-  { id: 'AMO', name: 'Amos', chapters: 9, testament: 'OT' },
-  { id: 'OBA', name: 'Obadiah', chapters: 1, testament: 'OT' },
-  { id: 'JON', name: 'Jonah', chapters: 4, testament: 'OT' },
-  { id: 'MIC', name: 'Micah', chapters: 7, testament: 'OT' },
-  { id: 'NAM', name: 'Nahum', chapters: 3, testament: 'OT' },
-  { id: 'HAB', name: 'Habakkuk', chapters: 3, testament: 'OT' },
-  { id: 'ZEP', name: 'Zephaniah', chapters: 3, testament: 'OT' },
-  { id: 'HAG', name: 'Haggai', chapters: 2, testament: 'OT' },
-  { id: 'ZEC', name: 'Zechariah', chapters: 14, testament: 'OT' },
-  { id: 'MAL', name: 'Malachi', chapters: 4, testament: 'OT' },
+  { id: 'GEN', name: 'Genesis', names: { en: 'Genesis', ro: 'Geneza', de: '1. Mose' }, chapters: 50, testament: 'OT' },
+  { id: 'EXO', name: 'Exodus', names: { en: 'Exodus', ro: 'Exodul', de: '2. Mose' }, chapters: 40, testament: 'OT' },
+  { id: 'LEV', name: 'Leviticus', names: { en: 'Leviticus', ro: 'Leviticul', de: '3. Mose' }, chapters: 27, testament: 'OT' },
+  { id: 'NUM', name: 'Numbers', names: { en: 'Numbers', ro: 'Numeri', de: '4. Mose' }, chapters: 36, testament: 'OT' },
+  { id: 'DEU', name: 'Deuteronomy', names: { en: 'Deuteronomy', ro: 'Deuteronomul', de: '5. Mose' }, chapters: 34, testament: 'OT' },
+  { id: 'JOS', name: 'Joshua', names: { en: 'Joshua', ro: 'Iosua', de: 'Josua' }, chapters: 24, testament: 'OT' },
+  { id: 'JDG', name: 'Judges', names: { en: 'Judges', ro: 'Judecătorii', de: 'Richter' }, chapters: 21, testament: 'OT' },
+  { id: 'RUT', name: 'Ruth', names: { en: 'Ruth', ro: 'Rut', de: 'Rut' }, chapters: 4, testament: 'OT' },
+  { id: '1SA', name: '1 Samuel', names: { en: '1 Samuel', ro: '1 Samuel', de: '1. Samuel' }, chapters: 31, testament: 'OT' },
+  { id: '2SA', name: '2 Samuel', names: { en: '2 Samuel', ro: '2 Samuel', de: '2. Samuel' }, chapters: 24, testament: 'OT' },
+  { id: '1KI', name: '1 Kings', names: { en: '1 Kings', ro: '1 Împărați', de: '1. Könige' }, chapters: 22, testament: 'OT' },
+  { id: '2KI', name: '2 Kings', names: { en: '2 Kings', ro: '2 Împărați', de: '2. Könige' }, chapters: 25, testament: 'OT' },
+  { id: '1CH', name: '1 Chronicles', names: { en: '1 Chronicles', ro: '1 Cronici', de: '1. Chronik' }, chapters: 29, testament: 'OT' },
+  { id: '2CH', name: '2 Chronicles', names: { en: '2 Chronicles', ro: '2 Cronici', de: '2. Chronik' }, chapters: 36, testament: 'OT' },
+  { id: 'EZR', name: 'Ezra', names: { en: 'Ezra', ro: 'Ezra', de: 'Esra' }, chapters: 10, testament: 'OT' },
+  { id: 'NEH', name: 'Nehemiah', names: { en: 'Nehemiah', ro: 'Neemia', de: 'Nehemia' }, chapters: 13, testament: 'OT' },
+  { id: 'EST', name: 'Esther', names: { en: 'Esther', ro: 'Estera', de: 'Ester' }, chapters: 10, testament: 'OT' },
+  { id: 'JOB', name: 'Job', names: { en: 'Job', ro: 'Iov', de: 'Hiob' }, chapters: 42, testament: 'OT' },
+  { id: 'PSA', name: 'Psalms', names: { en: 'Psalms', ro: 'Psalmii', de: 'Psalmen' }, chapters: 150, testament: 'OT' },
+  { id: 'PRO', name: 'Proverbs', names: { en: 'Proverbs', ro: 'Proverbele', de: 'Sprüche' }, chapters: 31, testament: 'OT' },
+  { id: 'ECC', name: 'Ecclesiastes', names: { en: 'Ecclesiastes', ro: 'Eclesiastul', de: 'Prediger' }, chapters: 12, testament: 'OT' },
+  { id: 'SNG', name: 'Song of Solomon', names: { en: 'Song of Songs', ro: 'Cântarea Cântărilor', de: 'Hohelied' }, chapters: 8, testament: 'OT' },
+  { id: 'ISA', name: 'Isaiah', names: { en: 'Isaiah', ro: 'Isaia', de: 'Jesaja' }, chapters: 66, testament: 'OT' },
+  { id: 'JER', name: 'Jeremiah', names: { en: 'Jeremiah', ro: 'Ieremia', de: 'Jeremia' }, chapters: 52, testament: 'OT' },
+  { id: 'LAM', name: 'Lamentations', names: { en: 'Lamentations', ro: 'Plângerile', de: 'Klagelieder' }, chapters: 5, testament: 'OT' },
+  { id: 'EZK', name: 'Ezekiel', names: { en: 'Ezekiel', ro: 'Ezechiel', de: 'Hesekiel' }, chapters: 48, testament: 'OT' },
+  { id: 'DAN', name: 'Daniel', names: { en: 'Daniel', ro: 'Daniel', de: 'Daniel' }, chapters: 12, testament: 'OT' },
+  { id: 'HOS', name: 'Hosea', names: { en: 'Hosea', ro: 'Osea', de: 'Hosea' }, chapters: 14, testament: 'OT' },
+  { id: 'JOL', name: 'Joel', names: { en: 'Joel', ro: 'Ioel', de: 'Joel' }, chapters: 3, testament: 'OT' },
+  { id: 'AMO', name: 'Amos', names: { en: 'Amos', ro: 'Amos', de: 'Amos' }, chapters: 9, testament: 'OT' },
+  { id: 'OBA', name: 'Obadiah', names: { en: 'Obadiah', ro: 'Obadia', de: 'Obadja' }, chapters: 1, testament: 'OT' },
+  { id: 'JON', name: 'Jonah', names: { en: 'Jonah', ro: 'Iona', de: 'Jona' }, chapters: 4, testament: 'OT' },
+  { id: 'MIC', name: 'Micah', names: { en: 'Micah', ro: 'Mica', de: 'Micha' }, chapters: 7, testament: 'OT' },
+  { id: 'NAM', name: 'Nahum', names: { en: 'Nahum', ro: 'Naum', de: 'Nahum' }, chapters: 3, testament: 'OT' },
+  { id: 'HAB', name: 'Habakkuk', names: { en: 'Habakkuk', ro: 'Habacuc', de: 'Habakuk' }, chapters: 3, testament: 'OT' },
+  { id: 'ZEP', name: 'Zephaniah', names: { en: 'Zephaniah', ro: 'Țefania', de: 'Zefanja' }, chapters: 3, testament: 'OT' },
+  { id: 'HAG', name: 'Haggai', names: { en: 'Haggai', ro: 'Hagai', de: 'Haggai' }, chapters: 2, testament: 'OT' },
+  { id: 'ZEC', name: 'Zechariah', names: { en: 'Zechariah', ro: 'Zaharia', de: 'Sacharja' }, chapters: 14, testament: 'OT' },
+  { id: 'MAL', name: 'Malachi', names: { en: 'Malachi', ro: 'Maleahi', de: 'Maleachi' }, chapters: 4, testament: 'OT' },
   // NEW TESTAMENT
-  { id: 'MAT', name: 'Matthew', chapters: 28, testament: 'NT' },
-  { id: 'MRK', name: 'Mark', chapters: 16, testament: 'NT' },
-  { id: 'LUK', name: 'Luke', chapters: 24, testament: 'NT' },
-  { id: 'JHN', name: 'John', chapters: 21, testament: 'NT' },
-  { id: 'ACT', name: 'Acts', chapters: 28, testament: 'NT' },
-  { id: 'ROM', name: 'Romans', chapters: 16, testament: 'NT' },
-  { id: '1CO', name: '1 Corinthians', chapters: 16, testament: 'NT' },
-  { id: '2CO', name: '2 Corinthians', chapters: 13, testament: 'NT' },
-  { id: 'GAL', name: 'Galatians', chapters: 6, testament: 'NT' },
-  { id: 'EPH', name: 'Ephesians', chapters: 6, testament: 'NT' },
-  { id: 'PHP', name: 'Philippians', chapters: 4, testament: 'NT' },
-  { id: 'COL', name: 'Colossians', chapters: 4, testament: 'NT' },
-  { id: '1TH', name: '1 Thessalonians', chapters: 5, testament: 'NT' },
-  { id: '2TH', name: '2 Thessalonians', chapters: 3, testament: 'NT' },
-  { id: '1TI', name: '1 Timothy', chapters: 6, testament: 'NT' },
-  { id: '2TI', name: '2 Timothy', chapters: 4, testament: 'NT' },
-  { id: 'TIT', name: 'Titus', chapters: 3, testament: 'NT' },
-  { id: 'PHM', name: 'Philemon', chapters: 1, testament: 'NT' },
-  { id: 'HEB', name: 'Hebrews', chapters: 13, testament: 'NT' },
-  { id: 'JAS', name: 'James', chapters: 5, testament: 'NT' },
-  { id: '1PE', name: '1 Peter', chapters: 5, testament: 'NT' },
-  { id: '2PE', name: '2 Peter', chapters: 3, testament: 'NT' },
-  { id: '1JN', name: '1 John', chapters: 5, testament: 'NT' },
-  { id: '2JN', name: '2 John', chapters: 1, testament: 'NT' },
-  { id: '3JN', name: '3 John', chapters: 1, testament: 'NT' },
-  { id: 'JUD', name: 'Jude', chapters: 1, testament: 'NT' },
-  { id: 'REV', name: 'Revelation', chapters: 22, testament: 'NT' },
+  { id: 'MAT', name: 'Matthew', names: { en: 'Matthew', ro: 'Matei', de: 'Matthäus' }, chapters: 28, testament: 'NT' },
+  { id: 'MRK', name: 'Mark', names: { en: 'Mark', ro: 'Marcu', de: 'Markus' }, chapters: 16, testament: 'NT' },
+  { id: 'LUK', name: 'Luke', names: { en: 'Luke', ro: 'Luca', de: 'Lukas' }, chapters: 24, testament: 'NT' },
+  { id: 'JHN', name: 'John', names: { en: 'John', ro: 'Ioan', de: 'Johannes' }, chapters: 21, testament: 'NT' },
+  { id: 'ACT', name: 'Acts', names: { en: 'Acts', ro: 'Faptele Apostolilor', de: 'Apostelgeschichte' }, chapters: 28, testament: 'NT' },
+  { id: 'ROM', name: 'Romans', names: { en: 'Romans', ro: 'Romani', de: 'Römer' }, chapters: 16, testament: 'NT' },
+  { id: '1CO', name: '1 Corinthians', names: { en: '1 Corinthians', ro: '1 Corinteni', de: '1. Korinther' }, chapters: 16, testament: 'NT' },
+  { id: '2CO', name: '2 Corinthians', names: { en: '2 Corinthians', ro: '2 Corinteni', de: '2. Korinther' }, chapters: 13, testament: 'NT' },
+  { id: 'GAL', name: 'Galatians', names: { en: 'Galatians', ro: 'Galateni', de: 'Galater' }, chapters: 6, testament: 'NT' },
+  { id: 'EPH', name: 'Ephesians', names: { en: 'Ephesians', ro: 'Efeseni', de: 'Epheser' }, chapters: 6, testament: 'NT' },
+  { id: 'PHP', name: 'Philippians', names: { en: 'Philippians', ro: 'Filipeni', de: 'Philipper' }, chapters: 4, testament: 'NT' },
+  { id: 'COL', name: 'Colossians', names: { en: 'Colossians', ro: 'Coloseni', de: 'Kolosser' }, chapters: 4, testament: 'NT' },
+  { id: '1TH', name: '1 Thessalonians', names: { en: '1 Thessalonians', ro: '1 Tesaloniceni', de: '1. Thessalonicher' }, chapters: 5, testament: 'NT' },
+  { id: '2TH', name: '2 Thessalonians', names: { en: '2 Thessalonians', ro: '2 Tesaloniceni', de: '2. Thessalonicher' }, chapters: 3, testament: 'NT' },
+  { id: '1TI', name: '1 Timothy', names: { en: '1 Timothy', ro: '1 Timotei', de: '1. Timotheus' }, chapters: 6, testament: 'NT' },
+  { id: '2TI', name: '2 Timothy', names: { en: '2 Timothy', ro: '2 Timotei', de: '2. Timotheus' }, chapters: 4, testament: 'NT' },
+  { id: 'TIT', name: 'Titus', names: { en: 'Titus', ro: 'Tit', de: 'Titus' }, chapters: 3, testament: 'NT' },
+  { id: 'PHM', name: 'Philemon', names: { en: 'Philemon', ro: 'Filimon', de: 'Philemon' }, chapters: 1, testament: 'NT' },
+  { id: 'HEB', name: 'Hebrews', names: { en: 'Hebrews', ro: 'Evrei', de: 'Hebräer' }, chapters: 13, testament: 'NT' },
+  { id: 'JAS', name: 'James', names: { en: 'James', ro: 'Iacov', de: 'Jakobus' }, chapters: 5, testament: 'NT' },
+  { id: '1PE', name: '1 Peter', names: { en: '1 Peter', ro: '1 Petru', de: '1. Petrus' }, chapters: 5, testament: 'NT' },
+  { id: '2PE', name: '2 Peter', names: { en: '2 Peter', ro: '2 Petru', de: '2. Petrus' }, chapters: 3, testament: 'NT' },
+  { id: '1JN', name: '1 John', names: { en: '1 John', ro: '1 Ioan', de: '1. Johannes' }, chapters: 5, testament: 'NT' },
+  { id: '2JN', name: '2 John', names: { en: '2 John', ro: '2 Ioan', de: '2. Johannes' }, chapters: 1, testament: 'NT' },
+  { id: '3JN', name: '3 John', names: { en: '3 John', ro: '3 Ioan', de: '3. Johannes' }, chapters: 1, testament: 'NT' },
+  { id: 'JUD', name: 'Jude', names: { en: 'Jude', ro: 'Iuda', de: 'Judas' }, chapters: 1, testament: 'NT' },
+  { id: 'REV', name: 'Revelation', names: { en: 'Revelation', ro: 'Apocalipsa', de: 'Offenbarung' }, chapters: 22, testament: 'NT' },
 ];
+
+/**
+ * CACHE: Holds the full Cornilescu Bible JSON in memory after first load.
+ */
+let cornilescuCache: any = null;
+
+async function fetchWithMultiProxy(url: string): Promise<Response> {
+    try {
+        const response = await fetch(url);
+        if (response.ok) return response;
+    } catch (e) { }
+
+    try {
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        if (response.ok) return response;
+    } catch (e) { }
+
+    throw new Error(`Failed to fetch ${url}`);
+}
+
+/**
+ * Downloads the ENTIRE Cornilescu Bible JSON
+ * Source: thiagobodruk/bible via JsDelivr
+ */
+async function getCornilescuData() {
+    if (cornilescuCache) return cornilescuCache;
+    
+    console.log("Downloading full Cornilescu Bible...");
+    const url = "https://cdn.jsdelivr.net/gh/thiagobodruk/bible@master/json/ro_cornilescu.json";
+    
+    try {
+        const response = await fetchWithMultiProxy(url);
+        const data = await response.json();
+        cornilescuCache = data;
+        return data;
+    } catch (e) {
+        console.error("JsDelivr failed, trying Raw GitHub fallback...");
+        const rawUrl = "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/ro_cornilescu.json";
+        const response = await fetchWithMultiProxy(rawUrl);
+        const data = await response.json();
+        cornilescuCache = data;
+        return data;
+    }
+}
+
+/**
+ * Super-Aggressive Normalizer for Fuzzy Search
+ */
+const superNormalize = (str: string) => {
+    return str.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+        .replace(/[^a-z0-9]/g, ''); // Remove EVERYTHING except letters and numbers
+};
 
 export const fetchChapter = async (
     bookName: string, 
     chapter: number, 
     language: string
 ): Promise<BibleChapter | null> => {
-    // 1. Identify Book ID for Bolls Life API (Index + 1)
-    // The BIBLE_BOOKS array is in standard Protestant order (Genesis=1, Revelation=66)
-    // which matches Bolls Life IDs perfectly.
-    const bookIndex = BIBLE_BOOKS.findIndex(b => b.name === bookName);
+    
+    // Find the internal book index (0-65)
+    const bookIndex = BIBLE_BOOKS.findIndex(b => b.name === bookName || b.names.en === bookName || b.names.de === bookName || b.names.ro === bookName);
+    
     if (bookIndex === -1) {
-        console.error("Book not found:", bookName);
+        console.error("Book not found in internal BIBLE_BOOKS list:", bookName);
         return null;
     }
-    const bookId = bookIndex + 1; // 1-based ID
+    
+    const bookData = BIBLE_BOOKS[bookIndex];
+    let mappedVerses: { verse: number, text: string }[] = [];
+    let translationId = 'NIV';
 
-    // 2. Primary Strategy: Bolls Life API (Supports NIV)
-    try {
-        const response = await fetch(`https://bolls.life/get-chapter/NIV/${bookId}/${chapter}/`);
+    // --- ROMANIAN FETCH STRATEGY ---
+    if (language === 'Romanian') {
+        translationId = 'Cornilescu'; 
         
-        if (response.ok) {
-            const data = await response.json();
+        try {
+            const fullBible = await getCornilescuData();
             
-            // Validate response is an array of verses
-            if (Array.isArray(data) && data.length > 0) {
-                return {
-                    reference: `${bookName} ${chapter}`,
-                    translation_id: 'NIV',
-                    verses: data.map((v: any) => ({
-                        book_id: BIBLE_BOOKS[bookIndex].id,
-                        book_name: bookName,
-                        chapter: chapter,
-                        verse: v.verse,
-                        // Bolls Life sometimes includes HTML tags (like <i> or <br>), strip them for clean reading
-                        text: v.text.replace(/<[^>]*>/g, '').trim()
-                    }))
-                };
+            if (Array.isArray(fullBible)) {
+                let bookObj = null;
+
+                // STRATEGY 1: INDEX MATCH (Best)
+                // If the JSON has exactly 66 books, assume standard Protestant order
+                if (fullBible.length === 66) {
+                    bookObj = fullBible[bookIndex];
+                    console.log(`[Bible] Matched by Index ${bookIndex}:`, bookObj?.name);
+                }
+
+                // STRATEGY 2: FUZZY NAME SEARCH (Fallback)
+                if (!bookObj) {
+                    console.log(`[Bible] Index match unsure, trying fuzzy search for: ${bookData.names.ro}`);
+                    const targets = [
+                        superNormalize(bookData.names.ro), 
+                        superNormalize(bookData.names.en),
+                        superNormalize(bookData.name)
+                    ];
+                    
+                    bookObj = fullBible.find((b: any) => {
+                        const n = superNormalize(b.name);
+                        return targets.includes(n);
+                    });
+                }
+
+                if (bookObj && bookObj.chapters) {
+                    // Chapters are 0-indexed in the array (Chapter 1 is at index 0)
+                    const chapterIndex = chapter - 1;
+                    if (chapterIndex >= 0 && chapterIndex < bookObj.chapters.length) {
+                        const chapterData = bookObj.chapters[chapterIndex];
+                        
+                        if (Array.isArray(chapterData)) {
+                            mappedVerses = chapterData.map((text: string, idx: number) => ({
+                                verse: idx + 1,
+                                text: text
+                            }));
+                        }
+                    } else {
+                        console.warn(`[Bible] Chapter ${chapter} out of range for ${bookObj.name}`);
+                    }
+                } else {
+                    console.warn(`[Bible] Book object not found or invalid structure.`);
+                }
             }
+
+        } catch (e) {
+            console.error("Critical Failure fetching Romanian Bible JSON", e);
         }
-    } catch (e) {
-        console.warn("Bolls Life API failed, attempting fallback...", e);
+    } 
+    // --- GERMAN FETCH STRATEGY ---
+    else if (language === 'German') {
+        translationId = 'LUT';
+        try {
+            const encodedBook = encodeURIComponent(bookData.names.en);
+            let url = `https://cdn.jsdelivr.net/gh/seven1m/bible@master/files/de-schlachter/${encodedBook}/${chapter}.json`;
+            let response = await fetchWithMultiProxy(url);
+            const data = await response.json();
+            if (typeof data === 'object') {
+                 Object.keys(data).forEach(key => {
+                     mappedVerses.push({ verse: parseInt(key), text: data[key] });
+                 });
+                 mappedVerses.sort((a,b) => a.verse - b.verse);
+            }
+        } catch (e) {}
+        
+        if (mappedVerses.length === 0) mappedVerses = await fetchFromBolls('LUT', bookIndex + 1, chapter);
+    } 
+    // --- ENGLISH/DEFAULT FETCH STRATEGY ---
+    else {
+        translationId = 'NIV';
+        mappedVerses = await fetchFromBolls('NIV', bookIndex + 1, chapter);
+        if (mappedVerses.length === 0) mappedVerses = await fetchFromBibleApiCom(bookData.names.en, chapter, 'web');
     }
 
-    // 3. Fallback Strategy: Bible-API.com (WEB Translation)
-    // Used if Bolls Life is down. WEB is a public domain modern English translation.
-    try {
-        const encodedBook = encodeURIComponent(bookName);
-        // Force standard request. For single chapter books, this might be fragile on bible-api.com
-        // but Bolls Life (Primary) fixes the main user issue.
-        const url = `https://bible-api.com/${encodedBook}+${chapter}?translation=web`;
-        
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Fallback API failed");
-        
-        const data = await response.json();
+    // FINAL FALLBACK: AI GENERATION
+    // Only if array is empty AND language is NOT Romanian (respecting user wish)
+    if (mappedVerses.length === 0 && language !== 'Romanian') { 
+        try {
+            mappedVerses = await getBibleChapterFromAI(bookData.names.en, chapter, translationId, language);
+        } catch (aiError) {}
+    }
+
+    if (mappedVerses.length > 0) {
+        let displayBookName = bookData.names.en;
+        if (language === 'German') displayBookName = bookData.names.de;
+        if (language === 'Romanian') displayBookName = bookData.names.ro;
+
         return {
-            reference: data.reference,
-            translation_id: 'WEB',
-            verses: data.verses.map((v: any) => ({
-                book_id: v.book_id,
-                book_name: v.book_name,
-                chapter: v.chapter,
+            reference: `${displayBookName} ${chapter}`,
+            translation_id: translationId,
+            verses: mappedVerses.map((v) => ({
+                book_id: bookData.id,
+                book_name: displayBookName,
+                chapter: chapter,
                 verse: v.verse,
-                text: v.text.trim()
+                text: v.text
             }))
         };
-    } catch (e) {
-        console.error("All Bible APIs failed:", e);
-        return null;
     }
+
+    return null;
+}
+
+// --- HELPER FETCHERS ---
+
+async function fetchFromBolls(translationId: string, bookId: number, chapter: number): Promise<any[]> {
+    try {
+        const url = `https://bolls.life/get-chapter/${translationId}/${bookId}/${chapter}/`;
+        const response = await fetchWithMultiProxy(url);
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+            return data.map((v: any) => ({
+                verse: v.verse,
+                text: v.text.replace(/<[^>]*>/g, '').replace(/^\d+\s*/, '').trim()
+            }));
+        }
+    } catch (e) { }
+    return [];
+}
+
+async function fetchFromBibleApiCom(bookName: string, chapter: number, translation: string): Promise<any[]> {
+    try {
+        const query = encodeURIComponent(`${bookName} ${chapter}`);
+        const url = `https://bible-api.com/${query}?translation=${translation}`;
+        const response = await fetchWithMultiProxy(url);
+        const data = await response.json();
+        if (data.verses && Array.isArray(data.verses)) {
+            return data.verses.map((v: any) => ({ verse: v.verse, text: v.text.trim().replace(/\n/g, ' ') }));
+        }
+    } catch (e) { }
+    return [];
 }

@@ -1,10 +1,13 @@
 
+
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Check, Feather, Calendar, Menu, Circle, CheckCircle2, Globe, Lock, Users, ChevronDown, User, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Check, Feather, Calendar, Menu, Circle, CheckCircle2, Globe, Lock, Users, ChevronDown, User, Eye, EyeOff, Languages, Loader2 } from 'lucide-react';
 import { SavedItem, PrayerVisibility, UserProfile } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { translations } from '../utils/translations';
 import { db } from '../services/db';
+import { translateContent } from '../services/geminiService';
 
 interface PrayerListProps {
     savedItems: SavedItem[];
@@ -37,15 +40,20 @@ const PrayerList: React.FC<PrayerListProps> = ({
     const [showVisibilityMenu, setShowVisibilityMenu] = useState(false);
     const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
     const [showFriendSelector, setShowFriendSelector] = useState(false);
-    const [isAnonymous, setIsAnonymous] = useState(false); // New Anonymous State
+    const [isAnonymous, setIsAnonymous] = useState(false);
     
     // Data Loading
     const [friendsList, setFriendsList] = useState<UserProfile[]>([]);
     const [communityPrayers, setCommunityPrayers] = useState<SavedItem[]>([]);
     const [loadingCommunity, setLoadingCommunity] = useState(false);
+    
+    // Translation State (Map of prayerId -> translatedText)
+    const [translationsMap, setTranslationsMap] = useState<Record<string, string>>({});
+    const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
 
     const menuRef = useRef<HTMLDivElement>(null);
     const t = translations[language]?.prayer || translations['English'].prayer;
+    const commonT = translations[language]?.common || translations['English'].common;
 
     // Filter local prayers
     const prayers = savedItems.filter(i => i.type === 'prayer');
@@ -53,7 +61,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
     const answeredPrayers = prayers.filter(p => p.metadata?.answered);
 
     useEffect(() => {
-        // Load friends for the selector
         const loadFriends = async () => {
             try {
                 const f = await db.social.getFriends();
@@ -62,7 +69,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
         };
         loadFriends();
 
-        // Close menu on click outside
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setShowVisibilityMenu(false);
@@ -72,7 +78,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Load Community Prayers when tab changes
     useEffect(() => {
         if (activeTab === 'community') {
             loadCommunityPrayers();
@@ -92,7 +97,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
         e?.preventDefault();
         if (!newPrayer.trim()) return;
 
-        // Ensure we use the latest props or fallback
         const authorName = userName || localStorage.getItem('displayName') || 'Guest';
         const authorAvatar = userAvatar || localStorage.getItem('userAvatar') || '';
 
@@ -119,7 +123,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
         setIsAnonymous(false);
         setShowVisibilityMenu(false);
         
-        // Refresh community list if posting publicly while on community tab
         if (activeTab === 'community' && visibility !== 'private') {
             setTimeout(loadCommunityPrayers, 500);
         }
@@ -132,7 +135,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
         };
         onUpdateItem(updated); 
         
-        // If on community tab, refresh list after a short delay
         if (activeTab === 'community') {
             setCommunityPrayers(prev => prev.map(p => p.id === updated.id ? updated : p));
         }
@@ -150,11 +152,9 @@ const PrayerList: React.FC<PrayerListProps> = ({
     };
 
     const handleAmen = async (prayer: SavedItem) => {
-        // Optimistic Update
         setCommunityPrayers(prev => prev.map(p => {
             if (p.id === prayer.id) {
                  const interactions = p.metadata?.interactions || { type: 'amen', count: 0, user_ids: [] };
-                 // Check if user already liked, though we don't have perfect user ID sync in map, we assume toggle
                  const currentUserIdLocal = currentUserId || "";
                  const hasAmened = interactions.user_ids.includes(currentUserIdLocal);
                  
@@ -188,6 +188,31 @@ const PrayerList: React.FC<PrayerListProps> = ({
         try {
             await db.prayers.toggleAmen(prayer.id, prayer.metadata);
         } catch (e) { console.error(e); }
+    };
+
+    const handleTranslate = async (id: string, text: string) => {
+        if (translationsMap[id]) {
+            // Toggle off
+            const newMap = { ...translationsMap };
+            delete newMap[id];
+            setTranslationsMap(newMap);
+            return;
+        }
+
+        setTranslatingIds(prev => new Set(prev).add(id));
+        try {
+            const targetLang = language || 'English';
+            const translated = await translateContent(text, targetLang);
+            setTranslationsMap(prev => ({ ...prev, [id]: translated }));
+        } catch (e) {
+            console.error("Translation failed", e);
+        } finally {
+            setTranslatingIds(prev => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+        }
     };
 
     const VisibilityIcon = ({ vis }: { vis: PrayerVisibility }) => {
@@ -224,7 +249,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
                         </div>
                     </div>
 
-                    {/* Tabs */}
                     <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
                         <button 
                             onClick={() => setActiveTab('journal')}
@@ -245,10 +269,8 @@ const PrayerList: React.FC<PrayerListProps> = ({
             <main className="flex-1 overflow-y-auto p-4 md:p-8">
                 <div className="max-w-3xl mx-auto space-y-8">
                     
-                    {/* MY JOURNAL TAB */}
                     {activeTab === 'journal' && (
                         <>
-                            {/* Input Area */}
                             <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
                                 <textarea 
                                     value={newPrayer}
@@ -259,7 +281,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                 />
                                 
                                 <div className="flex items-center justify-between">
-                                    {/* Privacy Menu */}
                                     <div className="flex gap-2">
                                         <div className="relative" ref={menuRef}>
                                             <button 
@@ -289,7 +310,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                             )}
                                         </div>
 
-                                        {/* Anonymous Toggle */}
                                         <button 
                                             onClick={() => setIsAnonymous(!isAnonymous)}
                                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${isAnonymous ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400'}`}
@@ -309,7 +329,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                     </button>
                                 </div>
 
-                                {/* Specific Friend Selector (Inline) */}
                                 {showFriendSelector && visibility === 'specific' && (
                                     <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 animate-slide-up">
                                         <div className="flex justify-between items-center mb-2">
@@ -333,7 +352,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                 )}
                             </div>
 
-                            {/* Active Prayers */}
                             <section>
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                                     <Circle size={10} className="fill-indigo-500 text-indigo-500"/> {t.active}
@@ -356,12 +374,10 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                                             <span className="text-xs text-slate-400 flex items-center gap-1">
                                                                 <Calendar size={10} /> {new Date(p.date).toLocaleDateString()}
                                                             </span>
-                                                            {/* Visibility Badge */}
                                                             <span className="text-xs text-slate-400 flex items-center gap-1 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
                                                                 <VisibilityIcon vis={p.metadata?.visibility || 'private'} />
                                                                 {VisibilityLabel({vis: p.metadata?.visibility || 'private'})}
                                                             </span>
-                                                            {/* Interactions Count (if shared) */}
                                                             {p.metadata?.visibility !== 'private' && (
                                                                 <span className="text-xs text-slate-400 flex items-center gap-1">
                                                                     <span className="text-xs">🙏</span> {p.metadata?.interactions?.count || 0}
@@ -379,7 +395,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                 )}
                             </section>
 
-                            {/* Answered Prayers */}
                             {answeredPrayers.length > 0 && (
                                 <section className="opacity-80">
                                     <h3 className="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -408,7 +423,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
                         </>
                     )}
 
-                    {/* COMMUNITY TAB */}
                     {activeTab === 'community' && (
                         <div className="space-y-4">
                              <div className="bg-indigo-600 rounded-xl p-6 text-white text-center shadow-lg mb-6">
@@ -422,16 +436,16 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                  <div className="text-center py-10 text-slate-400 italic">No shared prayers yet. Be the first to share!</div>
                              ) : (
                                  communityPrayers.map((prayer, i) => {
-                                     // Check if current user owns this prayer
                                      const isOwner = currentUserId && prayer.user_id === currentUserId;
                                      const isAnon = prayer.metadata?.is_anonymous;
                                      const isAnswered = prayer.metadata?.answered;
                                      const isAmened = prayer.metadata?.interactions?.user_ids?.includes(currentUserId || "");
+                                     const translatedText = translationsMap[prayer.id];
+                                     const isTranslating = translatingIds.has(prayer.id);
 
                                      return (
                                          <div key={prayer.id} className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
                                               <div className="flex items-center gap-3 mb-3">
-                                                  {/* Avatar: If Anonymous, show generic User icon */}
                                                   <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500 overflow-hidden">
                                                       {isAnon ? <User size={16}/> : (prayer.metadata?.author_avatar ? <img src={prayer.metadata.author_avatar} className="w-full h-full object-cover"/> : (prayer.metadata?.author_name?.charAt(0) || '?'))}
                                                   </div>
@@ -469,6 +483,13 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                               <p className={`text-slate-800 dark:text-slate-200 text-lg leading-relaxed mb-4 ${isAnswered ? 'line-through opacity-70' : ''}`}>
                                                   "{prayer.content}"
                                               </p>
+                                              
+                                              {translatedText && (
+                                                  <div className="mb-4 pt-3 border-t border-slate-100 dark:border-slate-700">
+                                                      <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">{commonT.translated}:</div>
+                                                      <p className="text-slate-600 dark:text-slate-300 text-sm italic">"{translatedText}"</p>
+                                                  </div>
+                                              )}
 
                                               <div className="flex items-center justify-between border-t border-slate-50 dark:border-slate-700 pt-3">
                                                   <button 
@@ -480,6 +501,15 @@ const PrayerList: React.FC<PrayerListProps> = ({
                                                       {prayer.metadata?.interactions?.count ? (
                                                           <span className={`px-1.5 rounded text-xs ml-1 ${isAmened ? 'bg-indigo-200 dark:bg-indigo-800' : 'bg-slate-200 dark:bg-slate-700'}`}>{prayer.metadata.interactions.count}</span>
                                                       ) : null}
+                                                  </button>
+                                                  
+                                                  <button
+                                                      onClick={() => handleTranslate(prayer.id, prayer.content)}
+                                                      disabled={isTranslating}
+                                                      className="p-2 text-slate-400 hover:text-indigo-500 transition-colors"
+                                                      title={commonT.translate}
+                                                  >
+                                                      {isTranslating ? <Loader2 size={16} className="animate-spin" /> : <Languages size={16} />}
                                                   </button>
                                               </div>
                                          </div>

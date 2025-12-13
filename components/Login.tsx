@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
-import { ArrowRight, Mail, Lock, AlertCircle, CheckCircle2, Moon, Sun, Eye, EyeOff, User, ArrowLeft } from 'lucide-react';
+import { ArrowRight, Mail, Lock, AlertCircle, CheckCircle2, Moon, Sun, Eye, EyeOff, User, Globe } from 'lucide-react';
 import ShepherdLogo from './ShepherdLogo';
 import { translations } from '../utils/translations';
 
@@ -8,9 +9,10 @@ interface LoginProps {
     isDarkMode: boolean;
     toggleDarkMode: () => void;
     language: string;
+    onSetLanguage: (lang: string) => void;
 }
 
-const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) => {
+const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onSetLanguage }) => {
   const [loading, setLoading] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   
@@ -19,6 +21,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
   const [displayName, setDisplayName] = useState(''); 
   
   const [showPassword, setShowPassword] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
   
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -29,9 +32,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
       // Check if user just arrived from a confirmation link or password recovery
       if (typeof window !== 'undefined' && window.location.hash) {
            if (window.location.hash.includes('type=recovery')) {
-               // This is handled by onAuthStateChange in App.tsx usually, 
-               // but we can show a message here if needed.
-               // For now, we let App.tsx handle the session update.
+               // This is handled by onAuthStateChange in App.tsx
            }
       }
   }, []);
@@ -49,7 +50,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
                  redirectTo: window.location.origin,
              });
              if (error) throw error;
-             setSuccessMsg("Password reset link sent to your email.");
+             setSuccessMsg(t.resetText);
         } else if (authMode === 'signup') {
             const { error, data } = await supabase.auth.signUp({
                 email,
@@ -63,7 +64,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
             });
             if (error) throw error;
             if (data.user && !data.session) {
-                setSuccessMsg(t.successCreated || "Account created! Please check your email.");
+                setSuccessMsg(t.successCreated);
             }
         } else {
             const { error } = await supabase.auth.signInWithPassword({
@@ -79,18 +80,51 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
     }
   };
 
+  const LANGUAGES = [
+      { id: 'English', label: 'English' },
+      { id: 'Romanian', label: 'Română' },
+      { id: 'German', label: 'Deutsch' }
+  ];
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 transition-colors relative overflow-hidden">
         {/* Background Effects */}
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-3xl animate-pulse"></div>
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-500/10 blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
 
-        <button 
-            onClick={toggleDarkMode}
-            className="absolute top-6 right-6 p-2 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-sm hover:shadow-md transition-all z-10"
-        >
-            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
+        {/* Top Actions */}
+        <div className="absolute top-6 right-6 flex gap-2 z-30">
+            <div className="relative">
+                <button 
+                    onClick={() => setShowLangMenu(!showLangMenu)}
+                    className="p-2 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                >
+                    <Globe size={20} />
+                    <span className="text-xs font-medium uppercase hidden md:inline">{language.substring(0, 3)}</span>
+                </button>
+                
+                {showLangMenu && (
+                    <div className="absolute top-full right-0 mt-2 w-32 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-scale-in">
+                        {LANGUAGES.map(lang => (
+                            <button
+                                key={lang.id}
+                                onClick={() => { onSetLanguage(lang.id); setShowLangMenu(false); }}
+                                className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 ${language === lang.id ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300'}`}
+                            >
+                                {lang.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <button 
+                onClick={toggleDarkMode}
+                className="p-2 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-sm hover:shadow-md transition-all"
+            >
+                {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+        </div>
 
         <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-800 relative z-20 animate-scale-in">
             <div className="p-8 text-center">
@@ -101,10 +135,10 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
                  </div>
                  
                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 font-serif-text">
-                     {authMode === 'signin' ? t.welcomeBack || 'Welcome Back' : authMode === 'signup' ? t.createAccount || 'Create Account' : 'Reset Password'}
+                     {authMode === 'signin' ? t.welcomeBack : authMode === 'signup' ? t.createAccount : 'Reset Password'}
                  </h1>
                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                     {authMode === 'signin' ? t.signInText : authMode === 'signup' ? t.signUpText : 'Enter your email to receive a reset link.'}
+                     {authMode === 'signin' ? t.signInText : authMode === 'signup' ? t.signUpText : t.resetText}
                  </p>
             </div>
 
@@ -126,7 +160,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
                 <form onSubmit={handleLogin} className="space-y-4">
                     {authMode === 'signup' && (
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Display Name</label>
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.displayName}</label>
                             <div className="relative">
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><User size={18}/></div>
                                 <input 
@@ -135,14 +169,14 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
                                     value={displayName}
                                     onChange={(e) => setDisplayName(e.target.value)}
                                     className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 dark:text-white"
-                                    placeholder="Your Name"
+                                    placeholder={t.namePlaceholder || "Your Name"}
                                 />
                             </div>
                         </div>
                     )}
 
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.emailPlaceholder || 'Email'}</label>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.emailPlaceholder}</label>
                         <div className="relative">
                             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Mail size={18}/></div>
                             <input 
@@ -151,13 +185,13 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 dark:text-white"
-                                placeholder="name@example.com"
+                                placeholder={t.emailPlaceholderExample || "name@example.com"}
                             />
                         </div>
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.passwordPlaceholder || 'Password'}</label>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.passwordPlaceholder}</label>
                         <div className="relative">
                             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Lock size={18}/></div>
                             <input 
@@ -166,7 +200,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 dark:text-white"
-                                placeholder="••••••••"
+                                placeholder={t.passwordPlaceholderExample || "••••••••"}
                                 minLength={6}
                             />
                             <button 
@@ -186,7 +220,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
                                 onClick={() => { setAuthMode('forgot'); setErrorMsg(null); setSuccessMsg(null); }} 
                                 className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
                             >
-                                Forgot password?
+                                {t.forgotPassword}
                             </button>
                         </div>
                     )}
@@ -200,7 +234,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (
                             <>
-                                <span>{authMode === 'signin' ? (t.signInBtn || 'Sign In') : authMode === 'signup' ? (t.signUpBtn || 'Sign Up') : 'Send Reset Link'}</span>
+                                <span>{authMode === 'signin' ? t.signInBtn : authMode === 'signup' ? t.signUpBtn : t.sendReset}</span>
                                 <ArrowRight size={18} />
                             </>
                         )}
@@ -210,22 +244,22 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language }) =
                 <div className="mt-6 text-center">
                     {authMode === 'signin' ? (
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                            Don't have an account?{' '}
+                            {t.noAccount}{' '}
                             <button 
                                 onClick={() => { setAuthMode('signup'); setErrorMsg(null); setSuccessMsg(null); }} 
                                 className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
                             >
-                                Sign Up
+                                {t.signUpBtn}
                             </button>
                         </p>
                     ) : (
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                            Already have an account?{' '}
+                            {t.hasAccount}{' '}
                             <button 
                                 onClick={() => { setAuthMode('signin'); setErrorMsg(null); setSuccessMsg(null); }} 
                                 className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
                             >
-                                Sign In
+                                {t.signInBtn}
                             </button>
                         </p>
                     )}

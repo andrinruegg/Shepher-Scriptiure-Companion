@@ -36,6 +36,15 @@ const BibleReader: React.FC<BibleReaderProps> = ({
   const t = translations[language]?.bible || translations['English'].bible;
   
   const selectedBook = BIBLE_BOOKS.find(b => b.id === selectedBookId) || BIBLE_BOOKS[0];
+  
+  // Get localized name for the currently selected book
+  const getLocalizedBookName = (book: typeof BIBLE_BOOKS[0]) => {
+      if (language === 'German') return book.names.de;
+      if (language === 'Romanian') return book.names.ro;
+      return book.names.en;
+  };
+
+  const displayBookName = getLocalizedBookName(selectedBook);
 
   useEffect(() => {
     // Stop any speech when changing chapters or unmounting
@@ -67,7 +76,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({
           const fullText = data.verses.map(v => `${v.verse}. ${v.text}`).join(' ');
           
           const utterance = new SpeechSynthesisUtterance(fullText);
-          utterance.lang = language === 'Romanian' ? 'ro-RO' : 'en-US';
+          utterance.lang = language === 'Romanian' ? 'ro-RO' : (language === 'German' ? 'de-DE' : 'en-US');
           utterance.rate = 0.9; // Slightly slower for bible reading
           utterance.pitch = 1.0;
           
@@ -93,7 +102,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({
   };
 
   const saveVerse = (text: string, verseNum: number) => {
-      const reference = `${selectedBook.name} ${chapter}:${verseNum}`;
+      const reference = `${displayBookName} ${chapter}:${verseNum}`;
       onSaveItem({
           id: uuidv4(),
           type: 'verse',
@@ -146,7 +155,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({
                    <Book size={20} />
                </div>
                <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-serif-text">
-                   {selectedBook.name} {chapter}
+                   {displayBookName} {chapter}
                </h1>
                
                {/* Audio Bible Button */}
@@ -169,12 +178,12 @@ const BibleReader: React.FC<BibleReaderProps> = ({
                >
                    <optgroup label={t.oldTestament}>
                        {BIBLE_BOOKS.filter(b => b.testament === 'OT').map(b => (
-                           <option key={b.id} value={b.id}>{b.name}</option>
+                           <option key={b.id} value={b.id}>{getLocalizedBookName(b)}</option>
                        ))}
                    </optgroup>
                    <optgroup label={t.newTestament}>
                        {BIBLE_BOOKS.filter(b => b.testament === 'NT').map(b => (
-                           <option key={b.id} value={b.id}>{b.name}</option>
+                           <option key={b.id} value={b.id}>{getLocalizedBookName(b)}</option>
                        ))}
                    </optgroup>
                </select>
@@ -203,7 +212,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({
                ) : data ? (
                    <div className="font-serif-text leading-loose text-lg text-slate-800 dark:text-slate-200 pb-20">
                        <h2 className="text-3xl font-bold mb-6 text-center text-slate-900 dark:text-white border-b pb-4 border-slate-100 dark:border-slate-700">
-                           {selectedBook.name} {chapter}
+                           {displayBookName} {chapter}
                        </h2>
                        
                        {data.verses.map((v) => {
@@ -265,7 +274,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({
            >
                <ChevronLeft size={18} /> {t.prev}
            </button>
-           <span className="text-sm text-slate-500 font-medium hidden md:block">{selectedBook.name} {chapter} / {selectedBook.chapters}</span>
+           <span className="text-sm text-slate-500 font-medium hidden md:block">{displayBookName} {chapter} / {selectedBook.chapters}</span>
            <button 
                 onClick={handleNext} 
                 disabled={chapter >= selectedBook.chapters}

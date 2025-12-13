@@ -2,8 +2,10 @@
 import React, { memo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Message } from '../types';
-import { User, RotateCw, Heart } from 'lucide-react';
+import { User, RotateCw, Heart, Languages } from 'lucide-react';
 import ShepherdLogo from './ShepherdLogo';
+import { translateContent } from '../services/geminiService';
+import { translations } from '../utils/translations';
 
 interface ChatMessageProps {
   message: Message;
@@ -12,21 +14,45 @@ interface ChatMessageProps {
   isRegenerating?: boolean;
   userAvatar?: string;
   onSave?: () => void;
+  language: string;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate, isRegenerating, userAvatar, onSave }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate, isRegenerating, userAvatar, onSave, language }) => {
   const isUser = message.role === 'user';
   const [isSaved, setIsSaved] = useState(false);
+  
+  // Translation State
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
 
-  // "Thinking" state check: If it's the model, text is empty/whitespace, and it's the last message
+  // "Thinking" state check
   const isThinking = !isUser && isLast && (!message.text || message.text.trim() === '') && !message.isError;
+
+  const t = translations[language]?.chat || translations['English'].chat;
 
   const handleSave = () => {
       if (onSave) {
           onSave();
           setIsSaved(true);
-          // Visual feedback reset after 2s
           setTimeout(() => setIsSaved(false), 2000);
+      }
+  };
+
+  const handleTranslate = async () => {
+      if (translatedText) {
+          setTranslatedText(null); // Toggle off
+          return;
+      }
+
+      setIsTranslating(true);
+      try {
+          const targetLang = language || 'English';
+          const result = await translateContent(message.text, targetLang);
+          setTranslatedText(result);
+      } catch (e) {
+          console.error("Translation failed", e);
+      } finally {
+          setIsTranslating(false);
       }
   };
 
@@ -34,7 +60,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
     <div className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'} animate-pop-in group`}>
       <div className={`flex gap-3 max-w-[85%] md:max-w-[75%] items-end`}>
         
-        {/* Shepherd Avatar - Only show if not user */}
         {!isUser && (
           <div className={`
             flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-sm mb-1
@@ -44,7 +69,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
           </div>
         )}
 
-        {/* Bubble */}
         <div className={`flex flex-col min-w-0 ${isUser ? 'items-end' : 'items-start'}`}>
           <div className={`
             px-4 py-3 shadow-sm text-sm md:text-base leading-relaxed break-words w-full relative
@@ -76,16 +100,22 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
                       ol: ({node, ...props}) => <ol className="list-decimal ml-4 mb-2 space-y-1" {...props} />,
                       h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-2" {...props} />,
                       h2: ({node, ...props}) => <h2 className="text-base font-bold mb-2" {...props} />,
-                      // Ensure code blocks from error messages wrap properly
                       code: ({node, ...props}) => <code className="bg-black/10 dark:bg-white/10 px-1 rounded break-all whitespace-pre-wrap" {...props} />
                    }}
                 >
                   {message.text}
                 </ReactMarkdown>
+                
+                {/* Translated Text Block */}
+                {translatedText && (
+                    <div className="mt-3 pt-3 border-t border-white/20 dark:border-white/10 text-sm italic opacity-90">
+                        <div className="text-[10px] uppercase font-bold mb-1 opacity-70">Translated:</div>
+                        {translatedText}
+                    </div>
+                )}
               </div>
             )}
             
-            {/* Timestamp */}
             {!isThinking && (
               <div className={`text-[10px] mt-1 opacity-70 w-full text-right ${isUser ? 'text-indigo-100' : 'text-slate-400 dark:text-slate-500'}`}>
                 {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -95,7 +125,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
           
           {/* Action Row */}
           <div className="flex items-center gap-2 mt-1 mr-1 self-end">
-              {/* Save Button (Hover only) */}
+              {/* Translate Button */}
+              {!isThinking && message.text && (
+                  <button
+                      onClick={handleTranslate}
+                      disabled={isTranslating}
+                      className={`text-xs flex items-center gap-1 transition-all ${isTranslating ? 'text-indigo-400 animate-pulse' : 'text-slate-300 dark:text-slate-600 hover:text-indigo-500 opacity-0 group-hover:opacity-100'}`}
+                      title="Translate"
+                  >
+                      <Languages size={12} />
+                      {isTranslating && "..."}
+                  </button>
+              )}
+
+              {/* Save Button */}
               {!isThinking && onSave && (
                   <button
                       onClick={handleSave}
@@ -114,13 +157,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
                      className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 transition-opacity animate-fade-in"
                   >
                      <RotateCw size={12} className={isRegenerating ? 'animate-spin' : ''} />
-                     <span>{message.isError ? 'Retry' : 'Regenerate'}</span>
+                     <span>{message.isError ? t.retry : t.regenerate}</span>
                   </button>
               )}
           </div>
         </div>
 
-        {/* User Avatar - Only show if user */}
         {isUser && (
            <>
               {userAvatar ? (

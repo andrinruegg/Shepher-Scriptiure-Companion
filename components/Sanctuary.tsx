@@ -114,7 +114,7 @@ const Sanctuary: React.FC<SanctuaryProps> = ({ isOpen, onClose, language }) => {
                     })()}
                  </div>
                  <button onClick={() => onClose()} className="hover:text-indigo-300 font-medium text-xs pr-2">
-                     Sanctuary Active
+                     {t.title} Active
                  </button>
                  <button onClick={() => setActiveSoundId(null)} className="bg-slate-700 p-1.5 rounded-full hover:bg-slate-600">
                      <X size={14} />
@@ -165,7 +165,7 @@ const Sanctuary: React.FC<SanctuaryProps> = ({ isOpen, onClose, language }) => {
                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
                      <div className="flex items-center gap-3 text-slate-400 mb-2">
                          {volume === 0 ? <VolumeX size={16}/> : <Volume2 size={16}/>}
-                         <span className="text-xs uppercase tracking-wider font-bold">Volume</span>
+                         <span className="text-xs uppercase tracking-wider font-bold">{t.volume}</span>
                      </div>
                      <input 
                         type="range" 

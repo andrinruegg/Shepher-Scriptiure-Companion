@@ -41,6 +41,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   
   // Translations
   const t = translations[language]?.chat || translations['English'].chat;
+  const commonT = translations[language]?.common || translations['English'].common;
 
   useEffect(() => {
     const handleResize = () => {
@@ -94,7 +95,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const isInitialState = safeMessages.length === 1 && safeMessages[0].role === 'model';
 
   // Shorten placeholder on mobile
-  const placeholderText = isMobile ? "Ask Shepherd..." : t.placeholder;
+  const placeholderText = isMobile ? (t.placeholderShort || "Ask Shepherd...") : t.placeholder;
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 relative overflow-hidden transition-colors duration-300">
@@ -126,10 +127,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <button 
                 onClick={onNewChat}
                 className="p-2 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg transition-colors flex items-center gap-2"
-                title="New Chat"
+                title={commonT.newChat}
             >
                 <Plus size={20} />
-                <span className="text-sm font-medium hidden md:inline">New Chat</span>
+                <span className="text-sm font-medium hidden md:inline">{commonT.newChat}</span>
             </button>
             
             {onDeleteCurrentChat && (
@@ -162,6 +163,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 isRegenerating={isLoading}
                 userAvatar={userAvatar}
                 onSave={() => onSaveMessage(msg)}
+                language={language}
             />
           ))}
           

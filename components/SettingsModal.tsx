@@ -1,7 +1,6 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp, Snowflake, Camera, Trash2, AlignLeft, CloudSnow, Sparkles, Droplets, Crown, Heart, Flower } from 'lucide-react';
+import { X, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp, Snowflake, Camera, Trash2, AlignLeft, CloudSnow, Sparkles, Droplets, Crown, Heart } from 'lucide-react';
 import { UserPreferences } from '../types';
 import { translations } from '../utils/translations';
 
@@ -17,13 +16,8 @@ interface SettingsModalProps {
 
 const LANGUAGES = [
   { id: 'English', name: 'English' },
-  // Temporarily hidden as requested
-  // { id: 'Spanish', name: 'Español' },
-  // { id: 'French', name: 'Français' },
-  // { id: 'German', name: 'Deutsch' },
-  // { id: 'Italian', name: 'Italiano' },
-  // { id: 'Dutch', name: 'Nederlands' },
-  // { id: 'Romanian', name: 'Română' },
+  { id: 'Romanian', name: 'Română' },
+  { id: 'German', name: 'Deutsch' },
 ];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -58,8 +52,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   const t = translations[preferences.language]?.settings || translations['English'].settings;
-  // Fallback for winterMode text if translation missing
-  const winterText = translations[preferences.language]?.settings?.winterMode || "Winter Mode";
 
   const handleSaveName = () => {
     onUpdatePreference('displayName', tempName);
@@ -217,10 +209,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                         <div>
                             <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                                {winterText}
+                                {t.winter.title}
                             </span>
                             <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                                Festive animations
+                                {t.winter.desc}
                             </span>
                         </div>
                     </div>
@@ -238,7 +230,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="pl-14 space-y-2 animate-slide-up">
                         <div className="flex items-center justify-between">
                             <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                                <CloudSnow size={12} className="text-slate-400"/> Falling Snow
+                                <CloudSnow size={12} className="text-slate-400"/> {t.winter.snow}
                             </label>
                             <input 
                                 type="checkbox" 
@@ -249,7 +241,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                         <div className="flex items-center justify-between">
                             <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                                <Sparkles size={12} className="text-amber-400"/> Christmas Lights
+                                <Sparkles size={12} className="text-amber-400"/> {t.winter.lights}
                             </label>
                             <input 
                                 type="checkbox" 
@@ -260,7 +252,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                         <div className="flex items-center justify-between">
                             <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                                <Droplets size={12} className="text-blue-400"/> Icicles
+                                <Droplets size={12} className="text-blue-400"/> {t.winter.icicles}
                             </label>
                             <input 
                                 type="checkbox" 
@@ -282,10 +274,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                         <div>
                             <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                                Princess Mode
+                                {t.princess.title}
                             </span>
                             <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                                Hearts, pink themes & magic
+                                {t.princess.desc}
                             </span>
                         </div>
                     </div>
@@ -303,7 +295,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="pl-14 space-y-2 animate-slide-up">
                         <div className="flex items-center justify-between">
                             <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                                <Heart size={12} className="text-pink-400 fill-pink-400"/> Floating Hearts
+                                <Heart size={12} className="text-pink-400 fill-pink-400"/> {t.princess.hearts}
                             </label>
                             <input 
                                 type="checkbox" 
@@ -314,7 +306,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                         <div className="flex items-center justify-between">
                             <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                                <Sparkles size={12} className="text-yellow-400"/> Magic Aurora
+                                <Sparkles size={12} className="text-yellow-400"/> {t.princess.aurora}
                             </label>
                             <input 
                                 type="checkbox" 
@@ -335,12 +327,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           <section>
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
                  <Key size={12} />
-                 Unlimited Access
+                 {t.apiKey.title}
               </h3>
               
               <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-100 dark:border-slate-800">
                   <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 leading-relaxed">
-                      For unlimited high-speed messaging, you can provide your own <strong>free</strong> Google Gemini API Key.
+                      {t.apiKey.desc}
                   </p>
 
                   {isEditingKey ? (
@@ -364,7 +356,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                           <div className="flex items-center gap-2">
                              <div className={`w-2 h-2 rounded-full ${customKey ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
                              <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                 {customKey ? 'Custom Key Active' : 'Using Shared Key'}
+                                 {customKey ? t.apiKey.custom : t.apiKey.shared}
                              </span>
                           </div>
                           <div className="flex gap-2">
@@ -372,7 +364,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                   <button onClick={handleClearKey} className="text-xs text-red-500 hover:text-red-600 underline">Remove</button>
                               )}
                               <button onClick={() => setIsEditingKey(true)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
-                                  {customKey ? 'Change Key' : 'Add Key'}
+                                  {customKey ? t.apiKey.change : t.apiKey.add}
                               </button>
                           </div>
                       </div>
@@ -385,17 +377,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-indigo-500 font-medium transition-colors"
                       >
                          {showKeyTutorial ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
-                         How to get a free API Key
+                         {t.apiKey.howTo}
                       </button>
                       
                       {showKeyTutorial && (
                           <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-950 p-3 rounded border border-slate-100 dark:border-slate-800 animate-fade-in">
                               <ol className="list-decimal ml-4 space-y-2">
-                                  <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline inline-flex items-center gap-0.5">Google AI Studio <ExternalLink size={10}/></a>.</li>
-                                  <li>Click the blue <strong>"Create API Key"</strong> button.</li>
-                                  <li><strong>Important:</strong> Select <strong>"Create API key in new project"</strong>.</li>
-                                  <li className="text-slate-400 italic">Note: Do not re-use the same project, or the limits will be shared!</li>
-                                  <li>Copy the key (starts with AIza...) and paste it above.</li>
+                                  <li>{t.apiKey.step1} <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline inline-flex items-center gap-0.5"><ExternalLink size={10}/></a></li>
+                                  <li>{t.apiKey.step2}</li>
+                                  <li><strong>{t.apiKey.step3}</strong></li>
+                                  <li className="text-slate-400 italic">{t.apiKey.step4}</li>
+                                  <li>{t.apiKey.step5}</li>
                               </ol>
                           </div>
                       )}
@@ -436,7 +428,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                  <div className="flex-1 space-y-3">
                      {/* Name */}
                      <div>
-                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Display Name</label>
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t.displayName}</label>
                         <div className="flex gap-2">
                             {isEditingName ? (
                                 <>
@@ -467,7 +459,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                      {/* BIO SECTION */}
                      <div>
                         <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
-                            <AlignLeft size={10} /> Bio / Description
+                            <AlignLeft size={10} /> {t.bio}
                         </label>
                         {isEditingBio ? (
                             <div className="flex flex-col gap-2">
@@ -486,7 +478,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         ) : (
                             <div className="group relative">
                                 <p className="text-sm text-slate-700 dark:text-slate-300 italic min-h-[1.5rem] p-2 bg-slate-50 dark:bg-slate-800/50 rounded border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
-                                    {preferences.bio || "No description yet."}
+                                    {preferences.bio || t.noBio}
                                 </p>
                                 <button 
                                     onClick={() => { setTempBio(preferences.bio || ''); setIsEditingBio(true); }}
@@ -529,11 +521,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                {t.about}
              </h3>
              <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-lg p-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300 italic">
-                <p>
-                  "Shepherd Scripture Companion was developed by <strong className="text-emerald-700 dark:text-emerald-400 not-italic">Andrin Rüegg</strong>, an 18-year-old developer from Switzerland."
-                </p>
-                <p className="mt-2">
-                  "As a Christian, he built this tool to help himself and his girlfriend, <strong className="text-emerald-700 dark:text-emerald-400 not-italic">Alexia</strong>, grow closer to God through Scripture. It stands as a testament to his love for her and the eternal truth that Jesus loves her."
+                <p className="whitespace-pre-wrap">
+                  {t.aboutText}
                 </p>
              </div>
           </section>

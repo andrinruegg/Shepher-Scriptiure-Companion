@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Plus, MessageSquare, Trash2, X, Edit2, Check, Settings, Calendar, Flame, Book, Heart, MessageCircle, Bell, Headphones, Feather, Brain } from 'lucide-react';
 import { ChatSession, AppView } from '../types';
@@ -52,6 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const t = translations[language]?.sidebar || translations['English'].sidebar;
+  const commonT = translations[language]?.common || translations['English'].common;
 
   const startEditing = (chat: ChatSession, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -125,14 +125,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <button 
                     onClick={() => { onOpenSanctuary(); }} 
                     className="relative p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-indigo-400 transition-colors hover:scale-110 active:scale-95"
-                    title={t.sanctuary}
+                    title={t.tooltips.sanctuary}
                 >
                     <Headphones size={20} />
                 </button>
                 <button 
                     onClick={() => { onOpenSocial(); if(window.innerWidth < 768) onClose(); }} 
                     className="relative p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors hover:scale-110 active:scale-95"
-                    title="Inbox & Friends"
+                    title={t.tooltips.inbox}
                 >
                     <Bell size={20} className={pendingRequestsCount > 0 ? "animate-swing" : ""} />
                     {pendingRequestsCount > 0 && (
@@ -196,7 +196,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 className="w-full flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-lg transition-all font-medium shadow-md hover:translate-x-1"
             >
                 <Plus size={20} />
-                <span>{t.newChat}</span>
+                <span>{commonT.newChat}</span>
             </button>
             
             <button
@@ -208,7 +208,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
                 <div className="flex items-center gap-2">
                    <Calendar size={18} />
-                   <span>Daily Verse</span>
+                   <span>{t.dailyVerse}</span>
                 </div>
                 {dailyStreak > 0 && (
                   <div className="flex items-center gap-1 bg-black/20 px-2 py-0.5 rounded-full text-xs">

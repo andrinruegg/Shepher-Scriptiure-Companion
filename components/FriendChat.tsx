@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { ArrowLeft, Send, Image as ImageIcon, Mic, Loader2, Trash2, Check, CheckCheck, Palette, X, AlertCircle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, Mic, Loader2, Trash2, Check, CheckCheck, Palette, X, AlertCircle, ExternalLink, Languages } from 'lucide-react';
 import { UserProfile, DirectMessage } from '../types';
 import { db } from '../services/db';
 import DrawingCanvas from './DrawingCanvas';
+import { translateContent } from '../services/geminiService';
+import { translations } from '../utils/translations';
 
 interface FriendChatProps {
   friend: UserProfile;
@@ -20,6 +22,10 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
   const [requestingMic, setRequestingMic] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
+  // Translation State
+  const [translationsMap, setTranslationsMap] = useState<Record<string, string>>({});
+  const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
+  
   // Graffiti State
   const [showGraffitiCanvas, setShowGraffitiCanvas] = useState(false);
   const [graffitiUrl, setGraffitiUrl] = useState<string | null>(null);
@@ -27,7 +33,7 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
   
   // Refs for logic
   const isDrawingRef = useRef(false);
-  const lastUploadTimeRef = useRef(0); // Prevents stale reads after upload
+  const lastUploadTimeRef = useRef(0);
 
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const hasScrolledRef = useRef(false);
@@ -43,8 +49,11 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
   const [recordingTime, setRecordingTime] = useState(0);
   const timerRef = useRef<any>(null);
 
-  // Safe fallback for ID to prevent upload errors if profile hasn't loaded
   const safeShareId = currentUserShareId || 'unknown';
+
+  // Get current language from local storage to select translations
+  const currentLang = localStorage.getItem('language') || 'English';
+  const t = translations[currentLang]?.social || translations['English'].social;
 
   const markAsRead = async () => {
       try {
@@ -72,12 +81,9 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
     const interval = setInterval(() => {
         fetchMessages(false);
         fetchFriendStatus();
-        
-        // Only load graffiti if not drawing AND we haven't just uploaded (grace period)
         if (!isDrawingRef.current && (Date.now() - lastUploadTimeRef.current > 10000)) {
             loadGraffiti(); 
         }
-        
         markAsRead();
         db.social.heartbeat();
     }, 3000);
@@ -174,6 +180,31 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
       try { await db.social.deleteDirectMessage(id); } catch (error: any) { console.error("[UI] Background delete failed:", error); }
   }
 
+  const handleTranslate = async (id: string, text: string) => {
+    if (translationsMap[id]) {
+        // Toggle off
+        const newMap = { ...translationsMap };
+        delete newMap[id];
+        setTranslationsMap(newMap);
+        return;
+    }
+
+    setTranslatingIds(prev => new Set(prev).add(id));
+    try {
+        const targetLang = localStorage.getItem('language') || 'English';
+        const translated = await translateContent(text, targetLang);
+        setTranslationsMap(prev => ({ ...prev, [id]: translated }));
+    } catch (e) {
+        console.error("Translation failed", e);
+    } finally {
+        setTranslatingIds(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+        });
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -189,7 +220,6 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
       } finally { setUploading(false); }
   };
 
-  // --- GRAFFITI HANDLERS ---
   const startGraffiti = () => {
       if (messagesContainerRef.current) {
           const w = messagesContainerRef.current.scrollWidth || window.innerWidth;
@@ -228,14 +258,10 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
           setUploading(false);
       }
   };
-
-  // --- AUDIO HANDLERS ---
   
   const startRecording = async () => {
       setErrorMessage(null);
       setRequestingMic(true);
-      
-      // 1. Check Browser Support
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           setRequestingMic(false);
           setErrorMessage("Microphone API not supported on this browser.");
@@ -243,13 +269,8 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
       }
 
       try {
-          // 2. Request Mic with standard constraints
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          
-          // 3. Initialize Recorder (Let browser pick defaults!)
-          // Do NOT force mimeTypes here, it causes issues on Safari/iOS
           const recorder = new MediaRecorder(stream);
-          
           const chunks: BlobPart[] = [];
           
           recorder.ondataavailable = (e) => {
@@ -257,13 +278,8 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
           };
           
           recorder.onstop = async () => {
-              // 4. Determine Type from Recorder
-              // If recorder.mimeType is empty (Safari bug), fallback to audio/mp4 for iOS or webm for others
               const detectedType = recorder.mimeType || (typeof window !== 'undefined' && (window as any).webkitAudioContext ? 'audio/mp4' : 'audio/webm');
-              
               const blob = new Blob(chunks, { type: detectedType });
-              
-              // Stop tracks
               stream.getTracks().forEach(track => track.stop());
 
               if (blob.size < 500) { 
@@ -273,7 +289,6 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
 
               setUploading(true);
               try {
-                  // Determine extension based on actual mime type
                   let ext = 'webm';
                   if (detectedType.includes('mp4')) ext = 'mp4';
                   if (detectedType.includes('aac')) ext = 'm4a';
@@ -295,17 +310,14 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
           recorder.start();
           setMediaRecorder(recorder);
           setIsRecording(true);
-          setRequestingMic(false); // Success
+          setRequestingMic(false);
           
-          // Timer
           setRecordingTime(0);
           timerRef.current = setInterval(() => setRecordingTime(p => p + 1), 1000);
 
       } catch (e: any) { 
           setRequestingMic(false);
           console.error("Mic Access Error:", e);
-          
-          // 5. Detailed Error Messages
           if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
               setErrorMessage("Mic Blocked: Click the Lock icon 🔒 in your address bar.");
           } else if (e.name === 'NotFoundError') {
@@ -330,7 +342,6 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
 
   const handleUploadError = (e: any, context: string) => {
       const msg = e.message || "Unknown error";
-      // Mask "Failed to fetch" with a friendly message
       if (msg.includes('Failed to fetch') || msg.includes('token <') || msg.includes('html')) {
           setErrorMessage(`${context}: Server Connection Failed. Please try again later or Run SQL Fix.`);
       } else if (msg.includes('row-level security') || msg.includes('new row violates')) {
@@ -344,19 +355,17 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
   const handleBack = async () => { await markAsRead(); onBack(); };
 
   const getStatusText = () => {
-      if (!friendStatus || !friendStatus.last_seen) return 'Offline';
+      if (!friendStatus || !friendStatus.last_seen) return t.status.offline;
       const last = new Date(friendStatus.last_seen).getTime();
       const diff = Date.now() - last;
-      if (diff < 5 * 60 * 1000) return 'Online';
-      if (diff < 60 * 60 * 1000) return `Last seen ${Math.floor(diff / 60000)}m ago`;
-      return 'Offline';
+      if (diff < 5 * 60 * 1000) return t.status.online;
+      if (diff < 60 * 60 * 1000) return `${t.status.lastSeen} ${Math.floor(diff / 60000)}m ${t.status.ago}`;
+      return t.status.offline;
   };
-  const isOnline = getStatusText() === 'Online';
+  const isOnline = getStatusText() === t.status.online;
 
-  // --- RENDER ---
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 overflow-hidden relative">
-      {/* Error Toast */}
       {errorMessage && (
           <div className="absolute top-16 left-4 right-4 z-50 bg-red-100 dark:bg-red-900/90 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-100 p-4 rounded-xl shadow-xl flex flex-col items-start gap-2 animate-slide-up backdrop-blur-md">
               <div className="flex items-center gap-3 w-full">
@@ -364,17 +373,9 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
                   <div className="flex-1 text-sm font-medium">{errorMessage}</div>
                   <button onClick={() => setErrorMessage(null)} className="p-1 hover:bg-red-200/50 rounded-full"><X size={18}/></button>
               </div>
-              {/* Special message for Preview environment */}
-              <div className="text-xs bg-white/50 dark:bg-black/20 p-2 rounded w-full">
-                  <strong>Testing?</strong> If you are in the AI Studio preview window, Microphones are often blocked. 
-                  <a href={window.location.href} target="_blank" rel="noopener noreferrer" className="ml-1 underline text-indigo-600 dark:text-indigo-300 font-bold inline-flex items-center gap-1">
-                      Open App in New Tab <ExternalLink size={10} />
-                  </a>
-              </div>
           </div>
       )}
 
-      {/* Header */}
       <div className="flex items-center gap-3 p-4 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shadow-sm z-30 relative shrink-0">
          <button onClick={handleBack} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
              <ArrowLeft size={20} />
@@ -387,18 +388,16 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
              <h3 className="font-bold text-slate-800 dark:text-white leading-tight">{friend.display_name}</h3>
              <div className="flex items-center gap-1.5">
                 <p className={`text-xs ${isOnline ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
-                    {isOnline ? 'Active now' : getStatusText()}
+                    {isOnline ? t.status.activeNow : getStatusText()}
                 </p>
              </div>
          </div>
       </div>
 
-      {/* Messages Container */}
       <div 
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900 relative p-4 space-y-4 pb-20 scroll-smooth"
       >
-        {/* SHARED GRAFFITI LAYER - Visible when NOT drawing. Z-Index 20 places it ON TOP of messages (z-10) */}
         {graffitiUrl && !showGraffitiCanvas && (
             <img 
                 src={graffitiUrl} 
@@ -411,6 +410,9 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
 
         {messages.map(msg => {
             const isMe = msg.sender_id !== friend.id;
+            const translatedText = translationsMap[msg.id];
+            const isTranslating = translatingIds.has(msg.id);
+
             return (
                 <div 
                     key={msg.id} 
@@ -422,7 +424,16 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
                         ? 'bg-indigo-600 text-white rounded-tr-none' 
                         : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-tl-none'
                     }`}>
-                        {msg.message_type === 'text' && <p>{msg.content}</p>}
+                        {msg.message_type === 'text' && (
+                            <>
+                                <p>{msg.content}</p>
+                                {translatedText && (
+                                    <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                        <p className="text-xs italic opacity-80">{translatedText}</p>
+                                    </div>
+                                )}
+                            </>
+                        )}
                         
                         {msg.message_type === 'image' && (
                             <img 
@@ -440,6 +451,19 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
                         
                         <div className={`text-[10px] mt-1 flex items-center gap-2 ${isMe ? 'justify-end text-indigo-200' : 'justify-start text-slate-400'}`}>
                             <span>{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            
+                            {/* Translate Button for Text Messages */}
+                            {!isMe && msg.message_type === 'text' && (
+                                <button
+                                    onClick={() => handleTranslate(msg.id, msg.content)}
+                                    disabled={isTranslating}
+                                    className="p-1 hover:text-indigo-500 transition-colors"
+                                    title="Translate"
+                                >
+                                    {isTranslating ? <Loader2 size={10} className="animate-spin" /> : <Languages size={10} />}
+                                </button>
+                            )}
+
                             {isMe && (
                                 <div className="flex items-center gap-1">
                                     {msg.read_at ? (
@@ -464,7 +488,6 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
         })}
         <div ref={messagesEndRef} />
 
-        {/* GRAFFITI EDITING MODE (Overlay) */}
         {showGraffitiCanvas && (
             <DrawingCanvas 
                initialImage={graffitiUrl}
@@ -477,7 +500,6 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
         )}
       </div>
 
-      {/* Input Area */}
       <div className="p-3 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 z-30 relative shrink-0">
          {isRecording ? (
              <div className="flex-1 flex items-center justify-between bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-full border border-red-200 dark:border-red-900 transition-all animate-pulse">
@@ -494,7 +516,7 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
                  <button 
                     onClick={startGraffiti}
                     className="p-2.5 bg-pink-100 dark:bg-pink-900/30 text-pink-500 hover:bg-pink-200 dark:hover:bg-pink-900/50 rounded-full transition-colors"
-                    title="Paint Mode"
+                    title={t.chat.paintMode}
                  >
                      <Palette size={20} />
                  </button>
@@ -509,7 +531,7 @@ const FriendChat: React.FC<FriendChatProps> = ({ friend, onBack, currentUserShar
                         type="text" 
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
-                        placeholder="Message..."
+                        placeholder={t.chat.placeholder}
                         className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-full px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white"
                         onKeyDown={(e) => e.key === 'Enter' && handleSendText()}
                     />

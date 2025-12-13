@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import Sidebar from './components/Sidebar';
@@ -549,7 +548,7 @@ const App: React.FC = () => {
             try {
                 if (currentChat.isTemp) {
                     await db.createChat(currentChat.title, currentChat.messages[0], currentChatId);
-                    generateChatTitle(text).then(smartTitle => { handleRenameChat(currentChatId, smartTitle); });
+                    generateChatTitle(text, language).then(smartTitle => { handleRenameChat(currentChatId, smartTitle); });
                 }
                 await db.addMessage(currentChatId, userMessage);
             } catch (dbError) {
@@ -721,7 +720,12 @@ const App: React.FC = () => {
                </div>
           </div>
       ) : !session ? ( 
-          <Login isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} language={language} /> 
+          <Login 
+            isDarkMode={isDarkMode} 
+            toggleDarkMode={toggleDarkMode} 
+            language={language} 
+            onSetLanguage={(lang) => handleUpdatePreference('language', lang)} 
+          /> 
       ) : (
         <div className="flex h-screen bg-slate-200 dark:bg-slate-900 overflow-hidden relative z-0 transition-colors duration-500">
           <Sidebar 
@@ -814,6 +818,7 @@ const App: React.FC = () => {
             currentUserShareId={shareId} 
             isDarkMode={isDarkMode} 
             onUpdateNotifications={loadSocialNotifications}
+            language={language}
           />
           
           {/* PASSWORD RESET MODAL */}
