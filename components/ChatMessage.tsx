@@ -2,7 +2,7 @@
 import React, { memo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Message } from '../types';
-import { User, RotateCw, Heart, Languages } from 'lucide-react';
+import { User, RotateCw, Heart, Languages, Image, Key } from 'lucide-react';
 import ShepherdLogo from './ShepherdLogo';
 import { translateContent } from '../services/geminiService';
 import { translations } from '../utils/translations';
@@ -15,20 +15,29 @@ interface ChatMessageProps {
   userAvatar?: string;
   onSave?: () => void;
   language: string;
+  onOpenComposer: (text: string) => void;
+  onOpenSettings?: () => void; 
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate, isRegenerating, userAvatar, onSave, language }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ 
+    message, 
+    isLast, 
+    onRegenerate, 
+    isRegenerating, 
+    userAvatar, 
+    onSave, 
+    language, 
+    onOpenComposer,
+    onOpenSettings 
+}) => {
   const isUser = message.role === 'user';
   const [isSaved, setIsSaved] = useState(false);
-  
-  // Translation State
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
 
-  // "Thinking" state check
   const isThinking = !isUser && isLast && (!message.text || message.text.trim() === '') && !message.isError;
-
   const t = translations[language]?.chat || translations['English'].chat;
+  const isMissingKeyError = message.isError && message.text === "MISSING_API_KEY_TEMPLATE";
 
   const handleSave = () => {
       if (onSave) {
@@ -40,10 +49,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
 
   const handleTranslate = async () => {
       if (translatedText) {
-          setTranslatedText(null); // Toggle off
+          setTranslatedText(null); 
           return;
       }
-
       setIsTranslating(true);
       try {
           const targetLang = language || 'English';
@@ -58,12 +66,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
 
   return (
     <div className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'} animate-pop-in group`}>
-      <div className={`flex gap-3 max-w-[85%] md:max-w-[75%] items-end`}>
+      <div className={`flex gap-4 max-w-[85%] md:max-w-[80%] items-end`}>
         
         {!isUser && (
           <div className={`
-            flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-sm mb-1
-            bg-emerald-600 text-white transform transition-transform hover:scale-110
+            flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg mb-2
+            bg-gradient-to-br from-emerald-500 to-teal-600 text-white transform transition-transform hover:scale-110
           `}>
             <ShepherdLogo size={16} className="text-white" />
           </div>
@@ -71,10 +79,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
 
         <div className={`flex flex-col min-w-0 ${isUser ? 'items-end' : 'items-start'}`}>
           <div className={`
-            px-4 py-3 shadow-sm text-sm md:text-base leading-relaxed break-words w-full relative
+            px-5 py-4 shadow-sm text-sm md:text-base leading-relaxed break-words w-full relative
             ${isUser 
-              ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none origin-bottom-right' 
-              : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-2xl rounded-tl-none font-serif-text origin-bottom-left'}
+              ? 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-[20px] rounded-tr-none shadow-indigo-500/30' 
+              : 'glass-panel text-slate-800 dark:text-slate-100 rounded-[20px] rounded-tl-none font-serif-text border-white/60 dark:border-white/10'}
             ${message.isError ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 border-red-200 dark:border-red-800' : ''}
             transition-all duration-300 hover:shadow-md
           `}>
@@ -84,29 +92,44 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
                  <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                  <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce"></div>
               </div>
+            ) : isMissingKeyError ? (
+                // Special UI for Missing API Key
+                <div className="flex flex-col items-start gap-3 p-1">
+                    <div className="flex items-center gap-2 font-bold text-red-600 dark:text-red-400">
+                        <Key size={18} />
+                        <span>{t.missingKeyTitle || "API Key Required"}</span>
+                    </div>
+                    <p className="text-sm font-sans opacity-90">{t.missingKeyDesc || "To chat with Shepherd, you need to provide a free Google Gemini API Key."}</p>
+                    <button 
+                        onClick={onOpenSettings}
+                        className="mt-2 px-5 py-2.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/40 dark:hover:bg-red-900/60 text-red-700 dark:text-red-200 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-sm hover:shadow hover:-translate-y-0.5"
+                    >
+                        <Key size={14} />
+                        {t.setupKey || "Setup API Key"}
+                    </button>
+                </div>
             ) : (
               <div className={`markdown-content ${isUser ? 'text-white' : 'text-slate-800 dark:text-slate-100'} ${message.isError ? 'font-sans text-xs' : ''}`}>
                 <ReactMarkdown
                    components={{
                       blockquote: ({node, ...props}) => (
                         <blockquote 
-                           className="border-l-4 border-indigo-300 dark:border-indigo-500 pl-3 py-1 my-3 bg-indigo-50/10 dark:bg-slate-900/50 italic rounded-r"
+                           className="border-l-4 border-indigo-300 dark:border-indigo-500 pl-4 py-1 my-3 bg-indigo-50/50 dark:bg-indigo-900/20 italic rounded-r-lg"
                            {...props} 
                         />
                       ),
-                      p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
-                      strong: ({node, ...props}) => <strong className="font-bold opacity-90" {...props} />,
-                      ul: ({node, ...props}) => <ul className="list-disc ml-4 mb-2 space-y-1" {...props} />,
-                      ol: ({node, ...props}) => <ol className="list-decimal ml-4 mb-2 space-y-1" {...props} />,
-                      h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-2" {...props} />,
-                      h2: ({node, ...props}) => <h2 className="text-base font-bold mb-2" {...props} />,
-                      code: ({node, ...props}) => <code className="bg-black/10 dark:bg-white/10 px-1 rounded break-all whitespace-pre-wrap" {...props} />
+                      p: ({node, ...props}) => <p className="mb-3 last:mb-0" {...props} />,
+                      strong: ({node, ...props}) => <strong className="font-bold opacity-100" {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc ml-4 mb-3 space-y-1" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal ml-4 mb-3 space-y-1" {...props} />,
+                      h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-2 mt-4" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="text-base font-bold mb-2 mt-3" {...props} />,
+                      code: ({node, ...props}) => <code className="bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono break-all whitespace-pre-wrap" {...props} />
                    }}
                 >
                   {message.text}
                 </ReactMarkdown>
                 
-                {/* Translated Text Block */}
                 {translatedText && (
                     <div className="mt-3 pt-3 border-t border-white/20 dark:border-white/10 text-sm italic opacity-90">
                         <div className="text-[10px] uppercase font-bold mb-1 opacity-70">Translated:</div>
@@ -116,70 +139,68 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, onRegenerate
               </div>
             )}
             
-            {!isThinking && (
-              <div className={`text-[10px] mt-1 opacity-70 w-full text-right ${isUser ? 'text-indigo-100' : 'text-slate-400 dark:text-slate-500'}`}>
+            {!isThinking && !isMissingKeyError && (
+              <div className={`text-[10px] mt-2 opacity-70 w-full text-right ${isUser ? 'text-indigo-100' : 'text-slate-400 dark:text-slate-500'}`}>
                 {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
           </div>
           
           {/* Action Row */}
-          <div className="flex items-center gap-2 mt-1 mr-1 self-end">
-              {/* Translate Button */}
-              {!isThinking && message.text && (
+          <div className="flex items-center gap-3 mt-1 mr-1 self-end opacity-0 group-hover:opacity-100 transition-opacity">
+              {!isThinking && !isMissingKeyError && message.text && (
                   <button
                       onClick={handleTranslate}
                       disabled={isTranslating}
-                      className={`text-xs flex items-center gap-1 transition-all ${isTranslating ? 'text-indigo-400 animate-pulse' : 'text-slate-300 dark:text-slate-600 hover:text-indigo-500 opacity-0 group-hover:opacity-100'}`}
+                      className={`text-xs flex items-center gap-1 transition-all ${isTranslating ? 'text-indigo-400 animate-pulse' : 'text-slate-400 dark:text-slate-500 hover:text-indigo-500'}`}
                       title="Translate"
                   >
-                      <Languages size={12} />
-                      {isTranslating && "..."}
+                      <Languages size={14} />
                   </button>
               )}
 
-              {/* Save Button */}
-              {!isThinking && onSave && (
+              {!isThinking && !isMissingKeyError && !isUser && message.text && (
+                  <button
+                      onClick={() => onOpenComposer(message.text)}
+                      className="text-xs flex items-center gap-1 transition-all text-slate-400 dark:text-slate-500 hover:text-purple-500"
+                      title="Create Image"
+                  >
+                      <Image size={14} />
+                  </button>
+              )}
+
+              {!isThinking && !isMissingKeyError && onSave && (
                   <button
                       onClick={handleSave}
-                      className={`text-xs flex items-center gap-1 transition-all ${isSaved ? 'text-rose-500 scale-110' : 'text-slate-300 dark:text-slate-600 hover:text-rose-400 opacity-0 group-hover:opacity-100'}`}
+                      className={`text-xs flex items-center gap-1 transition-all ${isSaved ? 'text-rose-500 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-rose-400'}`}
                       title="Save to Collection"
                   >
-                      <Heart size={12} className={isSaved ? 'fill-rose-500' : ''} />
+                      <Heart size={14} className={isSaved ? 'fill-rose-500' : ''} />
                   </button>
               )}
 
-              {/* Regenerate Button */}
               {!isUser && isLast && !isThinking && onRegenerate && (
                   <button 
                      onClick={onRegenerate}
                      disabled={isRegenerating}
-                     className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 transition-opacity animate-fade-in"
+                     className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-500 flex items-center gap-1 transition-opacity"
                   >
-                     <RotateCw size={12} className={isRegenerating ? 'animate-spin' : ''} />
-                     <span>{message.isError ? t.retry : t.regenerate}</span>
+                     <RotateCw size={14} className={isRegenerating ? 'animate-spin' : ''} />
                   </button>
               )}
           </div>
         </div>
 
         {isUser && (
-           <>
+           <div className="flex-shrink-0 w-8 h-8 rounded-full mb-2 shadow-md overflow-hidden border-2 border-white dark:border-slate-700 bg-slate-200">
               {userAvatar ? (
-                  <img 
-                    src={userAvatar} 
-                    alt="User" 
-                    className="flex-shrink-0 w-8 h-8 rounded-full mb-1 shadow-sm object-cover border-2 border-indigo-600 bg-slate-200 transform transition-transform hover:scale-110"
-                  />
+                  <img src={userAvatar} alt="User" className="w-full h-full object-cover" />
               ) : (
-                <div className={`
-                    flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mb-1 shadow-sm
-                    bg-indigo-600 text-white transform transition-transform hover:scale-110
-                `}>
+                <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-600">
                     <User size={16} />
                 </div>
               )}
-           </>
+           </div>
         )}
       </div>
     </div>

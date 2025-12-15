@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Trash2, Heart, MessageSquare, BookOpen, Filter, Menu, Feather } from 'lucide-react';
+import { Trash2, Heart, MessageSquare, BookOpen, Menu, Feather, Image, ArrowLeft } from 'lucide-react';
 import { SavedItem } from '../types';
 import { translations } from '../utils/translations';
 
@@ -9,9 +9,10 @@ interface SavedCollectionProps {
   onRemoveItem: (id: string) => void;
   language: string;
   onMenuClick: () => void;
+  onOpenComposer: (text: string, reference?: string) => void; 
 }
 
-const SavedCollection: React.FC<SavedCollectionProps> = ({ savedItems, onRemoveItem, language, onMenuClick }) => {
+const SavedCollection: React.FC<SavedCollectionProps> = ({ savedItems, onRemoveItem, language, onMenuClick, onOpenComposer }) => {
   const [filter, setFilter] = useState<'all' | 'verse' | 'chat' | 'prayer'>('all');
   const t = translations[language]?.saved || translations['English'].saved;
 
@@ -33,9 +34,9 @@ const SavedCollection: React.FC<SavedCollectionProps> = ({ savedItems, onRemoveI
              <div className="flex items-center gap-3">
                  <button 
                     onClick={onMenuClick}
-                    className="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                    className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
                  >
-                    <Menu size={24} />
+                    <ArrowLeft size={24} />
                  </button>
                  <div className="bg-rose-100 dark:bg-rose-900/30 p-2 rounded-xl text-rose-500">
                      <Heart size={24} fill="currentColor" />
@@ -118,13 +119,22 @@ const SavedCollection: React.FC<SavedCollectionProps> = ({ savedItems, onRemoveI
                                 )}
                             </div>
 
-                            <button 
-                                onClick={() => onRemoveItem(item.id)}
-                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                title={t.remove}
-                            >
-                                <Trash2 size={18} />
-                            </button>
+                            <div className="flex flex-col gap-2">
+                                <button 
+                                    onClick={() => onRemoveItem(item.id)}
+                                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                    title={t.remove}
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                                <button
+                                    onClick={() => onOpenComposer(item.content, item.reference)}
+                                    className="p-2 text-slate-300 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                                    title="Create Image"
+                                >
+                                    <Image size={18} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))

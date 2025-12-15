@@ -1,7 +1,30 @@
 
-
 export const translations: Record<string, any> = {
   English: {
+    home: {
+        goodMorning: "Good Morning",
+        goodAfternoon: "Good Afternoon",
+        goodEvening: "Good Evening",
+        welcome: "Welcome back, {name}",
+        dailyVerse: "Verse of the Day",
+        readVerse: "Read Verse",
+        streak: "Day Streak",
+        jumpTo: "Jump to...",
+        chatTitle: "Ask Shepherd",
+        chatDesc: "Get spiritual guidance",
+        bibleTitle: "Read Bible",
+        bibleDesc: "Explore the scriptures",
+        prayerTitle: "Prayer Journal",
+        prayerDesc: "Write & share prayers",
+        storiesTitle: "Bible Stories",
+        storiesDesc: "Lives of faith",
+        quizTitle: "Bible Trivia",
+        quizDesc: "Test your knowledge",
+        friendsTitle: "Friends",
+        friendsDesc: "Chat & Connect",
+        favoritesTitle: "Favorites",
+        favoritesDesc: "Your saved collection"
+    },
     common: {
         translate: "Translate",
         translated: "Translated",
@@ -10,10 +33,55 @@ export const translations: Record<string, any> = {
         loading: "Loading...",
         newChat: "New Chat"
     },
+    composer: {
+        title: "Visual Composer",
+        theme: "Theme",
+        content: "Content",
+        background: "Background",
+        typography: "Typography",
+        textColor: "Text Color",
+        quickSelect: "Quick Select Verse",
+        selectPlaceholder: "Choose a verse...",
+        message: "Message",
+        reference: "Reference / Author",
+        download: "Download Image",
+        processing: "Processing...",
+        securityWarning: "Could not generate image. Browser security might be blocking the external image source.",
+        themes: {
+            midnight: "Midnight",
+            sunset: "Dawn",
+            forest: "Forest",
+            paper: "Paper",
+            clean: "Clean",
+            mountains: "Peaks",
+            mist: "Mist",
+            valley: "Valley",
+            canyon: "Canyon",
+            desert: "Dunes",
+            field: "Golden",
+            ocean: "Ocean",
+            waterfall: "Falls",
+            rain: "Rain",
+            coast: "Coast",
+            stars: "Galaxy",
+            aurora: "Aurora",
+            clouds: "Cloudy",
+            dusk: "Dusk",
+            nebula: "Nebula",
+            bloom: "Bloom",
+            lavender: "Lavender",
+            winter: "Winter",
+            autumn: "Autumn",
+            leaves: "Ferns",
+            palm: "Leaves",
+            cross: "Bible"
+        }
+    },
     dailyVerse: {
         title: "Daily Scripture",
         copy: "Copy",
-        copied: "Copied!"
+        copied: "Copied!",
+        createImage: "Create Image"
     },
     welcomeMessages: [
       "Peace be with you, {name}. I am Shepherd. How can I guide you today?",
@@ -50,6 +118,7 @@ export const translations: Record<string, any> = {
       loggingOut: "Logging you out to sign in again..."
     },
     sidebar: {
+      home: "Home",
       newChat: "New Conversation",
       dailyVerse: "Daily Verse",
       history: "History",
@@ -59,17 +128,27 @@ export const translations: Record<string, any> = {
       rename: "Rename",
       delete: "Delete",
       tooltips: {
-          inbox: "Inbox & Friends",
-          sanctuary: "Sanctuary"
+          inbox: "Notifications",
+          sanctuary: "Sanctuary",
+          profile: "Profile",
+          settings: "Settings"
       },
       tabs: {
+          home: "Home",
           chat: "Chat",
           bible: "Bible",
           saved: "Saved",
           prayer: "Prayers",
-          quiz: "Trivia"
+          quiz: "Trivia",
+          stories: "Stories"
       },
       sanctuary: "Sanctuary"
+    },
+    stories: {
+        title: "Biblical Figures",
+        subtitle: "Stories of Faith",
+        readMore: "Read Story",
+        back: "Back to List"
     },
     chat: {
       subtitle: "Scripture Companion",
@@ -77,7 +156,10 @@ export const translations: Record<string, any> = {
       regenerate: "Regenerate",
       retry: "Retry",
       paintMode: "Paint Mode",
-      placeholderShort: "Ask Shepherd..."
+      placeholderShort: "Ask Shepherd...",
+      missingKeyTitle: "API Key Required",
+      missingKeyDesc: "To chat with Shepherd, you need to provide a free Google Gemini API Key.",
+      setupKey: "Setup API Key"
     },
     bible: {
         selectBook: "Select Book",
@@ -237,22 +319,26 @@ export const translations: Record<string, any> = {
             me: "Me"
         },
         inbox: {
+            title: "Notifications",
             requests: "Friend Requests",
             noRequests: "No pending requests",
             updates: "System Updates"
         },
         friends: {
+            title: "My Friends",
             loading: "Loading friends...",
             empty: "You haven't added any friends yet.",
             streak: "Streak"
         },
         add: {
+            title: "Add Friend",
             yourId: "Your Share ID",
             shareText: "Share this ID with friends so they can add you.",
             enterId: "Enter Friend's ID",
             search: "Search"
         },
         profile: {
+            title: "My Profile",
             streak: "Daily Streak",
             achievements: "Achievements",
             locked: "Locked",
@@ -273,6 +359,7 @@ export const translations: Record<string, any> = {
             ago: "ago"
         },
         updatesList: [
+            { version: "1.7.0", date: "2025-12-14", title: "New Dashboard", changes: ["Added Home View", "Improved Navigation"] },
             { version: "1.6.0", date: "2025-12-12", title: "Bible Reader Upgrade", changes: ["Fixed Romanian Bible (Cornilescu) loading", "Instant chapter switching", "Offline-ready Bible text"] },
             { version: "1.5.0", date: "2025-12-11", title: "Quiz & Achievements", changes: ["Added Bible Trivia mode", "Earn achievements for perfect scores", "View friend's streaks and badges", "Global progress tracking"] },
             { version: "1.4.0", date: "2025-12-10", title: "Graffiti Perfection", changes: ["Fixed Graffiti Mode saving issues", "Smoother drawing experience", "Improved upload reliability"] },
@@ -291,6 +378,30 @@ export const translations: Record<string, any> = {
   
   // ---------------- ROMANIAN ----------------
   Romanian: {
+    home: {
+        goodMorning: "Bună Dimineața",
+        goodAfternoon: "Bună Ziua",
+        goodEvening: "Bună Seara",
+        welcome: "Bine ai revenit, {name}",
+        dailyVerse: "Versetul Zilei",
+        readVerse: "Citește Versetul",
+        streak: "Serie",
+        jumpTo: "Mergi la...",
+        chatTitle: "Întreabă Păstorul",
+        chatDesc: "Ghidare spirituală",
+        bibleTitle: "Citește Biblia",
+        bibleDesc: "Explorează scripturile",
+        prayerTitle: "Jurnal Rugăciune",
+        prayerDesc: "Scrie & partajează",
+        storiesTitle: "Povești Biblice",
+        storiesDesc: "Vieți de credință",
+        quizTitle: "Trivia Biblică",
+        quizDesc: "Testează cunoștințele",
+        friendsTitle: "Prieteni",
+        friendsDesc: "Chat & Conectare",
+        favoritesTitle: "Favorite",
+        favoritesDesc: "Colecția ta salvată"
+    },
     common: {
         translate: "Traduce",
         translated: "Tradus",
@@ -299,10 +410,55 @@ export const translations: Record<string, any> = {
         loading: "Se încarcă...",
         newChat: "Chat Nou"
     },
+    composer: {
+        title: "Compozitor Vizual",
+        theme: "Temă",
+        content: "Conținut",
+        background: "Fundal",
+        typography: "Tipografie",
+        textColor: "Culoare Text",
+        quickSelect: "Selectare Rapidă",
+        selectPlaceholder: "Alege un verset...",
+        message: "Mesaj",
+        reference: "Referință / Autor",
+        download: "Descarcă Imagine",
+        processing: "Se procesează...",
+        securityWarning: "Nu s-a putut genera imaginea. Setările de securitate ale browserului ar putea bloca sursa externă.",
+        themes: {
+            midnight: "Miezul Nopții",
+            sunset: "Zori",
+            forest: "Pădure",
+            paper: "Hârtie",
+            clean: "Curat",
+            mountains: "Vârfuri",
+            mist: "Ceață",
+            valley: "Vale",
+            canyon: "Canion",
+            desert: "Dune",
+            field: "Auriu",
+            ocean: "Ocean",
+            waterfall: "Cascadă",
+            rain: "Ploaie",
+            coast: "Coastă",
+            stars: "Galaxie",
+            aurora: "Auroră",
+            clouds: "Noros",
+            dusk: "Apus",
+            nebula: "Nebuloasă",
+            bloom: "Înflorire",
+            lavender: "Lavandă",
+            winter: "Iarnă",
+            autumn: "Toamnă",
+            leaves: "Ferigi",
+            palm: "Frunze",
+            cross: "Biblie"
+        }
+    },
     dailyVerse: {
         title: "Versetul Zilei",
         copy: "Copiază",
-        copied: "Copiat!"
+        copied: "Copiat!",
+        createImage: "Creează Imagine"
     },
     welcomeMessages: [
       "Pacea fie cu tine, {name}. Sunt Păstorul. Cum te pot ghida astăzi?",
@@ -339,6 +495,7 @@ export const translations: Record<string, any> = {
       loggingOut: "Te deconectăm pentru a te autentifica din nou..."
     },
     sidebar: {
+      home: "Acasă",
       newChat: "Conversație Nouă",
       dailyVerse: "Versetul Zilei",
       history: "Istoric",
@@ -348,17 +505,27 @@ export const translations: Record<string, any> = {
       rename: "Redenumire",
       delete: "Ștergere",
       tooltips: {
-          inbox: "Inbox & Prieteni",
-          sanctuary: "Sanctuar"
+          inbox: "Notificări",
+          sanctuary: "Sanctuar",
+          profile: "Profil",
+          settings: "Setări"
       },
       tabs: {
+          home: "Acasă",
           chat: "Chat",
           bible: "Biblia",
           saved: "Salvate",
           prayer: "Rugăciuni",
-          quiz: "Trivia"
+          quiz: "Trivia",
+          stories: "Povești"
       },
       sanctuary: "Sanctuar"
+    },
+    stories: {
+        title: "Figuri Biblice",
+        subtitle: "Povești de Credință",
+        readMore: "Citește Povestea",
+        back: "Înapoi la Listă"
     },
     chat: {
       subtitle: "Partener Scriptural",
@@ -366,7 +533,10 @@ export const translations: Record<string, any> = {
       regenerate: "Regenerează",
       retry: "Reîncearcă",
       paintMode: "Mod Pictură",
-      placeholderShort: "Întreabă Păstorul..."
+      placeholderShort: "Întreabă Păstorul...",
+      missingKeyTitle: "Cheie API Necesară",
+      missingKeyDesc: "Pentru a discuta cu Păstorul, trebuie să furnizezi o cheie gratuită Google Gemini API.",
+      setupKey: "Setare Cheie API"
     },
     bible: {
         selectBook: "Alege Cartea",
@@ -526,23 +696,27 @@ export const translations: Record<string, any> = {
             me: "Eu"
         },
         inbox: {
+            title: "Notificări",
             requests: "Cereri de Prietenie",
             noRequests: "Nicio cerere în așteptare",
             updates: "Actualizări Sistem"
         },
         friends: {
+            title: "Prieteni",
             loading: "Se încarcă prietenii...",
             empty: "Nu ai adăugat niciun prieten încă.",
             streak: "Serie"
         },
         add: {
+            title: "Adaugă Prieten",
             yourId: "ID-ul Tău de Partajare",
             shareText: "Distribuie acest ID prietenilor pentru a te adăuga.",
             enterId: "Introdu ID Prieten",
             search: "Caută"
         },
         profile: {
-            streak: "Serie Zilnică",
+            title: "Profilul Meu",
+            streak: "Serie",
             achievements: "Realizări",
             locked: "Blocat",
             about: "Despre",
@@ -562,6 +736,7 @@ export const translations: Record<string, any> = {
             ago: "în urmă"
         },
         updatesList: [
+            { version: "1.7.0", date: "14-12-2025", title: "Tablou de bord nou", changes: ["Adăugat ecran principal", "Navigație îmbunătățită"] },
             { version: "1.6.0", date: "12-12-2025", title: "Actualizare Biblie", changes: ["S-a reparat încărcarea Bibliei Cornilescu", "Schimbare instantanee a capitolelor", "Text disponibil offline"] },
             { version: "1.5.0", date: "11-12-2025", title: "Quiz & Realizări", changes: ["Mod Trivia Biblică", "Câștigă realizări", "Vezi seriile prietenilor", "Urmărire progres"] },
             { version: "1.4.0", date: "10-12-2025", title: "Perfecțiune Graffiti", changes: ["Probleme de salvare rezolvate", "Experiență de desen mai fluidă", "Fiabilitate upload"] },
@@ -580,6 +755,30 @@ export const translations: Record<string, any> = {
 
   // ---------------- GERMAN ----------------
   German: {
+    home: {
+        goodMorning: "Guten Morgen",
+        goodAfternoon: "Guten Tag",
+        goodEvening: "Guten Abend",
+        welcome: "Willkommen zurück, {name}",
+        dailyVerse: "Vers des Tages",
+        readVerse: "Vers lesen",
+        streak: "Tages-Serie",
+        jumpTo: "Springe zu...",
+        chatTitle: "Frag Hirte",
+        chatDesc: "Erhalte geistliche Führung",
+        bibleTitle: "Bibel lesen",
+        bibleDesc: "Erkunde die Schrift",
+        prayerTitle: "Gebetstagebuch",
+        prayerDesc: "Schreiben & teilen",
+        storiesTitle: "Bibelgeschichten",
+        storiesDesc: "Leben im Glauben",
+        quizTitle: "Bibel Trivia",
+        quizDesc: "Teste dein Wissen",
+        friendsTitle: "Freunde",
+        friendsDesc: "Chatten & Verbinden",
+        favoritesTitle: "Favoriten",
+        favoritesDesc: "Deine Sammlung"
+    },
     common: {
         translate: "Übersetzen",
         translated: "Übersetzt",
@@ -588,10 +787,55 @@ export const translations: Record<string, any> = {
         loading: "Lädt...",
         newChat: "Neuer Chat"
     },
+    composer: {
+        title: "Visueller Komponist",
+        theme: "Thema",
+        content: "Inhalt",
+        background: "Hintergrund",
+        typography: "Typografie",
+        textColor: "Textfarbe",
+        quickSelect: "Schnellauswahl",
+        selectPlaceholder: "Wähle einen Vers...",
+        message: "Nachricht",
+        reference: "Referenz / Autor",
+        download: "Bild herunterladen",
+        processing: "Verarbeite...",
+        securityWarning: "Bild konnte nicht erstellt werden. Browser-Sicherheit blockiert möglicherweise die externe Bildquelle.",
+        themes: {
+            midnight: "Mitternacht",
+            sunset: "Morgendämmerung",
+            forest: "Wald",
+            paper: "Papier",
+            clean: "Sauber",
+            mountains: "Gipfel",
+            mist: "Nebel",
+            valley: "Tal",
+            canyon: "Schlucht",
+            desert: "Dünen",
+            field: "Golden",
+            ocean: "Ozean",
+            waterfall: "Wasserfall",
+            rain: "Regen",
+            coast: "Küste",
+            stars: "Galaxie",
+            aurora: "Aurora",
+            clouds: "Bewölkt",
+            dusk: "Dämmerung",
+            nebula: "Nebel",
+            bloom: "Blüte",
+            lavender: "Lavendel",
+            winter: "Winter",
+            autumn: "Herbst",
+            leaves: "Farne",
+            palm: "Blätter",
+            cross: "Bibel"
+        }
+    },
     dailyVerse: {
         title: "Tagesvers",
         copy: "Kopieren",
-        copied: "Kopiert!"
+        copied: "Kopiert!",
+        createImage: "Bild erstellen"
     },
     welcomeMessages: [
       "Friede sei mit dir, {name}. Ich bin Hirte. Wie kann ich dich heute führen?",
@@ -628,6 +872,7 @@ export const translations: Record<string, any> = {
       loggingOut: "Du wirst abgemeldet, um dich neu anzumelden..."
     },
     sidebar: {
+      home: "Startseite",
       newChat: "Neue Unterhaltung",
       dailyVerse: "Tagesvers",
       history: "Verlauf",
@@ -637,17 +882,27 @@ export const translations: Record<string, any> = {
       rename: "Umbenennen",
       delete: "Löschen",
       tooltips: {
-          inbox: "Posteingang & Freunde",
-          sanctuary: "Ruheort"
+          inbox: "Benachrichtigungen",
+          sanctuary: "Ruheort",
+          profile: "Profil",
+          settings: "Einstellungen"
       },
       tabs: {
+          home: "Startseite",
           chat: "Chat",
           bible: "Bibel",
           saved: "Gespeichert",
           prayer: "Gebete",
-          quiz: "Trivia"
+          quiz: "Trivia",
+          stories: "Geschichten"
       },
       sanctuary: "Ruheort"
+    },
+    stories: {
+        title: "Biblische Gestalten",
+        subtitle: "Geschichten des Glaubens",
+        readMore: "Geschichte lesen",
+        back: "Zurück zur Liste"
     },
     chat: {
       subtitle: "Schriftbegleiter",
@@ -655,7 +910,10 @@ export const translations: Record<string, any> = {
       regenerate: "Neu generieren",
       retry: "Wiederholen",
       paintMode: "Malmodus",
-      placeholderShort: "Frag Hirte..."
+      placeholderShort: "Frag Hirte...",
+      missingKeyTitle: "API-Schlüssel erforderlich",
+      missingKeyDesc: "Um mit Hirte zu chatten, musst du einen kostenlosen Google Gemini API-Schlüssel angeben.",
+      setupKey: "API-Schlüssel einrichten"
     },
     bible: {
         selectBook: "Buch wählen",
@@ -815,22 +1073,26 @@ export const translations: Record<string, any> = {
             me: "Ich"
         },
         inbox: {
+            title: "Benachrichtigungen",
             requests: "Freundschaftsanfragen",
             noRequests: "Keine offenen Anfragen",
             updates: "System-Updates"
         },
         friends: {
+            title: "Meine Freunde",
             loading: "Lade Freunde...",
             empty: "Du hast noch keine Freunde hinzugefügt.",
             streak: "Serie"
         },
         add: {
+            title: "Freund hinzufügen",
             yourId: "Deine Share-ID",
             shareText: "Teile diese ID mit Freunden, damit sie dich hinzufügen können.",
             enterId: "Freund-ID eingeben",
             search: "Suchen"
         },
         profile: {
+            title: "Mein Profil",
             streak: "Tages-Serie",
             achievements: "Erfolge",
             locked: "Gesperrt",
@@ -851,6 +1113,7 @@ export const translations: Record<string, any> = {
             ago: "vor"
         },
         updatesList: [
+            { version: "1.7.0", date: "14.12.2025", title: "Neues Dashboard", changes: ["Startseite hinzugefügt", "Verbesserte Navigation"] },
             { version: "1.6.0", date: "12.12.2025", title: "Bibel-Reader Update", changes: ["Laden der rumänischen Bibel behoben", "Sofortiger Kapitelwechsel", "Offline-verfügbarer Text"] },
             { version: "1.5.0", date: "11.12.2025", title: "Quiz & Erfolge", changes: ["Bibel Trivia Modus", "Erfolge für Punkte", "Freunde-Streaks ansehen", "Fortschrittstracking"] },
             { version: "1.4.0", date: "10.12.2025", title: "Graffiti Perfektion", changes: ["Speicherprobleme behoben", "Weicheres Zeichnen", "Upload Zuverlässigkeit"] },

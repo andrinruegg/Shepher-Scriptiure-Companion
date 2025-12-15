@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Brain, Sparkles, CheckCircle, XCircle, ArrowRight, Trophy, Menu, Flame, RotateCw, Award, CheckCircle2, Timer } from 'lucide-react';
+import { Brain, Sparkles, CheckCircle, XCircle, ArrowRight, Trophy, Menu, Flame, RotateCw, Award, CheckCircle2, Timer, ArrowLeft } from 'lucide-react';
 import { STATIC_QUIZ_DATA } from '../data/staticQuizData';
 import { QuizQuestion, Achievement } from '../types';
 import { translations } from '../utils/translations';
@@ -16,14 +16,12 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
     const [gameState, setGameState] = useState<'menu' | 'playing' | 'result' | 'complete'>('menu');
     const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Easy');
     
-    // Quiz State
     const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([]);
     const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
     const [showResult, setShowResult] = useState(false);
     
-    // Stats
     const [correctCount, setCorrectCount] = useState(0);
     const [streak, setStreak] = useState(0);
     const [startTime, setStartTime] = useState<number>(0);
@@ -34,7 +32,6 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
 
     const t = translations[language]?.quiz || translations['English'].quiz;
 
-    // Load achievements on mount
     useEffect(() => {
         const fetchAchievements = async () => {
             try {
@@ -50,44 +47,30 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
         fetchAchievements();
     }, []);
 
-    // Helper to shuffle answers so users can't memorize positions
     const randomizeQuestion = (q: QuizQuestion): QuizQuestion => {
         const correctString = q.options[q.correctIndex];
-        // Shuffle options
         const newOptions = [...q.options].sort(() => 0.5 - Math.random());
-        // Find new index of the correct string
         const newCorrectIndex = newOptions.indexOf(correctString);
-        
-        return {
-            ...q,
-            options: newOptions,
-            correctIndex: newCorrectIndex
-        };
+        return { ...q, options: newOptions, correctIndex: newCorrectIndex };
     };
 
     const startQuiz = (diff: 'Easy' | 'Medium' | 'Hard') => {
         setDifficulty(diff);
         
-        // Select language data or fallback to English
         const langData = STATIC_QUIZ_DATA[language] || STATIC_QUIZ_DATA['English'];
         const allQuestions = [...langData[diff]];
         
-        // 1. Shuffle the order of questions
         const shuffledQuestions = allQuestions.sort(() => 0.5 - Math.random());
-        
-        // 2. Randomize the answer positions for each question
         const randomizedQuestions = shuffledQuestions.map(randomizeQuestion);
 
         setSessionQuestions(randomizedQuestions);
         
-        // Reset State
         setCurrentIndex(0);
         setCorrectCount(0);
         setStreak(0);
         setEarnedAchievement(null);
         setStartTime(Date.now());
         
-        // Load first
         setCurrentQuestion(randomizedQuestions[0]);
         setGameState('playing');
         setShowResult(false);
@@ -123,7 +106,6 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
         setEndTime(Date.now());
         setGameState('complete');
 
-        // Check for Achievement (100% Correct)
         const percentage = Math.round((correctCount / sessionQuestions.length) * 100);
         
         if (percentage === 100) {
@@ -137,7 +119,6 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
 
             const achievementId = `perfect-${difficulty.toLowerCase()}`;
             
-            // Only award if not already earned
             if (!myAchievements.has(achievementId)) {
                 const achievement: Achievement = {
                     id: achievementId,
@@ -149,16 +130,12 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
                 };
                 
                 setEarnedAchievement(achievement);
-                // Update local state immediately so menu checkmark appears
                 setMyAchievements(prev => new Set(prev).add(achievementId));
                 
-                // Save to DB
                 try {
                     await db.social.addAchievement(achievement);
                     await db.social.updateProfileStats(streak); 
-                } catch (e) {
-                    console.error("Failed to save achievement", e);
-                }
+                } catch (e) { console.error("Failed to save achievement", e); }
             }
         }
     };
@@ -170,18 +147,16 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
         return `${m}m ${s}s`;
     };
 
-    // Smoother progress bar logic: Base progress + 1 step if answered
     const progressPercentage = sessionQuestions.length > 0 
         ? ((currentIndex + (showResult ? 1 : 0)) / sessionQuestions.length) * 100 
         : 0;
 
     return (
         <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 transition-colors">
-            {/* Header */}
             <header className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 p-4 shadow-sm sticky top-0 z-10 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3">
-                    <button onClick={onMenuClick} className="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
-                        <Menu size={24} />
+                    <button onClick={onMenuClick} className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+                        <ArrowLeft size={24} />
                     </button>
                     <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg text-purple-600 dark:text-purple-400">
                         <Brain size={20} />
@@ -193,7 +168,6 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
                 </div>
             </header>
 
-            {/* Main Content */}
             <main className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth">
                 <div className="min-h-full flex flex-col items-center justify-center w-full max-w-lg mx-auto py-4">
                     
@@ -261,7 +235,6 @@ const QuizMode: React.FC<QuizModeProps> = ({ language, onMenuClick }) => {
                     {gameState === 'playing' && currentQuestion && (
                         <div className="w-full space-y-6 animate-slide-up pb-8">
                             <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 relative overflow-hidden">
-                                {/* PROGRESS BAR */}
                                 <div className="absolute top-0 left-0 w-full h-1.5 bg-slate-100 dark:bg-slate-700">
                                     <div className="h-full bg-purple-500 transition-all duration-500 ease-out" style={{ width: `${progressPercentage}%` }}></div>
                                 </div>

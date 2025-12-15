@@ -1,8 +1,6 @@
 
-
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Check, Feather, Calendar, Menu, Circle, CheckCircle2, Globe, Lock, Users, ChevronDown, User, Eye, EyeOff, Languages, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Feather, Menu, Circle, CheckCircle2, Globe, Lock, Users, ChevronDown, User, Eye, EyeOff, Languages, Loader2, ArrowLeft, Calendar } from 'lucide-react';
 import { SavedItem, PrayerVisibility, UserProfile } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { translations } from '../utils/translations';
@@ -35,19 +33,16 @@ const PrayerList: React.FC<PrayerListProps> = ({
     const [newPrayer, setNewPrayer] = useState('');
     const [activeTab, setActiveTab] = useState<'journal' | 'community'>('journal');
     
-    // Privacy State
     const [visibility, setVisibility] = useState<PrayerVisibility>('private');
     const [showVisibilityMenu, setShowVisibilityMenu] = useState(false);
     const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
     const [showFriendSelector, setShowFriendSelector] = useState(false);
     const [isAnonymous, setIsAnonymous] = useState(false);
     
-    // Data Loading
     const [friendsList, setFriendsList] = useState<UserProfile[]>([]);
     const [communityPrayers, setCommunityPrayers] = useState<SavedItem[]>([]);
     const [loadingCommunity, setLoadingCommunity] = useState(false);
     
-    // Translation State (Map of prayerId -> translatedText)
     const [translationsMap, setTranslationsMap] = useState<Record<string, string>>({});
     const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
 
@@ -55,7 +50,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
     const t = translations[language]?.prayer || translations['English'].prayer;
     const commonT = translations[language]?.common || translations['English'].common;
 
-    // Filter local prayers
     const prayers = savedItems.filter(i => i.type === 'prayer');
     const activePrayers = prayers.filter(p => !p.metadata?.answered);
     const answeredPrayers = prayers.filter(p => p.metadata?.answered);
@@ -192,7 +186,6 @@ const PrayerList: React.FC<PrayerListProps> = ({
 
     const handleTranslate = async (id: string, text: string) => {
         if (translationsMap[id]) {
-            // Toggle off
             const newMap = { ...translationsMap };
             delete newMap[id];
             setTranslationsMap(newMap);
@@ -235,11 +228,15 @@ const PrayerList: React.FC<PrayerListProps> = ({
 
     return (
         <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900">
-            <header className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 p-4 shadow-sm sticky top-0 z-20">
-                <div className="max-w-3xl mx-auto">
-                    <div className="flex items-center gap-3 mb-4">
-                        <button onClick={onMenuClick} className="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
-                            <Menu size={24} />
+            {/* Header: Full width container for back button alignment */}
+            <header className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 p-4 shadow-sm sticky top-0 z-20 flex flex-col items-center">
+                <div className="w-full max-w-3xl flex flex-col gap-4">
+                    <div className="flex items-center gap-3 w-full">
+                        <button 
+                            onClick={onMenuClick} 
+                            className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                        >
+                            <ArrowLeft size={24} />
                         </button>
                         <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-xl text-indigo-600 dark:text-indigo-400">
                             <Feather size={24} />
@@ -249,7 +246,7 @@ const PrayerList: React.FC<PrayerListProps> = ({
                         </div>
                     </div>
 
-                    <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                    <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg w-full">
                         <button 
                             onClick={() => setActiveTab('journal')}
                             className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'journal' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}

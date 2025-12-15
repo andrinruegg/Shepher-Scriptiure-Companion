@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Users, Bell, Search, Check, AlertCircle, Copy, User, MessageCircle, ArrowLeft, Trash2, Shield, Info, Circle, Flame, Award, Book, Scroll, Trophy } from 'lucide-react';
-import { UserProfile, FriendRequest, AppUpdate, Achievement } from '../types';
+import { UserProfile, FriendRequest, AppUpdate, Achievement, SocialTab } from '../types';
 import { db } from '../services/db';
 import FriendChat from './FriendChat';
 import { translations } from '../utils/translations';
@@ -9,21 +9,22 @@ import { translations } from '../utils/translations';
 interface SocialModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: SocialTab;
   currentUserShareId: string;
   isDarkMode: boolean;
   onUpdateNotifications?: () => void;
-  language: string; // Explicitly pass language
+  language: string;
 }
 
-// Master list of all possible achievements structure (Icons/IDs), Text comes from translations
+// Master list of all possible achievements structure (Icons/IDs)
 const ACHIEVEMENT_STRUCTURE = [
     { id: 'perfect-easy', icon: 'Book' },
     { id: 'perfect-medium', icon: 'Scroll' },
     { id: 'perfect-hard', icon: 'Trophy' }
 ];
 
-const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserShareId, isDarkMode, onUpdateNotifications, language }) => {
-  const [activeTab, setActiveTab] = useState<'inbox' | 'friends' | 'add' | 'profile'>('inbox');
+const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, initialTab = 'inbox', currentUserShareId, isDarkMode, onUpdateNotifications, language }) => {
+  const [currentView, setCurrentView] = useState<SocialTab>(initialTab);
   
   // Navigation States
   const [activeChatFriend, setActiveChatFriend] = useState<UserProfile | null>(null);
@@ -48,30 +49,35 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
   const commonT = translations[language]?.common || translations['English'].common;
   const updatesLog = t.updatesList || []; 
 
+  // Reset tab when modal opens or initialTab changes
+  useEffect(() => {
+      if (isOpen) {
+          setCurrentView(initialTab);
+      }
+  }, [isOpen, initialTab]);
+
   useEffect(() => {
       if (isOpen && !activeChatFriend && !viewingProfile) {
           loadSocialData();
       }
-  }, [isOpen, activeTab, activeChatFriend, viewingProfile]);
+  }, [isOpen, currentView, activeChatFriend, viewingProfile]);
 
-  // Force refresh when switching to Profile tab to ensure latest Trophies are visible
+  // Force refresh when switching to Profile tab
   useEffect(() => {
-      if (isOpen && activeTab === 'profile') {
+      if (isOpen && currentView === 'profile') {
           db.social.getCurrentUser().then(p => {
               if(p) setCurrentUserProfile(p);
           }).catch(e => console.warn("Could not reload profile", e));
       }
-  }, [activeTab]);
+  }, [currentView]);
 
   const loadSocialData = async () => {
       setLoadingData(true);
-      // Timeout fallback to prevent infinite loading state
       const timer = setTimeout(() => {
           if (loadingData) setLoadingData(false);
       }, 8000);
 
       try {
-          // Always load to keep badges updated, but optimize if needed
           const [reqs, friendsList, myProfile] = await Promise.all([
               db.social.getIncomingRequests(),
               db.social.getFriends(),
@@ -81,11 +87,9 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
           setRequests(reqs);
           setCurrentUserProfile(myProfile);
           
-          // Calculate total unread
           const unreadCount = friendsList.reduce((acc, f) => acc + (f.unread_count || 0), 0);
           setTotalUnreadMessages(unreadCount);
 
-          // Sort Friends
           const sortedFriends = friendsList.sort((a, b) => {
               if ((a.unread_count || 0) > 0 && (b.unread_count || 0) === 0) return -1;
               if ((a.unread_count || 0) === 0 && (b.unread_count || 0) > 0) return 1;
@@ -137,7 +141,7 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
           await db.social.sendFriendRequest(targetId);
           setRequestSent(true);
           alert("Friend Request Sent!");
-          setViewingProfile(null); // Go back
+          setViewingProfile(null); 
       } catch (e: any) {
           alert(e.message || "Failed to send request.");
       } finally {
@@ -147,12 +151,8 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
 
   const handleRespond = async (requestId: string, accept: boolean) => {
       try {
-          // Optimistic update
           setRequests(prev => prev.filter(r => r.id !== requestId));
-          
-          // Trigger Bell update immediately
           if (onUpdateNotifications) onUpdateNotifications();
-
           await db.social.respondToRequest(requestId, accept);
       } catch (e) {
           console.error("Response failed", e);
@@ -160,10 +160,8 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
   };
 
   const handleUnfriend = async (friendId: string) => {
-      // INSTANTLY HIDE (Optimistic)
       setFriends(prev => prev.filter(f => f.id !== friendId));
       setViewingProfile(null); 
-
       try {
           await db.social.removeFriend(friendId);
       } catch (e: any) {
@@ -178,51 +176,36 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
   const isOnline = (isoDate?: string) => {
       if (!isoDate) return false;
       const diff = Date.now() - new Date(isoDate).getTime();
-      return diff < 5 * 60 * 1000; // Online if active in last 5 mins
+      return diff < 5 * 60 * 1000;
   };
 
-  // Called when clicking to chat
   const handleOpenChat = (friend: UserProfile) => {
-      // 1. Optimistic UI update: Remove unread badge locally for this friend immediately
       setFriends(prev => prev.map(f => f.id === friend.id ? { ...f, unread_count: 0 } : f));
-      
-      // 2. Reduce total count immediately
       setTotalUnreadMessages(prev => {
           const count = friend.unread_count || 0;
           return Math.max(0, prev - count);
       });
-
-      // 3. Open the chat
       setActiveChatFriend(friend);
   };
 
-  // Callback when returning from chat
   const handleReturnFromChat = () => {
       const friendId = activeChatFriend?.id;
       setActiveChatFriend(null);
-
-      // Force update of main Bell icon
       if (onUpdateNotifications) onUpdateNotifications();
-
-      // Ensure local state is clean
       if (friendId) {
           setFriends(prev => prev.map(f => f.id === friendId ? { ...f, unread_count: 0 } : f));
       }
-
       loadSocialData();
   };
 
-  // HELPER: Renders the full achievement grid (Locked & Unlocked)
+  // HELPER: Renders the full achievement grid
   const renderAchievementGrid = (userAchievements: Achievement[] = []) => {
       const unlockedIds = new Set(userAchievements.map(a => a.id));
-      
       const unlockedList = ACHIEVEMENT_STRUCTURE.filter(a => unlockedIds.has(a.id));
       const lockedList = ACHIEVEMENT_STRUCTURE.filter(a => !unlockedIds.has(a.id));
 
       const renderItem = (achStruct: typeof ACHIEVEMENT_STRUCTURE[0], isUnlocked: boolean) => {
-          // Fetch localized strings
           const localized = t.achievementList[achStruct.id] || { title: achStruct.id, description: "..." };
-
           return (
               <div key={achStruct.id} className={`flex flex-col items-center gap-1 text-center group relative cursor-help ${isUnlocked ? '' : 'opacity-50 grayscale'}`}>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center border transition-transform group-hover:scale-110 ${isUnlocked ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 border-slate-300 dark:border-slate-700'}`}>
@@ -232,11 +215,8 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                       {achStruct.icon === 'Award' && <Award size={18} />}
                   </div>
                   <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400 leading-tight">{localized.title}</span>
-                  
-                  {/* Tooltip */}
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 w-32 shadow-xl border border-slate-700">
                       {localized.description}
-                      {/* Triangle pointer */}
                       <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
                   </div>
               </div>
@@ -248,27 +228,14 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
                   <Trophy size={12} /> {t.profile.achievements}
               </h4>
-              
-              {/* Unlocked Section */}
-              {unlockedList.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2 mb-4">
-                      {unlockedList.map(ach => renderItem(ach, true))}
-                  </div>
-              )}
-
-              {/* Locked Section */}
+              {unlockedList.length > 0 && <div className="grid grid-cols-4 gap-2 mb-4">{unlockedList.map(ach => renderItem(ach, true))}</div>}
               {lockedList.length > 0 && (
                   <>
                     <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 opacity-70">{t.profile.locked}</h5>
-                    <div className="grid grid-cols-4 gap-2">
-                        {lockedList.map(ach => renderItem(ach, false))}
-                    </div>
+                    <div className="grid grid-cols-4 gap-2">{lockedList.map(ach => renderItem(ach, false))}</div>
                   </>
               )}
-
-              {unlockedList.length === 0 && lockedList.length === 0 && (
-                  <div className="text-center py-4 text-slate-400 italic text-xs">No achievements available.</div>
-              )}
+              {unlockedList.length === 0 && lockedList.length === 0 && <div className="text-center py-4 text-slate-400 italic text-xs">No achievements available.</div>}
           </div>
       );
   };
@@ -285,7 +252,7 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                       friend={activeChatFriend} 
                       onBack={handleReturnFromChat} 
                       currentUserShareId={currentUserShareId}
-                      onMessagesRead={onUpdateNotifications} // Pass update handler to chat
+                      onMessagesRead={onUpdateNotifications} 
                   />
               </div>
           </div>
@@ -295,93 +262,41 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
   // --- SUB-VIEW: PROFILE DETAILS ---
   if (viewingProfile) {
       const isFriend = friends.some(f => f.id === viewingProfile.id);
-      
       return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setViewingProfile(null)} />
-             
-             {/* Profile Card */}
              <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-800 flex flex-col max-h-[85vh] h-[85vh]">
-                 <button 
-                    onClick={() => setViewingProfile(null)} 
-                    className="absolute top-4 left-4 p-2 bg-black/20 text-white rounded-full hover:bg-black/30 backdrop-blur-sm z-20 shadow-lg"
-                 >
+                 <button onClick={() => setViewingProfile(null)} className="absolute top-4 left-4 p-2 bg-black/20 text-white rounded-full hover:bg-black/30 backdrop-blur-sm z-20 shadow-lg">
                      <ArrowLeft size={20} />
                  </button>
-
                  <div className="flex-1 overflow-y-auto w-full no-scrollbar">
                      <div className="h-32 bg-gradient-to-r from-indigo-500 to-purple-600 relative shrink-0">
                          <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                      </div>
-
                      <div className="px-6 pb-6 flex flex-col items-center text-center">
                          <div className="-mt-12 w-28 h-28 rounded-full border-4 border-white dark:border-slate-900 bg-white dark:bg-slate-800 overflow-hidden shadow-lg mb-2 relative z-10 animate-pop-in">
-                             {viewingProfile.avatar ? (
-                                 <img src={viewingProfile.avatar} className="w-full h-full object-cover" />
-                             ) : (
-                                 <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400">
-                                     <User size={48} />
-                                 </div>
-                             )}
+                             {viewingProfile.avatar ? <img src={viewingProfile.avatar} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400"><User size={48} /></div>}
                          </div>
-
                          <div className="flex items-center gap-2 mb-1">
-                             <h2 className="text-2xl font-bold text-slate-800 dark:text-white font-serif-text">
-                                 {viewingProfile.display_name || "Unknown"}
-                             </h2>
-                             {/* Daily Streak Badge */}
-                             {(viewingProfile.streak || 0) > 0 && (
-                                 <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
-                                     <Flame size={12} className="text-amber-500 fill-amber-500 animate-pulse" />
-                                     <span className="text-xs font-bold text-amber-700 dark:text-amber-400">{viewingProfile.streak}</span>
-                                 </div>
-                             )}
+                             <h2 className="text-2xl font-bold text-slate-800 dark:text-white font-serif-text">{viewingProfile.display_name || "Unknown"}</h2>
+                             {(viewingProfile.streak || 0) > 0 && <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800"><Flame size={12} className="text-amber-500 fill-amber-500 animate-pulse" /><span className="text-xs font-bold text-amber-700 dark:text-amber-400">{viewingProfile.streak}</span></div>}
                          </div>
-                         
                          <div className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-full mb-6">
-                            <p className="text-sm text-indigo-600 dark:text-indigo-400 font-mono font-semibold tracking-wide">
-                                {viewingProfile.share_id || "ID-ERROR"}
-                            </p>
+                            <p className="text-sm text-indigo-600 dark:text-indigo-400 font-mono font-semibold tracking-wide">{viewingProfile.share_id || "ID-ERROR"}</p>
                          </div>
-
                          <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 mb-4 border border-slate-100 dark:border-slate-800 text-left shadow-sm">
                              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t.profile.about}</h4>
-                             {viewingProfile.bio ? (
-                                 <p className="text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed whitespace-pre-wrap">
-                                     {viewingProfile.bio}
-                                 </p>
-                             ) : (
-                                 <p className="text-xs text-slate-400 italic text-center py-2">{t.noBio || "No bio available."}</p>
-                             )}
+                             {viewingProfile.bio ? <p className="text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed whitespace-pre-wrap">{viewingProfile.bio}</p> : <p className="text-xs text-slate-400 italic text-center py-2">{t.noBio || "No bio available."}</p>}
                          </div>
-
-                         {/* Enhanced Achievements Section (Showing Locked & Unlocked) */}
                          {renderAchievementGrid(viewingProfile.achievements || [])}
-
                          <div className="flex gap-3 w-full mt-auto">
                              {isFriend ? (
                                  <>
-                                     <button 
-                                        onClick={() => { handleOpenChat(viewingProfile); setViewingProfile(null); }}
-                                        className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 hover:scale-105"
-                                     >
-                                         <MessageCircle size={18} /> {t.profile.message}
-                                     </button>
-                                     <button 
-                                        onClick={() => handleUnfriend(viewingProfile.id)}
-                                        className="px-4 py-3.5 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300 rounded-xl font-medium hover:bg-red-200 dark:hover:bg-red-900/60 border border-red-200 dark:border-red-800 transition-colors shadow-sm"
-                                        title={t.profile.unfriend}
-                                     >
-                                         <Trash2 size={20} />
-                                     </button>
+                                     <button onClick={() => { handleOpenChat(viewingProfile); setViewingProfile(null); }} className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 hover:scale-105"><MessageCircle size={18} /> {t.profile.message}</button>
+                                     <button onClick={() => handleUnfriend(viewingProfile.id)} className="px-4 py-3.5 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300 rounded-xl font-medium hover:bg-red-200 dark:hover:bg-red-900/60 border border-red-200 dark:border-red-800 transition-colors shadow-sm" title={t.profile.unfriend}><Trash2 size={20} /></button>
                                  </>
                              ) : (
-                                 <button 
-                                    onClick={() => sendRequest(viewingProfile.id)}
-                                    className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 hover:scale-105"
-                                 >
-                                     <UserPlus size={18} /> {t.profile.addFriend}
-                                 </button>
+                                 <button onClick={() => sendRequest(viewingProfile.id)} className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 hover:scale-105"><UserPlus size={18} /> {t.profile.addFriend}</button>
                              )}
                          </div>
                      </div>
@@ -391,65 +306,64 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
       );
   }
 
+  // --- HEADER CONFIGURATION ---
+  const getHeaderConfig = () => {
+      switch(currentView) {
+          case 'inbox': return { title: t.inbox?.title || "Notifications", icon: Bell, showAdd: false, showBack: false };
+          case 'friends': return { title: t.friends?.title || "Friends", icon: Users, showAdd: true, showBack: false };
+          case 'add': return { title: t.add?.title || "Add Friend", icon: UserPlus, showAdd: false, showBack: true };
+          case 'profile': return { title: t.profile?.title || "My Profile", icon: User, showAdd: false, showBack: false };
+          default: return { title: "Social", icon: Circle, showAdd: false, showBack: false };
+      }
+  };
+  const header = getHeaderConfig();
+
   // --- MAIN MODAL ---
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh] h-[85vh] animate-scale-in border border-slate-200 dark:border-slate-800">
+      <div className="relative w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] h-[85vh] animate-scale-in border border-slate-200/50 dark:border-slate-800/50">
         
-        {/* Header */}
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950 flex-shrink-0">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white font-serif-text">{t.title}</h2>
-            <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:rotate-90 transition-transform">
-                <X size={20} />
-            </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex p-2 bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-            <button 
-                onClick={() => setActiveTab('inbox')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'inbox' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm scale-105' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-            >
-                <Bell size={16} />
-                {t.tabs.inbox}
-                {requests.length > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full animate-bounce">{requests.length}</span>}
-            </button>
-            <button 
-                onClick={() => setActiveTab('friends')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'friends' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm scale-105' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-            >
-                <Users size={16} />
-                {t.tabs.friends}
-                {totalUnreadMessages > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full animate-bounce">{totalUnreadMessages}</span>}
-            </button>
-            <button 
-                onClick={() => setActiveTab('add')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'add' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm scale-105' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-            >
-                <UserPlus size={16} />
-                {t.tabs.add}
-            </button>
-            <button 
-                onClick={() => setActiveTab('profile')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'profile' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm scale-105' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-            >
-                <User size={16} />
-                {t.tabs.me}
-            </button>
+        {/* DISTINCT HEADER */}
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50 flex-shrink-0">
+            <div className="flex items-center gap-3">
+                {header.showBack && (
+                    <button 
+                        onClick={() => setCurrentView('friends')}
+                        className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 transition-colors"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                )}
+                <div className="flex items-center gap-2">
+                    <header.icon size={20} className="text-indigo-600 dark:text-indigo-400" />
+                    <h2 className="text-lg font-bold text-slate-800 dark:text-white font-serif-text">{header.title}</h2>
+                </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+                {header.showAdd && (
+                    <button 
+                        onClick={() => setCurrentView('add')} 
+                        className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors shadow-sm"
+                        title="Add Friend"
+                    >
+                        <UserPlus size={18} />
+                    </button>
+                )}
+                <button onClick={onClose} className="p-2 rounded-full text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:rotate-90 transition-transform">
+                    <X size={20} />
+                </button>
+            </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900">
+        <div className="flex-1 overflow-y-auto p-4">
             
             {/* INBOX TAB */}
-            {activeTab === 'inbox' && (
+            {currentView === 'inbox' && (
                 <div className="space-y-6">
-                    {/* Friend Requests Section */}
                     <div>
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                            {t.inbox.requests}
@@ -458,7 +372,7 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                         {loadingData ? (
                             <div className="text-center py-4 text-slate-400 text-sm animate-pulse">{commonT.loading}</div>
                         ) : requests.length === 0 ? (
-                            <div className="text-center py-4 text-slate-400 text-sm italic bg-white dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">{t.inbox.noRequests}</div>
+                            <div className="text-center py-8 text-slate-400 text-sm italic bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">{t.inbox.noRequests}</div>
                         ) : (
                             <div className="space-y-2">
                                 {requests.map((req, i) => (
@@ -486,7 +400,6 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                         )}
                     </div>
 
-                    {/* Updates Log Section */}
                     <div>
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{t.inbox.updates}</h3>
                         <div className="space-y-3">
@@ -508,18 +421,18 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
             )}
 
             {/* FRIENDS TAB */}
-            {activeTab === 'friends' && (
+            {currentView === 'friends' && (
                 <div className="space-y-3">
                      {loadingData ? (
                         <div className="text-center py-8 text-slate-400 animate-pulse">{t.friends.loading}</div>
                      ) : friends.length === 0 ? (
-                        <div className="text-center py-10 opacity-60">
+                        <div className="text-center py-20 opacity-60">
                             <Users size={48} className="mx-auto mb-2 text-slate-300"/>
                             <p className="text-slate-500">{t.friends.empty}</p>
                         </div>
                      ) : (
                         friends.map((friend, i) => {
-                            if (!friend) return null; // Safe check
+                            if (!friend) return null;
                             const online = isOnline(friend.last_seen);
                             const hasUnread = (friend.unread_count || 0) > 0;
                             
@@ -533,7 +446,6 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                                     `}
                                     style={{ animationDelay: `${i * 0.05}s` }}
                                 >
-                                    {/* Unread Flash Effect */}
                                     {hasUnread && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 animate-pulse"></div>}
 
                                     <div className="flex items-center gap-3 pl-2">
@@ -541,7 +453,6 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                                             <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-indigo-400 transition-colors">
                                                 {friend.avatar ? <img src={friend.avatar} className="w-full h-full object-cover"/> : <User size={24} className="text-slate-400"/>}
                                             </div>
-                                            {/* Online Status Indicator */}
                                             {online && (
                                                 <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full shadow-sm animate-pulse" title="Online"></div>
                                             )}
@@ -551,7 +462,6 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                                                 <div className={`font-medium transition-colors ${hasUnread ? 'text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-800 dark:text-white group-hover:text-indigo-600'}`}>
                                                     {friend.display_name || "Friend"}
                                                 </div>
-                                                {/* Streak Icon in List */}
                                                 {(friend.streak || 0) > 0 && (
                                                     <div className="flex items-center gap-0.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full text-[10px] text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                                                         <Flame size={8} className="fill-current" /> {friend.streak}
@@ -586,23 +496,23 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
             )}
 
             {/* ADD FRIEND TAB */}
-            {activeTab === 'add' && (
+            {currentView === 'add' && (
                 <div className="space-y-6 animate-slide-in-right">
-                    {/* My ID Card */}
-                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-5 text-white shadow-lg animate-float">
-                        <div className="text-xs font-medium opacity-80 uppercase tracking-wide mb-1">{t.add.yourId}</div>
-                        <div className="flex items-center justify-between">
+                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg animate-float">
+                        <div className="text-xs font-medium opacity-80 uppercase tracking-wide mb-2">{t.add.yourId}</div>
+                        <div className="flex items-center justify-between bg-white/10 p-3 rounded-lg backdrop-blur-sm border border-white/10">
                             <div className="text-2xl font-bold font-mono tracking-wider">{currentUserShareId}</div>
-                            <button onClick={copyMyId} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors hover:scale-110 active:scale-95">
+                            <button onClick={copyMyId} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors hover:scale-110 active:scale-95 shadow-sm">
                                 <Copy size={18} />
                             </button>
                         </div>
-                        <div className="text-[10px] mt-2 opacity-70">{t.add.shareText}</div>
+                        <div className="text-[10px] mt-3 opacity-70 flex items-center gap-1">
+                            <Info size={12}/> {t.add.shareText}
+                        </div>
                     </div>
 
-                    {/* Search Input */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t.add.enterId}</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 ml-1">{t.add.enterId}</label>
                         <div className="flex gap-2">
                             <input 
                                 type="text" 
@@ -614,7 +524,7 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                             <button 
                                 onClick={handleSearch}
                                 disabled={searchLoading || !searchId}
-                                className="px-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 hover:scale-105 active:scale-95 transition-transform"
+                                className="px-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 hover:scale-105 active:scale-95 transition-transform shadow-md"
                             >
                                 <Search size={20} />
                             </button>
@@ -624,45 +534,43 @@ const SocialModal: React.FC<SocialModalProps> = ({ isOpen, onClose, currentUserS
                 </div>
             )}
 
-            {/* MY PROFILE TAB (SAFE RENDER) */}
-            {activeTab === 'profile' && (
+            {/* MY PROFILE TAB */}
+            {currentView === 'profile' && (
                 <div className="animate-slide-up flex flex-col items-center pt-6">
-                     {/* Check if profile loaded, if not show generic */}
-                     <div className="w-24 h-24 rounded-full border-4 border-white dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-lg mb-3 relative">
+                     <div className="w-28 h-28 rounded-full border-4 border-white dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-xl mb-4 relative ring-2 ring-indigo-100 dark:ring-slate-800">
                          {currentUserProfile?.avatar ? (
                              <img src={currentUserProfile.avatar} className="w-full h-full object-cover" />
                          ) : (
                              <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400">
-                                 <User size={40} />
+                                 <User size={48} />
                              </div>
                          )}
                      </div>
 
-                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white font-serif-text mb-1">
-                         {currentUserProfile?.display_name || "Profile Loading..."}
+                     <h2 className="text-3xl font-bold text-slate-800 dark:text-white font-serif-text mb-1">
+                         {currentUserProfile?.display_name || "Loading..."}
                      </h2>
-                     <div className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-full mb-6">
+                     <div className="inline-block px-4 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-full mb-8 border border-indigo-100 dark:border-indigo-900">
                         <p className="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-semibold tracking-wide">
                             {currentUserProfile?.share_id || "..."}
                         </p>
                      </div>
 
-                     <div className="w-full grid grid-cols-2 gap-3 mb-6">
-                         <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 text-center">
-                             <div className="text-xs text-slate-400 font-bold uppercase mb-1">{t.profile.streak}</div>
-                             <div className="flex items-center justify-center gap-1 text-xl font-bold text-amber-500">
-                                 <Flame size={20} fill="currentColor" /> {currentUserProfile?.streak || 0}
+                     <div className="w-full grid grid-cols-2 gap-4 mb-8">
+                         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 text-center shadow-sm">
+                             <div className="text-xs text-slate-400 font-bold uppercase mb-2 tracking-wider">{t.profile.streak}</div>
+                             <div className="flex items-center justify-center gap-1.5 text-2xl font-bold text-amber-500">
+                                 <Flame size={24} fill="currentColor" /> {currentUserProfile?.streak || 0}
                              </div>
                          </div>
-                         <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 text-center">
-                             <div className="text-xs text-slate-400 font-bold uppercase mb-1">{t.profile.achievements}</div>
-                             <div className="flex items-center justify-center gap-1 text-xl font-bold text-purple-500">
-                                 <Trophy size={20} /> {(currentUserProfile?.achievements || []).length}
+                         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 text-center shadow-sm">
+                             <div className="text-xs text-slate-400 font-bold uppercase mb-2 tracking-wider">{t.profile.achievements}</div>
+                             <div className="flex items-center justify-center gap-1.5 text-2xl font-bold text-purple-500">
+                                 <Trophy size={24} /> {(currentUserProfile?.achievements || []).length}
                              </div>
                          </div>
                      </div>
 
-                     {/* My Achievements (Enhanced Grid) */}
                      {renderAchievementGrid(currentUserProfile?.achievements || [])}
                 </div>
             )}

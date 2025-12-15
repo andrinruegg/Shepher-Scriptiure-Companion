@@ -14,10 +14,12 @@ interface ChatInterfaceProps {
   onMenuClick: () => void;
   onRegenerate: () => void;
   onDeleteCurrentChat?: (e: React.MouseEvent) => void;
-  onNewChat: () => void; // New Prop
+  onNewChat: () => void;
   language: string;
   userAvatar?: string;
-  onSaveMessage: (message: Message) => void; // New prop for saving
+  onSaveMessage: (message: Message) => void;
+  onOpenComposer: (text: string) => void; 
+  onOpenSettings: () => void; 
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
@@ -30,7 +32,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onNewChat,
   language,
   userAvatar,
-  onSaveMessage
+  onSaveMessage,
+  onOpenComposer,
+  onOpenSettings
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -39,27 +43,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
-  // Translations
   const t = translations[language]?.chat || translations['English'].chat;
   const commonT = translations[language]?.common || translations['English'].common;
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+    const handleResize = () => { setIsMobile(window.innerWidth < 768); };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
-    // If it's a new chat (only 1 message which is the welcome msg), scroll to TOP
-    // so the user can see the beginning of the text.
     if (messages.length <= 1) {
-        if (messagesContainerRef.current) {
-            messagesContainerRef.current.scrollTop = 0;
-        }
+        if (messagesContainerRef.current) messagesContainerRef.current.scrollTop = 0;
     } else {
-        // Otherwise, scroll to BOTTOM to see latest
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages.length, isLoading]); 
@@ -67,13 +63,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputValue.trim() || isLoading) return;
-    
     onSendMessage(inputValue.trim());
     setInputValue('');
-    
-    if (inputRef.current) {
-      inputRef.current.style.height = 'auto';
-    }
+    if (inputRef.current) inputRef.current.style.height = 'auto';
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -89,44 +81,35 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
   };
 
-  // Determine if we are in the "Empty State" (just the welcome message)
-  // Safety check: messages might be undefined briefly during transitions
   const safeMessages = messages || [];
   const isInitialState = safeMessages.length === 1 && safeMessages[0].role === 'model';
-
-  // Shorten placeholder on mobile
   const placeholderText = isMobile ? (t.placeholderShort || "Ask Shepherd...") : t.placeholder;
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 relative overflow-hidden transition-colors duration-300">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between z-10 shadow-sm sticky top-0 transition-colors">
+    <div className="flex flex-col h-full relative overflow-hidden">
+      {/* Header with Glass Effect */}
+      <header className="glass-header p-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
-          <button 
-            onClick={onMenuClick}
-            className="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-          >
+          <button onClick={onMenuClick} className="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors">
             <Menu size={24} />
           </button>
           
           <div className="flex items-center gap-3 select-none">
-              <div className="bg-emerald-600 p-2 rounded-lg text-white hidden md:block">
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl text-white hidden md:block shadow-md shadow-indigo-500/20">
                 <ShepherdLogo size={24} className="text-white" />
               </div>
-              <div className="md:hidden">
-                 <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100 tracking-tight font-serif-text">Shepherd</h1>
-              </div>
               <div className="hidden md:block">
-                <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 tracking-tight font-serif-text">Shepherd</h1>
-                <p className="hidden md:block text-xs text-slate-500 dark:text-slate-400 font-medium">{t.subtitle}</p>
+                <h1 className="text-xl font-bold text-slate-800 dark:text-white font-serif-text">Shepherd</h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">{t.subtitle}</p>
               </div>
+              <div className="md:hidden font-serif-text font-bold text-lg text-slate-800 dark:text-white">Shepherd</div>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
             <button 
                 onClick={onNewChat}
-                className="p-2 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg transition-colors flex items-center gap-2"
+                className="p-2 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl transition-colors flex items-center gap-2 border border-indigo-200/50 dark:border-indigo-800/50"
                 title={commonT.newChat}
             >
                 <Plus size={20} />
@@ -136,7 +119,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {onDeleteCurrentChat && (
                 <button 
                     onClick={onDeleteCurrentChat}
-                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
                     title="Delete Conversation"
                 >
                     <Trash2 size={20} />
@@ -150,7 +133,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
          ref={messagesContainerRef}
          className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth"
       >
-        <div ref={messagesTopRef} /> {/* Top Anchor */}
+        <div ref={messagesTopRef} /> 
         <div className="max-w-3xl mx-auto h-full flex flex-col">
           
           {safeMessages.map((msg, index) => (
@@ -158,50 +141,53 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 key={msg.id} 
                 message={msg} 
                 isLast={index === safeMessages.length - 1}
-                // Only allow regenerate if it's NOT the first message (index 0)
                 onRegenerate={index > 0 ? onRegenerate : undefined}
                 isRegenerating={isLoading}
                 userAvatar={userAvatar}
                 onSave={() => onSaveMessage(msg)}
                 language={language}
+                onOpenComposer={onOpenComposer}
+                onOpenSettings={onOpenSettings} 
             />
           ))}
           
-          {/* Topic Selector for Initial State */}
           {isInitialState && !isLoading && (
             <div className="flex-1 flex flex-col justify-center pb-10">
                <TopicSelector onSelectTopic={onSendMessage} language={language} />
             </div>
           )}
           
-          <div ref={messagesEndRef} className="h-4" /> {/* Bottom Anchor */}
+          <div ref={messagesEndRef} className="h-4" /> 
         </div>
       </main>
 
-      {/* Input Area */}
-      <footer className="p-4 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 transition-colors">
+      {/* Input Area - Floating Glass */}
+      <footer className="p-4 md:p-6 pb-6 bg-transparent">
         <div className="max-w-3xl mx-auto relative">
-          <form onSubmit={handleSubmit} className="relative flex items-end gap-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-3xl p-2 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all shadow-inner">
+          <form 
+            onSubmit={handleSubmit} 
+            className="relative flex items-end gap-2 bg-white/70 dark:bg-slate-900/80 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[2rem] p-2 shadow-2xl shadow-indigo-900/5 focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all focus-within:bg-white/90 dark:focus-within:bg-slate-900/95"
+          >
             <textarea
               ref={inputRef}
               value={inputValue}
               onChange={adjustTextareaHeight}
               onKeyDown={handleKeyDown}
               placeholder={placeholderText}
-              className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-[120px] min-h-[44px] py-2.5 px-3 text-slate-800 dark:text-slate-100 placeholder-slate-400"
+              className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-[120px] min-h-[44px] py-3 px-4 text-slate-800 dark:text-slate-100 placeholder-slate-400 leading-relaxed"
               rows={1}
             />
             <button
               type="submit"
               disabled={isLoading || !inputValue.trim()}
               className={`
-                p-2.5 rounded-full mb-0.5 flex-shrink-0 transition-all duration-200
+                p-3 rounded-full mb-1 flex-shrink-0 transition-all duration-300
                 ${isLoading || !inputValue.trim() 
-                  ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed' 
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md transform hover:scale-105'}
+                  ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:scale-105 active:scale-95'}
               `}
             >
-              <Send size={20} />
+              <Send size={18} strokeWidth={2.5} />
             </button>
           </form>
         </div>

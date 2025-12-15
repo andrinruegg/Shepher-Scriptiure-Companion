@@ -1,5 +1,4 @@
 
-
 export interface Message {
   id: string;
   role: 'user' | 'model';
@@ -95,9 +94,11 @@ export interface DirectMessage {
   read_at?: string | null; // Null if unread
 }
 
+export type SocialTab = 'inbox' | 'friends' | 'add' | 'profile';
+
 // --- NEW TYPES FOR BIBLE READER & SAVED ITEMS ---
 
-export type AppView = 'chat' | 'bible' | 'saved' | 'prayer' | 'quiz';
+export type AppView = 'home' | 'chat' | 'bible' | 'saved' | 'prayer' | 'quiz' | 'stories';
 
 export interface BibleBook {
   id: string;   // e.g. 'GEN'
@@ -161,4 +162,11 @@ export interface QuizQuestion {
   correctIndex: number;
   explanation: string;
   reference: string;
+}
+export interface BibleStory {
+    id: string;
+    name: string;
+    role: string;
+    image: string;
+    story: string;
 }

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Share2, Copy, Calendar, Check } from 'lucide-react';
+import { X, Share2, Copy, Calendar, Check, Image } from 'lucide-react';
 import { getDailyVerse } from '../services/dailyVerseService';
 import ShepherdLogo from './ShepherdLogo';
 import { translations } from '../utils/translations';
@@ -9,10 +9,11 @@ interface DailyVerseModalProps {
   isOpen: boolean;
   onClose: () => void;
   isDarkMode: boolean;
-  language: string; 
+  language: string;
+  onOpenComposer: (text: string, ref: string) => void; // New prop
 }
 
-const DailyVerseModal: React.FC<DailyVerseModalProps> = ({ isOpen, onClose, isDarkMode, language }) => {
+const DailyVerseModal: React.FC<DailyVerseModalProps> = ({ isOpen, onClose, isDarkMode, language, onOpenComposer }) => {
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
@@ -76,6 +77,14 @@ const DailyVerseModal: React.FC<DailyVerseModalProps> = ({ isOpen, onClose, isDa
                 >
                     {copied ? <Check size={16} /> : <Copy size={16} />}
                     <span>{copied ? t.copied : t.copy}</span>
+                </button>
+
+                <button 
+                    onClick={() => { onOpenComposer(verse.text, verse.reference); onClose(); }}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full font-medium transition-colors text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/30"
+                >
+                    <Image size={16} />
+                    <span>{t.createImage}</span>
                 </button>
             </div>
         </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Book, ChevronLeft, ChevronRight, Heart, X, Menu, Volume2, Pause, Volume1 } from 'lucide-react';
+import { Book, ChevronLeft, ChevronRight, Heart, X, ArrowLeft, Volume2, Pause, Volume1, Image } from 'lucide-react';
 import { BIBLE_BOOKS, fetchChapter } from '../services/bibleService';
 import { BibleChapter, SavedItem, BibleHighlight } from '../types';
 import { translations } from '../utils/translations';
@@ -13,6 +13,7 @@ interface BibleReaderProps {
   highlights: BibleHighlight[];
   onAddHighlight: (highlight: BibleHighlight) => void;
   onRemoveHighlight: (ref: string) => void;
+  onOpenComposer: (text: string, reference: string) => void; 
 }
 
 const BibleReader: React.FC<BibleReaderProps> = ({ 
@@ -21,7 +22,8 @@ const BibleReader: React.FC<BibleReaderProps> = ({
     onMenuClick, 
     highlights, 
     onAddHighlight, 
-    onRemoveHighlight 
+    onRemoveHighlight,
+    onOpenComposer
 }) => {
   const [selectedBookId, setSelectedBookId] = useState('JHN');
   const [chapter, setChapter] = useState(1);
@@ -29,15 +31,14 @@ const BibleReader: React.FC<BibleReaderProps> = ({
   const [loading, setLoading] = useState(false);
   const [activeVerse, setActiveVerse] = useState<number | null>(null);
   
-  // Audio state
   const [isSpeaking, setIsSpeaking] = useState(false);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
   
   const t = translations[language]?.bible || translations['English'].bible;
+  const commonT = translations[language]?.common || translations['English'].common;
   
   const selectedBook = BIBLE_BOOKS.find(b => b.id === selectedBookId) || BIBLE_BOOKS[0];
   
-  // Get localized name for the currently selected book
   const getLocalizedBookName = (book: typeof BIBLE_BOOKS[0]) => {
       if (language === 'German') return book.names.de;
       if (language === 'Romanian') return book.names.ro;
@@ -47,7 +48,6 @@ const BibleReader: React.FC<BibleReaderProps> = ({
   const displayBookName = getLocalizedBookName(selectedBook);
 
   useEffect(() => {
-    // Stop any speech when changing chapters or unmounting
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
     
@@ -71,18 +71,13 @@ const BibleReader: React.FC<BibleReaderProps> = ({
           setIsSpeaking(false);
       } else {
           if (!data || !data.verses) return;
-          
-          // Combine full text for smoother reading
           const fullText = data.verses.map(v => `${v.verse}. ${v.text}`).join(' ');
-          
           const utterance = new SpeechSynthesisUtterance(fullText);
           utterance.lang = language === 'Romanian' ? 'ro-RO' : (language === 'German' ? 'de-DE' : 'en-US');
-          utterance.rate = 0.9; // Slightly slower for bible reading
+          utterance.rate = 0.9; 
           utterance.pitch = 1.0;
-          
           utterance.onend = () => setIsSpeaking(false);
           utterance.onerror = () => setIsSpeaking(false);
-          
           speechRef.current = utterance;
           window.speechSynthesis.speak(utterance);
           setIsSpeaking(true);
@@ -147,18 +142,17 @@ const BibleReader: React.FC<BibleReaderProps> = ({
            <div className="flex items-center gap-2 w-full md:w-auto">
                <button 
                   onClick={onMenuClick}
-                  className="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                  className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
                >
-                  <Menu size={24} />
+                  <ArrowLeft size={24} />
                </button>
-               <div className="bg-indigo-100 dark:bg-slate-800 p-2 rounded-lg text-indigo-600 dark:text-indigo-400">
+               <div className="bg-emerald-100 dark:bg-slate-800 p-2 rounded-lg text-emerald-600 dark:text-emerald-400">
                    <Book size={20} />
                </div>
                <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-serif-text">
                    {displayBookName} {chapter}
                </h1>
                
-               {/* Audio Bible Button */}
                <button
                   onClick={toggleAudio}
                   disabled={loading || !data}
@@ -170,7 +164,6 @@ const BibleReader: React.FC<BibleReaderProps> = ({
            </div>
 
            <div className="flex items-center gap-2 w-full md:w-auto">
-               {/* Book Selector */}
                <select 
                   value={selectedBookId} 
                   onChange={(e) => { setSelectedBookId(e.target.value); setChapter(1); }}
@@ -188,7 +181,6 @@ const BibleReader: React.FC<BibleReaderProps> = ({
                    </optgroup>
                </select>
 
-               {/* Chapter Selector */}
                <select
                   value={chapter}
                   onChange={(e) => setChapter(Number(e.target.value))}
@@ -229,10 +221,8 @@ const BibleReader: React.FC<BibleReaderProps> = ({
                                    <sup className="text-xs text-slate-400 font-sans mr-1 select-none">{v.verse}</sup>
                                    {v.text}
                                    
-                                   {/* Floating Action Menu */}
                                    {activeVerse === v.verse && (
                                        <span className="absolute -top-14 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1.5 flex gap-1 items-center z-20 whitespace-nowrap animate-scale-in">
-                                           {/* Highlight Colors */}
                                            <button onClick={(e) => { e.stopPropagation(); highlightVerse(v.verse, 'yellow'); }} className="w-6 h-6 rounded-full bg-yellow-400 hover:scale-110 transition-transform"></button>
                                            <button onClick={(e) => { e.stopPropagation(); highlightVerse(v.verse, 'green'); }} className="w-6 h-6 rounded-full bg-emerald-400 hover:scale-110 transition-transform"></button>
                                            <button onClick={(e) => { e.stopPropagation(); highlightVerse(v.verse, 'blue'); }} className="w-6 h-6 rounded-full bg-blue-400 hover:scale-110 transition-transform"></button>
@@ -245,6 +235,14 @@ const BibleReader: React.FC<BibleReaderProps> = ({
                                            )}
 
                                            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+
+                                           <button
+                                              onClick={(e) => { e.stopPropagation(); onOpenComposer(v.text, `${displayBookName} ${chapter}:${v.verse}`); setActiveVerse(null); }}
+                                              className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-purple-600 px-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded"
+                                              title="Create Image"
+                                           >
+                                               <Image size={14} />
+                                           </button>
 
                                            <button 
                                               onClick={(e) => { e.stopPropagation(); saveVerse(v.text, v.verse); }}
@@ -265,7 +263,6 @@ const BibleReader: React.FC<BibleReaderProps> = ({
            </div>
        </main>
 
-       {/* Footer Navigation */}
        <footer className="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between">
            <button 
                 onClick={handlePrev} 

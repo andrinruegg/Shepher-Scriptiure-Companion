@@ -4,7 +4,6 @@ import ChatInterface from './components/ChatInterface';
 import Sidebar from './components/Sidebar';
 import Login from './components/Login';
 import SetupScreen from './components/SetupScreen';
-import ShepherdLogo from './components/ShepherdLogo';
 import SettingsModal from './components/SettingsModal';
 import DailyVerseModal from './components/DailyVerseModal';
 import BibleReader from './components/BibleReader';
@@ -16,7 +15,10 @@ import PrincessOverlay from './components/PrincessOverlay';
 import SocialModal from './components/SocialModal';
 import QuizMode from './components/QuizMode';
 import PasswordResetModal from './components/PasswordResetModal';
-import { Message, ChatSession, UserPreferences, AppView, SavedItem, BibleHighlight } from './types';
+import VisualComposerModal from './components/VisualComposerModal'; 
+import StoriesTab from './components/StoriesTab';
+import HomeView from './components/HomeView'; 
+import { Message, ChatSession, UserPreferences, AppView, SavedItem, BibleHighlight, SocialTab } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { sendMessageStream, generateChatTitle } from './services/geminiService';
 import { supabase } from './services/supabase';
@@ -29,18 +31,28 @@ const App: React.FC = () => {
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
 
-  const [currentView, setCurrentView] = useState<AppView>('chat');
+  // VIEW MANAGEMENT
+  const [currentView, setCurrentView] = useState<AppView>('home');
+  
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // MODALS
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDailyVerseOpen, setIsDailyVerseOpen] = useState(false);
+  
   const [isSocialOpen, setIsSocialOpen] = useState(false); 
+  const [socialInitialTab, setSocialInitialTab] = useState<SocialTab>('inbox');
+
   const [isSanctuaryOpen, setIsSanctuaryOpen] = useState(false);
   const [isPasswordResetOpen, setIsPasswordResetOpen] = useState(false);
-  const [dailyStreak, setDailyStreak] = useState(0);
   
+  // COMPOSER STATE
+  const [composerData, setComposerData] = useState<{text: string, reference?: string} | null>(null);
+
+  const [dailyStreak, setDailyStreak] = useState(0);
   const [shareId, setShareId] = useState<string>('');
   const [totalNotifications, setTotalNotifications] = useState(0);
 
@@ -154,7 +166,6 @@ const App: React.FC = () => {
             db.social.heartbeat().catch(e => console.warn("Heartbeat failed", e));
 
         } catch (e) {
-            // Global safety net - ensure chat can still load even if profile fails
             console.error("Initialization critical error (bypassed):", e);
         }
 
@@ -223,10 +234,15 @@ const App: React.FC = () => {
           ]);
           setTotalNotifications(requests.length + unreadCount);
       } catch (e: any) {
-          // Suppress known fetch errors to avoid console noise
           if (e.message && e.message.includes('Failed to fetch')) return;
           console.warn("Failed to load requests (minor)", e);
       }
+  };
+
+  const handleOpenSocial = (tab: SocialTab) => {
+      setSocialInitialTab(tab);
+      setIsSocialOpen(true);
+      loadSocialNotifications();
   };
 
   const handleSaveItem = async (item: SavedItem) => {
@@ -289,11 +305,7 @@ const App: React.FC = () => {
   }, [isDarkMode, isPrincessMode]);
 
   const toggleDarkMode = () => {
-      // Prevent toggling dark mode if Princess Mode is on
-      if (isPrincessMode) {
-          // You could show a toast here, but simple disabling is fine
-          return; 
-      }
+      if (isPrincessMode) return; 
       
       const newMode = !isDarkMode;
       setIsDarkMode(newMode);
@@ -314,7 +326,6 @@ const App: React.FC = () => {
        const isDark = value === 'dark';
        
        if (isDark && isPrincessMode) {
-           // Turning on Dark Mode disables Princess Mode
            setIsPrincessMode(false);
            localStorage.setItem('princessMode', 'false');
            updateCloudPreference('princessMode', false);
@@ -329,29 +340,12 @@ const App: React.FC = () => {
        localStorage.setItem('winterMode', String(isWinter));
        updateCloudPreference('winterMode', isWinter);
        
-       // Mutually exclusive: If Winter ON, Princess OFF
        if (isWinter) {
            setIsPrincessMode(false);
            localStorage.setItem('princessMode', 'false');
            updateCloudPreference('princessMode', false);
        }
 
-    } else if (key === 'winterSnow') {
-        const val = value === true;
-        setIsWinterSnow(val);
-        localStorage.setItem('winterSnow', String(val));
-        updateCloudPreference('winterSnow', val);
-    } else if (key === 'winterLights') {
-        const val = value === true;
-        setIsWinterLights(val);
-        localStorage.setItem('winterLights', String(val));
-        updateCloudPreference('winterLights', val);
-    } else if (key === 'winterIcicles') {
-        const val = value === true;
-        setIsWinterIcicles(val);
-        localStorage.setItem('winterIcicles', String(val));
-        updateCloudPreference('winterIcicles', val);
-        
     } else if (key === 'princessTheme') {
         const isPrincess = value === true;
         setIsPrincessMode(isPrincess);
@@ -359,29 +353,17 @@ const App: React.FC = () => {
         updateCloudPreference('princessMode', isPrincess);
 
         if (isPrincess) {
-            // Mutually exclusive: If Princess ON, Winter OFF
             setIsWinterMode(false);
             localStorage.setItem('winterMode', 'false');
             updateCloudPreference('winterMode', false);
             
-            // Enforce Light Mode
             setIsDarkMode(false);
             localStorage.setItem('theme', 'light');
             updateCloudPreference('theme', 'light');
         }
 
-    } else if (key === 'princessHearts') {
-        const val = value === true;
-        setIsPrincessHearts(val);
-        localStorage.setItem('princessHearts', String(val));
-        updateCloudPreference('princessHearts', val);
-    } else if (key === 'princessSparkles') {
-        const val = value === true;
-        setIsPrincessSparkles(val);
-        localStorage.setItem('princessSparkles', String(val));
-        updateCloudPreference('princessSparkles', val);
-
     } else if (key === 'language') {
+       // CRITICAL: Ensure immediate state update for UI
        setLanguage(value as string);
        localStorage.setItem('language', value as string);
        updateCloudPreference('language', value as string);
@@ -424,39 +406,20 @@ const App: React.FC = () => {
   const loadChats = async () => {
     try {
       const userChats = await db.getUserChats();
-      const langData = translations[language] || translations['English'];
-      const messages = langData.welcomeMessages || translations['English'].welcomeMessages;
-      const randomTemplate = messages[Math.floor(Math.random() * messages.length)];
-      const finalWelcomeText = randomTemplate.replace('{name}', displayName || (language === 'Romanian' ? 'Prieten' : 'Friend'));
-
-      const tempId = uuidv4();
-      const welcomeMsg: Message = {
-        id: uuidv4(),
-        role: 'model',
-        text: finalWelcomeText,
-        timestamp: new Date().toISOString()
-      };
-
-      const tempChat: ChatSession = {
-          id: tempId,
-          title: translations[language]?.sidebar?.newChat || 'New Conversation',
-          createdAt: Date.now(),
-          messages: [welcomeMsg],
-          isTemp: true 
-      };
-
-      // Always ensure at least one chat exists
-      setChats([tempChat, ...userChats]);
-      setActiveChatId(tempId);
-      setCurrentView('chat');
+      if (userChats.length === 0) {
+          // Pass FALSE to prevent auto-switching view on startup
+          createNewChat(false);
+      } else {
+          setChats(userChats);
+          // Default to home view is already set in state initialization
+      }
     } catch (error) { 
         console.error("Failed to load chats:", error);
-        // Fallback: Create a local chat so the user isn't stuck on blank screen
-        createNewChat();
+        createNewChat(false);
     }
   };
 
-  const createNewChat = () => {
+  const createNewChat = (activateView: boolean = true) => {
     const langData = translations[language] || translations['English'];
     const messages = langData.welcomeMessages || translations['English'].welcomeMessages;
     const randomTemplate = messages[Math.floor(Math.random() * messages.length)];
@@ -475,7 +438,10 @@ const App: React.FC = () => {
     
     setChats(prevChats => [newChat, ...prevChats]);
     setActiveChatId(tempId);
-    setCurrentView('chat');
+    
+    if (activateView) {
+        setCurrentView('chat');
+    }
   };
 
   const handleDeleteChat = async (chatId: string) => {
@@ -491,7 +457,7 @@ const App: React.FC = () => {
     setActiveChatId(nextActiveId);
 
     if (chats.length <= 1) { 
-         setTimeout(() => { if (nextActiveId === null) createNewChat(); }, 50);
+         setTimeout(() => { if (nextActiveId === null) createNewChat(true); }, 50);
     }
 
     const chatToDelete = chatsBackup.find(c => c.id === chatId);
@@ -543,8 +509,6 @@ const App: React.FC = () => {
 
     (async () => {
         try {
-            // DATABASE OPERATIONS (FAIL-SAFE)
-            // If saving to DB fails, we still want the AI to reply.
             try {
                 if (currentChat.isTemp) {
                     await db.createChat(currentChat.title, currentChat.messages[0], currentChatId);
@@ -553,15 +517,13 @@ const App: React.FC = () => {
                 await db.addMessage(currentChatId, userMessage);
             } catch (dbError) {
                 console.error("DB Save failed, continuing locally:", dbError);
-                // DO NOT THROW. Continue to AI response.
             }
 
-            // AI GENERATION (CRITICAL PATH)
             const historyPayload = [...currentChat.messages, userMessage];
             await streamAIResponse(currentChatId, aiMessageId, historyPayload, text, hiddenContext, initialAiMessage);
         } catch (e) { 
             console.error("Message send critical failure:", e);
-            setIsLoading(false); // Ensure loading state is turned off on error
+            setIsLoading(false);
         }
     })();
   };
@@ -613,7 +575,11 @@ const App: React.FC = () => {
         const rawMsg = error?.message || "Unknown Error";
         let friendlyMessage = rawMsg;
         
-        if (rawMsg.includes('429') || rawMsg.includes('Quota')) {
+        // --- Detect Missing API Key ---
+        if (rawMsg.includes("NO_API_KEY") || rawMsg.includes("API_KEY_LEAKED") || rawMsg.includes("API key not valid")) {
+             friendlyMessage = "MISSING_API_KEY_TEMPLATE";
+        } 
+        else if (rawMsg.includes('429') || rawMsg.includes('Quota')) {
             friendlyMessage = "⚠️ **High Traffic / Daily Limit Reached**\n\nPlease wait a moment or add your own free API Key in Settings.";
         } else if (rawMsg.includes('Failed to fetch')) {
             friendlyMessage = "⚠️ **Connection Error**\n\nPlease check your internet connection.";
@@ -727,62 +693,125 @@ const App: React.FC = () => {
             onSetLanguage={(lang) => handleUpdatePreference('language', lang)} 
           /> 
       ) : (
-        <div className="flex h-screen bg-slate-200 dark:bg-slate-900 overflow-hidden relative z-0 transition-colors duration-500">
-          <Sidebar 
-            isOpen={isSidebarOpen}
-            onClose={() => setIsSidebarOpen(false)}
-            chats={chats}
-            activeChatId={activeChatId}
-            onSelectChat={(id) => { setActiveChatId(id); setIsSidebarOpen(false); }}
-            onNewChat={() => createNewChat()}
-            onDeleteChat={(id, e) => handleDeleteChat(id)}
-            onRenameChat={handleRenameChat}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onOpenDailyVerse={() => setIsDailyVerseOpen(true)}
-            onOpenSocial={() => { setIsSocialOpen(true); loadSocialNotifications(); }}
-            onOpenSanctuary={() => setIsSanctuaryOpen(true)}
-            pendingRequestsCount={totalNotifications}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-            language={language}
-            dailyStreak={dailyStreak}
-            currentView={currentView}
-            onChangeView={setCurrentView}
-          />
-          <div className="flex-1 flex flex-col h-full relative w-full overflow-hidden">
-            {currentView === 'chat' && (
-                <ChatInterface 
-                    messages={activeMessages} 
-                    isLoading={isLoading} 
-                    onSendMessage={handleSendMessage} 
-                    onMenuClick={() => setIsSidebarOpen(true)} 
-                    onRegenerate={handleRegenerate} 
-                    onDeleteCurrentChat={activeChatId ? () => handleDeleteChat(activeChatId) : undefined} 
-                    onNewChat={createNewChat} 
-                    language={language} 
-                    userAvatar={avatar}
-                    onSaveMessage={handleSaveMessage}
-                />
-            )}
-            {currentView === 'bible' && ( <BibleReader language={language} onSaveItem={handleSaveItem} onMenuClick={() => setIsSidebarOpen(true)} highlights={highlights} onAddHighlight={handleAddHighlight} onRemoveHighlight={handleRemoveHighlight} /> )}
-            {currentView === 'saved' && ( <SavedCollection savedItems={savedItems} onRemoveItem={handleRemoveSavedItem} language={language} onMenuClick={() => setIsSidebarOpen(true)} /> )}
-            {currentView === 'prayer' && ( 
-                <PrayerList 
-                    savedItems={savedItems} 
-                    onSaveItem={handleSaveItem} 
-                    onUpdateItem={handleUpdateItem} 
-                    onRemoveItem={handleRemoveSavedItem} 
-                    language={language} 
-                    onMenuClick={() => setIsSidebarOpen(true)} 
-                    currentUserId={session.user.id} 
-                    userName={displayName}
-                    userAvatar={avatar}
-                /> 
-            )}
-            {currentView === 'quiz' && ( <QuizMode language={language} onMenuClick={() => setIsSidebarOpen(true)} /> )}
-          </div>
+        // MAIN APP CONTAINER - Removed background color to let CSS body gradient show
+        <div className="flex h-screen overflow-hidden relative z-0">
+          
+          {/* HOME VIEW - Full Screen */}
+          {currentView === 'home' && (
+              <div className="flex-1 w-full h-full">
+                  <HomeView 
+                      language={language} 
+                      displayName={displayName} 
+                      userAvatar={avatar}
+                      dailyStreak={dailyStreak} 
+                      onNavigate={setCurrentView}
+                      onMenuClick={() => setIsSettingsOpen(true)}
+                      onOpenSettings={() => setIsSettingsOpen(true)}
+                      onOpenNotifications={() => handleOpenSocial('inbox')}
+                      onOpenProfile={() => handleOpenSocial('profile')}
+                      onOpenFriends={() => handleOpenSocial('friends')}
+                      onOpenSanctuary={() => setIsSanctuaryOpen(true)}
+                      notificationCount={totalNotifications}
+                      onOpenDailyVerse={() => setIsDailyVerseOpen(true)}
+                  />
+              </div>
+          )}
 
+          {/* CHAT VIEW - With Sidebar */}
+          {currentView === 'chat' && (
+              <div className="flex w-full h-full">
+                  <Sidebar 
+                    isOpen={isSidebarOpen}
+                    onClose={() => setIsSidebarOpen(false)}
+                    chats={chats}
+                    activeChatId={activeChatId}
+                    onSelectChat={(id) => { setActiveChatId(id); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
+                    onNewChat={() => createNewChat(true)}
+                    onDeleteChat={(id, e) => handleDeleteChat(id)}
+                    onRenameChat={handleRenameChat}
+                    language={language}
+                    onNavigateHome={() => setCurrentView('home')}
+                  />
+                  <div className="flex-1 h-full w-full relative">
+                      <ChatInterface 
+                          messages={activeMessages} 
+                          isLoading={isLoading} 
+                          onSendMessage={handleSendMessage} 
+                          onMenuClick={() => setIsSidebarOpen(true)} 
+                          onRegenerate={handleRegenerate} 
+                          onDeleteCurrentChat={activeChatId ? () => handleDeleteChat(activeChatId) : undefined} 
+                          onNewChat={() => createNewChat(true)} 
+                          language={language} 
+                          userAvatar={avatar}
+                          onSaveMessage={handleSaveMessage}
+                          onOpenComposer={(text) => setComposerData({ text })}
+                          onOpenSettings={() => setIsSettingsOpen(true)} 
+                      />
+                  </div>
+              </div>
+          )}
+
+          {/* OTHER FULL SCREEN VIEWS */}
+          {currentView === 'bible' && ( 
+              <div className="flex-1 w-full h-full">
+                  <BibleReader 
+                      language={language} 
+                      onSaveItem={handleSaveItem} 
+                      onMenuClick={() => setCurrentView('home')} 
+                      highlights={highlights} 
+                      onAddHighlight={handleAddHighlight} 
+                      onRemoveHighlight={handleRemoveHighlight}
+                      onOpenComposer={(text, ref) => setComposerData({ text, reference: ref })}
+                  /> 
+              </div>
+          )}
+          {currentView === 'saved' && ( 
+              <div className="flex-1 w-full h-full">
+                  <SavedCollection 
+                      savedItems={savedItems} 
+                      onRemoveItem={handleRemoveSavedItem} 
+                      language={language} 
+                      onMenuClick={() => setCurrentView('home')} 
+                      onOpenComposer={(text, ref) => setComposerData({ text, reference: ref })}
+                  /> 
+              </div>
+          )}
+          {currentView === 'prayer' && ( 
+              <div className="flex-1 w-full h-full">
+                  <PrayerList 
+                      savedItems={savedItems} 
+                      onSaveItem={handleSaveItem} 
+                      onUpdateItem={handleUpdateItem} 
+                      onRemoveItem={handleRemoveSavedItem} 
+                      language={language} 
+                      onMenuClick={() => setCurrentView('home')} 
+                      currentUserId={session.user.id} 
+                      userName={displayName}
+                      userAvatar={avatar}
+                  /> 
+              </div>
+          )}
+          {currentView === 'quiz' && ( 
+              <div className="flex-1 w-full h-full">
+                  <QuizMode language={language} onMenuClick={() => setCurrentView('home')} />
+              </div>
+          )}
+          {currentView === 'stories' && ( 
+              <div className="flex-1 w-full h-full">
+                  <StoriesTab language={language} onMenuClick={() => setCurrentView('home')} />
+              </div>
+          )}
+
+          {/* Modals */}
           <Sanctuary isOpen={isSanctuaryOpen} onClose={() => setIsSanctuaryOpen(false)} language={language} />
+
+          <VisualComposerModal 
+            isOpen={!!composerData} 
+            onClose={() => setComposerData(null)} 
+            initialText={composerData?.text || ''} 
+            initialReference={composerData?.reference}
+            language={language} 
+          />
 
           <SettingsModal 
             isOpen={isSettingsOpen} 
@@ -790,16 +819,13 @@ const App: React.FC = () => {
             preferences={{ 
                 bibleTranslation, 
                 theme: isDarkMode ? 'dark' : 'light', 
-                // Winter
                 winterTheme: isWinterMode, 
                 winterSnow: isWinterSnow,
                 winterLights: isWinterLights,
                 winterIcicles: isWinterIcicles,
-                // Princess
                 princessTheme: isPrincessMode,
                 princessHearts: isPrincessHearts,
                 princessSparkles: isPrincessSparkles,
-                
                 language, 
                 displayName, 
                 avatar, 
@@ -810,18 +836,24 @@ const App: React.FC = () => {
             userId={session.user.id} 
             onLogout={handleLogout} 
           />
-          <DailyVerseModal isOpen={isDailyVerseOpen} onClose={() => setIsDailyVerseOpen(false)} isDarkMode={isDarkMode} language={language} />
+          <DailyVerseModal 
+            isOpen={isDailyVerseOpen} 
+            onClose={() => setIsDailyVerseOpen(false)} 
+            isDarkMode={isDarkMode} 
+            language={language} 
+            onOpenComposer={(text, ref) => setComposerData({ text, reference: ref })}
+          />
           
           <SocialModal 
             isOpen={isSocialOpen} 
             onClose={() => setIsSocialOpen(false)} 
+            initialTab={socialInitialTab}
             currentUserShareId={shareId} 
             isDarkMode={isDarkMode} 
             onUpdateNotifications={loadSocialNotifications}
             language={language}
           />
           
-          {/* PASSWORD RESET MODAL */}
           <PasswordResetModal 
             isOpen={isPasswordResetOpen}
             onClose={() => setIsPasswordResetOpen(false)}
