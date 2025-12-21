@@ -163,10 +163,31 @@ export interface QuizQuestion {
   explanation: string;
   reference: string;
 }
+
 export interface BibleStory {
     id: string;
     name: string;
     role: string;
     image: string;
-    story: string;
+    
+    // Detailed biographical data
+    meaningOfName?: string;
+    timeline?: string; // e.g., "c. 1000 BC" or "1st Century AD"
+    
+    family?: {
+        parents?: string;
+        spouse?: string;
+        children?: string;
+        siblings?: string;
+    };
+    
+    traits?: string[];
+    
+    keyVerses?: Array<{
+        ref: string;
+        text: string;
+    }>;
+    
+    // Array of paragraphs for formatted reading
+    biography: string[]; 
 }

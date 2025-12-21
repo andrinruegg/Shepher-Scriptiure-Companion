@@ -9,8 +9,6 @@ interface SanctuaryProps {
     language: string;
 }
 
-// DIRECT MP3 SOURCES (100% Reliable - SoundJay)
-// Removed Night as requested.
 const SOUNDS = [
     { 
         id: 'rain', 
@@ -38,64 +36,72 @@ const Sanctuary: React.FC<SanctuaryProps> = ({ isOpen, onClose, language }) => {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     
+    // Use HTMLAudioElement instead of fetch/AudioContext to bypass CORS issues
     const audioRef = useRef<HTMLAudioElement | null>(null);
+
     const t = translations[language]?.sanctuary || translations['English'].sanctuary;
+
+    useEffect(() => {
+        // Create audio element if it doesn't exist
+        if (!audioRef.current) {
+            audioRef.current = new Audio();
+            audioRef.current.loop = true;
+        }
+
+        const audio = audioRef.current;
+
+        const handleCanPlay = () => {
+            setIsLoading(false);
+            setError(null);
+        };
+
+        const handleLoadStart = () => {
+            setIsLoading(true);
+            setError(null);
+        };
+
+        const handleError = () => {
+            setIsLoading(false);
+            setError("Unable to play sound. Please check your connection.");
+            setActiveSoundId(null);
+        };
+
+        audio.addEventListener('canplay', handleCanPlay);
+        audio.addEventListener('loadstart', handleLoadStart);
+        audio.addEventListener('error', handleError);
+
+        return () => {
+            audio.removeEventListener('canplay', handleCanPlay);
+            audio.removeEventListener('loadstart', handleLoadStart);
+            audio.removeEventListener('error', handleError);
+        };
+    }, []);
 
     // Effect: Handle Playback when activeSoundId changes
     useEffect(() => {
+        if (!audioRef.current) return;
         const audio = audioRef.current;
-        if (!audio) return;
 
-        // STOPPING
-        if (!activeSoundId) {
-            audio.pause();
-            audio.currentTime = 0;
-            setIsLoading(false);
-            return;
-        }
-
-        const sound = SOUNDS.find(s => s.id === activeSoundId);
-        if (sound) {
-            // If the src is already correct, don't reload (allows seamless play)
-            if (audio.src === sound.url) {
-                if (audio.paused) {
-                    const playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(err => {
-                            if (err.name !== 'AbortError') console.error("Resume error:", err);
-                        });
-                    }
+        if (activeSoundId) {
+            const sound = SOUNDS.find(s => s.id === activeSoundId);
+            if (sound) {
+                // Only change src if it's different to prevent restart flickering
+                if (audio.src !== sound.url) {
+                    audio.src = sound.url;
+                    audio.load();
                 }
-                return;
+                
+                audio.play().catch(err => {
+                    console.error("Audio playback interrupted:", err);
+                    // This often happens if the user hasn't interacted with the page yet
+                    if (err.name !== 'AbortError') {
+                        setError("Interaction required or playback blocked.");
+                    }
+                });
             }
-
-            // New Sound Selected
+        } else {
             audio.pause();
-            setError(null);
-            setIsLoading(true);
-            audio.src = sound.url;
-            audio.volume = volume;
-            
-            const playPromise = audio.play();
-            
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => setIsLoading(false))
-                    .catch(err => {
-                        if (err.name === 'AbortError') {
-                            setIsLoading(false);
-                            return;
-                        }
-                        
-                        console.error("Play error:", err);
-                        setIsLoading(false);
-                        if (err.name === 'NotAllowedError') {
-                            setError("Tap again to play");
-                        } else if (err.name === 'NotSupportedError') {
-                            setError("Format not supported");
-                        }
-                    });
-            }
+            setIsLoading(false);
         }
     }, [activeSoundId]);
 
@@ -106,41 +112,18 @@ const Sanctuary: React.FC<SanctuaryProps> = ({ isOpen, onClose, language }) => {
         }
     }, [volume]);
 
-    const handleAudioError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
-        if (!activeSoundId) {
-            setIsLoading(false);
-            return;
-        }
+    if (!isOpen && !activeSoundId) return null;
 
-        const target = e.target as HTMLAudioElement;
-        const currentSrc = target.getAttribute('src');
-        if (!currentSrc || currentSrc === '') return;
-
-        console.error("Audio Error Event:", target.error);
-        setIsLoading(false);
-        
-        if (target.error && target.error.code === 4) {
-            setError("Source unavailable");
+    const toggleSound = (id: string) => {
+        if (activeSoundId === id) {
+            setActiveSoundId(null);
         } else {
-            setError("Unable to play audio");
+            setActiveSoundId(id);
         }
     };
 
-    if (!isOpen && !activeSoundId) return null;
-
     return (
         <>
-            {/* PERSISTENT AUDIO PLAYER */}
-            <audio 
-                ref={audioRef}
-                loop
-                preload="auto"
-                onError={handleAudioError}
-                onCanPlay={() => setIsLoading(false)}
-                onWaiting={() => setIsLoading(true)}
-                onPlaying={() => setIsLoading(false)}
-            />
-
             {/* VIEW 1: FULL MODAL */}
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -161,14 +144,13 @@ const Sanctuary: React.FC<SanctuaryProps> = ({ isOpen, onClose, language }) => {
                             </div>
                         )}
 
-                        {/* LIST LAYOUT (Better for 3 items) */}
                         <div className="flex flex-col gap-3 mb-8">
                             {SOUNDS.map(sound => {
                                 const isActive = activeSoundId === sound.id;
                                 return (
                                     <button
                                         key={sound.id}
-                                        onClick={() => setActiveSoundId(isActive ? null : sound.id)}
+                                        onClick={() => toggleSound(sound.id)}
                                         className={`
                                             w-full p-4 rounded-2xl flex items-center justify-between transition-all border relative overflow-hidden group
                                             ${isActive 
@@ -176,7 +158,6 @@ const Sanctuary: React.FC<SanctuaryProps> = ({ isOpen, onClose, language }) => {
                                                 : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750 hover:border-slate-600'}
                                         `}
                                     >
-                                        {/* Left: Icon & Label */}
                                         <div className="flex items-center gap-4 z-10">
                                             <div className={`p-2 rounded-full ${isActive ? 'bg-emerald-500/20' : 'bg-slate-900/50'}`}>
                                                 <sound.icon size={24} className={isActive && !isLoading ? 'animate-pulse' : ''} />
@@ -186,26 +167,22 @@ const Sanctuary: React.FC<SanctuaryProps> = ({ isOpen, onClose, language }) => {
                                             </span>
                                         </div>
 
-                                        {/* Right: Status or Loader */}
                                         <div className="z-10">
                                             {isLoading && isActive ? (
                                                 <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
                                             ) : isActive ? (
-                                                // Animated Equalizer Bars
                                                 <div className="flex gap-1 items-end h-4">
                                                     <div className="w-1 bg-emerald-400 rounded-full animate-[bounce_1s_infinite]"></div>
                                                     <div className="w-1 bg-emerald-400 rounded-full animate-[bounce_1.2s_infinite]"></div>
                                                     <div className="w-1 bg-emerald-400 rounded-full animate-[bounce_0.8s_infinite]"></div>
                                                 </div>
                                             ) : (
-                                                // Play Icon (Implicit)
                                                 <div className="w-8 h-8 rounded-full border border-slate-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <div className="ml-0.5 border-t-[5px] border-t-transparent border-l-[8px] border-l-slate-400 border-b-[5px] border-b-transparent"></div>
                                                 </div>
                                             )}
                                         </div>
                                         
-                                        {/* Background Fill Animation */}
                                         {isActive && (
                                             <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none"></div>
                                         )}
@@ -214,7 +191,6 @@ const Sanctuary: React.FC<SanctuaryProps> = ({ isOpen, onClose, language }) => {
                             })}
                         </div>
 
-                        {/* Volume Control */}
                         <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
                             <div className="flex items-center gap-3 text-slate-400 mb-2">
                                 {volume === 0 ? <VolumeX size={16}/> : <Volume2 size={16}/>}
