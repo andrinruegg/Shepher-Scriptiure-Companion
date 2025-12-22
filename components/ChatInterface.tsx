@@ -1,11 +1,10 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { Send, Menu, Trash2, Plus } from 'lucide-react';
-import { Message } from '../types';
-import ChatMessage from './ChatMessage';
-import TopicSelector from './TopicSelector';
-import ShepherdLogo from './ShepherdLogo';
-import { translations } from '../utils/translations';
+import { Message } from '../types.ts';
+import ChatMessage from './ChatMessage.tsx';
+import TopicSelector from './TopicSelector.tsx';
+import ShepherdLogo from './ShepherdLogo.tsx';
+import { translations } from '../utils/translations.ts';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -87,7 +86,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
-      {/* Header with Glass Effect */}
       <header className="glass-header p-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <button onClick={onMenuClick} className="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors">
@@ -128,7 +126,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </header>
 
-      {/* Messages Area */}
       <main 
          ref={messagesContainerRef}
          className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth"
@@ -161,7 +158,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </main>
 
-      {/* Input Area - Floating Glass */}
       <footer className="p-4 md:p-6 pb-6 bg-transparent">
         <div className="max-w-3xl mx-auto relative">
           <form 

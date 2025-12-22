@@ -1,11 +1,10 @@
-
 import React, { memo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Message } from '../types';
+import { Message } from '../types.ts';
 import { User, RotateCw, Heart, Languages, Image, Key } from 'lucide-react';
-import ShepherdLogo from './ShepherdLogo';
-import { translateContent } from '../services/geminiService';
-import { translations } from '../utils/translations';
+import ShepherdLogo from './ShepherdLogo.tsx';
+import { translateContent } from '../services/geminiService.ts';
+import { translations } from '../utils/translations.ts';
 
 interface ChatMessageProps {
   message: Message;
@@ -35,7 +34,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
 
-  /* Removed thinking and missing key checks related to API key UI */
   const isThinking = !isUser && isLast && (!message.text || message.text.trim() === '') && !message.isError;
   const t = translations[language]?.chat || translations['English'].chat;
 
@@ -130,7 +128,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             )}
           </div>
           
-          {/* Action Row */}
           <div className="flex items-center gap-3 mt-1 mr-1 self-end opacity-0 group-hover:opacity-100 transition-opacity">
               {!isThinking && message.text && (
                   <button
