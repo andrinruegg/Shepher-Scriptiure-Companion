@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { Lock, CheckCircle2, AlertCircle, X } from 'lucide-react';
-import { supabase } from '../services/supabase.ts';
+import { supabase } from '../services/supabase';
 
 interface PasswordResetModalProps {
   isOpen: boolean;
@@ -32,16 +33,20 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({ isOpen, onClose
     setLoading(true);
 
     try {
+        // Fix for TS18047: Assign to local variable to ensure type narrowing persists
         const client = supabase;
         if (!client) throw new Error("Database not connected");
 
+        // Update the password
         const { error } = await client.auth.updateUser({ password: password });
         if (error) throw error;
 
         setSuccess(true);
+        
+        // Wait 2 seconds then sign out to force re-login with new password
         setTimeout(async () => {
             await client.auth.signOut();
-            window.location.reload();
+            window.location.reload(); // Force reload to clear state and show login
         }, 2000);
 
     } catch (err: any) {
@@ -53,6 +58,7 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({ isOpen, onClose
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      
       <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 border border-slate-200 dark:border-slate-800 animate-scale-in">
         <div className="text-center mb-6">
             <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-3 text-indigo-600 dark:text-indigo-400">
@@ -100,6 +106,7 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({ isOpen, onClose
                         required
                     />
                 </div>
+
                 <button 
                     type="submit"
                     disabled={loading}

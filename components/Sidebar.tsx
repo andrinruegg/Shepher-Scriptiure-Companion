@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Plus, MessageSquare, Trash2, X, Edit2, Check, ArrowLeft } from 'lucide-react';
-import { ChatSession } from '../types.ts';
-import { translations } from '../utils/translations.ts';
+import { ChatSession } from '../types';
+import { translations } from '../utils/translations';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -79,6 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
+      {/* Mobile Overlay */}
       {isOpen && (
         <div 
           className="absolute inset-0 bg-black/40 backdrop-blur-sm z-20 md:hidden transition-opacity"
@@ -86,6 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
+      {/* Sidebar Content - Uses CSS Variables for glass effect */}
       <div className={`
         absolute md:relative inset-y-0 left-0 z-30
         w-72 flex flex-col
@@ -94,6 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         md:flex-shrink-0
       `}>
+        {/* Header */}
         <div className="p-5 border-b border-black/5 dark:border-white/5">
           <div className="flex items-center justify-between mb-5">
              <button 
@@ -120,6 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
+        {/* Chat List */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
             <h3 className="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
                 {t.history}

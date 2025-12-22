@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { X, Check, Eraser, Sparkles, Trash2, Undo2, Loader2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -22,17 +23,21 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   
+  // Brush Settings
   const [color, setColor] = useState('#6366f1'); 
   const [size, setSize] = useState(5);
   const [isGlowing, setIsGlowing] = useState(false);
   const [isEraser, setIsEraser] = useState(false);
 
+  // Undo History
   const [history, setHistory] = useState<ImageData[]>([]);
 
+  // Ensure valid dimensions
   const safeWidth = width || window.innerWidth;
   const safeHeight = height || window.innerHeight;
 
   useEffect(() => {
+    // Init canvas
     const canvas = canvasRef.current;
     if (canvas) {
         canvas.width = safeWidth;
@@ -41,12 +46,16 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         
         if (ctx) {
             if (initialImage) {
+                console.log("[DrawingCanvas] Loading background image...", initialImage);
                 const img = new Image();
+                // CRITICAL: Set crossOrigin BEFORE src to prevent canvas tainting
                 img.crossOrigin = "anonymous";
+                // Cache-busting: Force browser to re-fetch with CORS headers even if cached without them
                 const separator = initialImage.includes('?') ? '&' : '?';
                 img.src = `${initialImage}${separator}cb=${Date.now()}`;
                 
                 img.onload = () => {
+                    console.log("[DrawingCanvas] Background image loaded successfully.");
                     try {
                         ctx.drawImage(img, 0, 0, safeWidth, safeHeight);
                         saveHistory();
@@ -54,7 +63,9 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                         console.error("Image draw failed", e);
                     }
                 };
-                img.onerror = () => {
+                img.onerror = (e) => {
+                    console.error("[DrawingCanvas] Failed to load background image", e);
+                    // We continue without the background rather than breaking the app
                     saveHistory();
                 };
             } else {
@@ -66,13 +77,13 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   const saveHistory = () => {
       const canvas = canvasRef.current;
-      const ctx = canvas?.getContext('2d', { willReadFrequently: true });
+      const ctx = canvas?.getContext('2d');
       if (canvas && ctx) {
           try {
               const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
               setHistory(prev => [...prev.slice(-10), imageData]); 
           } catch (e) {
-              console.warn("Could not save history", e);
+              console.warn("[DrawingCanvas] Could not save history (likely tainted canvas)", e);
           }
       }
   };
@@ -174,23 +185,37 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   };
 
   const handleSend = () => {
-      if (isSaving) return;
+      console.log("[DrawingCanvas] Checkmark clicked. Saving...");
+      if (isSaving) {
+          console.warn("[DrawingCanvas] Save already in progress.");
+          return;
+      }
+      
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) {
+        console.error("[DrawingCanvas] Canvas ref is null");
+        alert("System Error: Canvas not found.");
+        return;
+      }
       
       try {
+          // This usually throws a SecurityError if the canvas is tainted (CORS issue)
           canvas.toBlob((blob) => {
               if (blob) {
+                console.log(`[DrawingCanvas] Blob created successfully. Size: ${blob.size} bytes. Type: ${blob.type}`);
                 onSend(blob);
               } else {
-                alert("Security Error: Background image issue.");
+                console.error("[DrawingCanvas] canvas.toBlob() returned null. This usually means the canvas is tainted (CORS security violation).");
+                alert("Security Error: The background image is blocking the save. Please check Supabase storage CORS settings.");
               }
           }, 'image/png');
       } catch (error) {
-          alert("Security Error: Background image issue.");
+          console.error("[DrawingCanvas] Exception during toBlob:", error);
+          alert("Security Error: The background image is blocking the save. Please check Supabase storage CORS settings.");
       }
   };
 
+  // Render Toolbar via Portal to ensure it is fixed on top of everything
   const toolbar = (
       <div className="fixed top-0 left-0 right-0 bg-slate-900 border-b border-slate-800 p-3 flex items-center gap-3 z-[60] shadow-xl safe-area-top">
          <button onClick={onClose} disabled={isSaving} className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 disabled:opacity-50">
@@ -206,6 +231,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                    disabled={isSaving}
                    className="w-8 h-8 rounded-full cursor-pointer bg-transparent border-none disabled:opacity-50"
                  />
+                 
                  <button 
                     onClick={() => { setIsGlowing(!isGlowing); setIsEraser(false); }}
                     disabled={isSaving}
@@ -213,6 +239,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                  >
                      <Sparkles size={18} />
                  </button>
+
                  <button 
                     onClick={() => setIsEraser(!isEraser)}
                     disabled={isSaving}
@@ -220,11 +247,14 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                  >
                      <Eraser size={18} />
                  </button>
+                 
                  <button onClick={() => setSize(size === 5 ? 15 : 5)} disabled={isSaving} className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-300 disabled:opacity-50">
                      {size}
                  </button>
              </div>
+             
              <div className="w-px h-6 bg-slate-700 mx-2"></div>
+
              <button onClick={handleUndo} disabled={isSaving} className="text-slate-400 hover:text-white disabled:opacity-50"><Undo2 size={20} /></button>
              <button onClick={clearCanvas} disabled={isSaving} className="text-red-400 hover:text-red-300 disabled:opacity-50"><Trash2 size={20} /></button>
          </div>

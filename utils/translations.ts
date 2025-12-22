@@ -23,6 +23,7 @@ export const translations: Record<string, any> = {
         friendsTitle: "Friends",
         friendsDesc: "Chat & Connect",
         favoritesTitle: "Favorites",
+        favoritesSub: "Your Collection",
         favoritesDesc: "Your saved collection"
     },
     common: {
@@ -156,7 +157,10 @@ export const translations: Record<string, any> = {
       regenerate: "Regenerate",
       retry: "Retry",
       paintMode: "Paint Mode",
-      placeholderShort: "Ask Shepherd..."
+      placeholderShort: "Ask Shepherd...",
+      missingKeyTitle: "API Key Required",
+      missingKeyDesc: "To chat with Shepherd, you need to provide a free Google Gemini API Key.",
+      setupKey: "Setup API Key"
     },
     bible: {
         selectBook: "Select Book",
@@ -288,10 +292,24 @@ export const translations: Record<string, any> = {
       loggedIn: "Logged in via Supabase",
       signOut: "Sign Out",
       about: "About",
-      aboutText: "Shepherd Scripture Companion was developed by Andrin Rüegg, an 18-year-old developer from Switzerland.\n\nAs a Christian, he built this tool to help himself and his girlfriend, Alexia, grow closer to God through Scripture. It stands as a testament to his love for her and the eternal truth that Jesus loves her.",
+      aboutText: "Shepherd Scripture Companion is dedicated to spreading God's word and providing spiritual encouragement.\n\nIt is designed to help believers grow closer to God through the power of Scripture and a community of faith.",
       displayName: "Display Name",
       bio: "Bio / Description",
-      noBio: "No description yet."
+      noBio: "No description yet.",
+      apiKey: {
+          title: "Unlimited Access",
+          desc: "For unlimited high-speed messaging, you can provide your own free Google Gemini API Key.",
+          shared: "Using Shared Key",
+          custom: "Custom Key Active",
+          add: "Add Key",
+          change: "Change Key",
+          howTo: "How to get a free API Key",
+          step1: "Go to Google AI Studio.",
+          step2: "Click the blue 'Create API Key' button.",
+          step3: "Important: Select 'Create API key in new project'.",
+          step4: "Note: Do not re-use the same project, or the limits will be shared!",
+          step5: "Copy the key (starts with AIza...) and paste it above."
+      }
     },
     social: {
         title: "Social & Updates",
@@ -320,6 +338,8 @@ export const translations: Record<string, any> = {
             enterId: "Enter Friend's ID",
             search: "Search"
         },
+        socialTitle: "Social",
+        socialDesc: "Connect with others",
         profile: {
             title: "My Profile",
             streak: "Daily Streak",
@@ -383,6 +403,7 @@ export const translations: Record<string, any> = {
         friendsTitle: "Prieteni",
         friendsDesc: "Chat & Conectare",
         favoritesTitle: "Favorite",
+        favoritesSub: "Colecția Ta",
         favoritesDesc: "Colecția ta salvată"
     },
     common: {
@@ -516,7 +537,10 @@ export const translations: Record<string, any> = {
       regenerate: "Regenerează",
       retry: "Reîncearcă",
       paintMode: "Mod Pictură",
-      placeholderShort: "Întreabă Păstorul..."
+      placeholderShort: "Întreabă Păstorul...",
+      missingKeyTitle: "Cheie API Necesară",
+      missingKeyDesc: "Pentru a discuta cu Păstorul, trebuie să furnizezi o cheie gratuită Google Gemini API.",
+      setupKey: "Setare Cheie API"
     },
     bible: {
         selectBook: "Alege Cartea",
@@ -648,10 +672,24 @@ export const translations: Record<string, any> = {
       loggedIn: "Autentificat prin Supabase",
       signOut: "Deconectare",
       about: "Despre",
-      aboutText: "Shepherd Scripture Companion a fost dezvoltat de Andrin Rüegg, un dezvoltator de 18 ani din Elveția.\n\nCa creștin, a construit acest instrument pentru a se ajuta pe sine și pe prietena sa, Alexia, să se apropie de Dumnezeu prin Scriptură. Este un testament al dragostei sale pentru ea și al adevărului etern că Isus o iubește.",
+      aboutText: "Shepherd Scripture Companion este dedicat răspândirii cuvântului lui Dumnezeu și oferirii de încurajare spirituală.\n\nEste conceput pentru a ajuta credincioșii să se apropie de Dumnezeu prin puterea Scripturii și o comunitate de credință.",
       displayName: "Nume Afișat",
       bio: "Bio / Descriere",
-      noBio: "Nicio descriere."
+      noBio: "Nicio descriere.",
+      apiKey: {
+          title: "Acces Nelimitat",
+          desc: "Pentru mesaje nelimitate de mare viteză, poți furniza propria cheie gratuită Google Gemini API.",
+          shared: "Folosind Cheie Partajată",
+          custom: "Cheie Personală Activă",
+          add: "Adaugă Cheie",
+          change: "Schimbă Cheia",
+          howTo: "Cum să obții o cheie API gratuită",
+          step1: "Mergi la Google AI Studio.",
+          step2: "Apasă butonul albastru 'Create API Key'.",
+          step3: "Important: Selectează 'Create API key in new project'.",
+          step4: "Notă: Nu refolosi același proiect, altfel limitele vor fi partajate!",
+          step5: "Copiază cheia (începe cu AIza...) și lipește-o mai sus."
+      }
     },
     social: {
         title: "Social & Noutăți",
@@ -680,6 +718,8 @@ export const translations: Record<string, any> = {
             enterId: "Introdu ID Prieten",
             search: "Caută"
         },
+        socialTitle: "Social",
+        socialDesc: "Conectează-te cu alții",
         profile: {
             title: "Profilul Meu",
             streak: "Serie",
@@ -743,6 +783,7 @@ export const translations: Record<string, any> = {
         friendsTitle: "Freunde",
         friendsDesc: "Chatten & Verbinden",
         favoritesTitle: "Favoriten",
+        favoritesSub: "Deine Sammlung",
         favoritesDesc: "Deine Sammlung"
     },
     common: {
@@ -876,7 +917,10 @@ export const translations: Record<string, any> = {
       regenerate: "Neu generieren",
       retry: "Wiederholen",
       paintMode: "Malmodus",
-      placeholderShort: "Frag Hirte..."
+      placeholderShort: "Frag Hirte...",
+      missingKeyTitle: "API-Schlüssel erforderlich",
+      missingKeyDesc: "Um mit Hirte zu chatten, musst du einen kostenlosen Google Gemini API-Schlüssel angeben.",
+      setupKey: "API-Schlüssel einrichten"
     },
     bible: {
         selectBook: "Buch wählen",
@@ -972,7 +1016,7 @@ export const translations: Record<string, any> = {
     topics: {
       title: "Erkunde ein Thema",
       anxiety: { label: "Angst", query: "Ich fühle mich ängstlich. Bitte gib mir einen tröstenden Bibelvers über Frieden." },
-      love: { label: "Liebe", query: "Was sagt die Bibel über Liebe? Geb mir einen schönen Vers." },
+      love: { label: "Liebe", query: "Was sagt die Bibel über Liebe? Geben Sie mir einen schönen Vers." },
       hope: { label: "Hoffnung", query: "Ich brauche heute Hoffnung. Bitte teile eine Schriftstelle über Zukunft." },
       sadness: { label: "Traurigkeit", query: "Ich bin traurig. Bitte gib mir einen Vers des Trostes für ein schweres Herz." },
       gratitude: { label: "Dankbarkeit", query: "Ich möchte dankbar sein. Gib mir einen Vers über Dankbarkeit." },
@@ -1008,10 +1052,24 @@ export const translations: Record<string, any> = {
       loggedIn: "Eingeloggt über Supabase",
       signOut: "Abmelden",
       about: "Über",
-      aboutText: "Shepherd Scripture Companion wurde von Andrin Rüegg entwickelt, einem 18-jährigen Entwickler aus der Schweiz.\n\nAls Christ baute er dieses Werkzeug, um sich selbst und seiner Freundin Alexia zu helfen, durch die Heilige Schrift näher zu Gott zu wachsen. Es steht als Zeugnis seiner Liebe zu ihr und der ewigen Wahrheit, dass Jesus sie liebt.",
+      aboutText: "Shepherd Scripture Companion widmet sich der Verbreitung von Gottes Wort und der Bereitstellung geistlicher Ermutigung.\n\nEs ist darauf ausgelegt, Gläubigen zu helfen, durch die Kraft der Schrift und eine Gemeinschaft des Glaubens Gott näher zu kommen.",
       displayName: "Anzeigename",
       bio: "Bio / Beschreibung",
-      noBio: "Noch keine Beschreibung."
+      noBio: "Noch keine Beschreibung.",
+      apiKey: {
+          title: "Unbegrenzter Zugang",
+          desc: "Für unbegrenzte Hochgeschwindigkeits-Nachrichten kannst du deinen eigenen kostenlosen Google Gemini API-Schlüssel hinzufügen.",
+          shared: "Geteilten Schlüssel nutzen",
+          custom: "Eigener Schlüssel aktiv",
+          add: "Schlüssel hinzufügen",
+          change: "Schlüssel ändern",
+          howTo: "Wie man einen kostenlosen API-Schlüssel erhält",
+          step1: "Gehe zu Google AI Studio.",
+          step2: "Klicke den blauen 'Create API Key' Button.",
+          step3: "Wichtig: Wähle 'Create API key in new project'.",
+          step4: "Hinweis: Verwende nicht dasselbe Projekt erneut, sonst werden die Limits geteilt!",
+          step5: "Kopiere den Schlüssel (beginnt mit AIza...) und füge ihn oben ein."
+      }
     },
     social: {
         title: "Soziales & Updates",
@@ -1040,6 +1098,8 @@ export const translations: Record<string, any> = {
             enterId: "Freund-ID eingeben",
             search: "Suchen"
         },
+        socialTitle: "Soziales",
+        socialDesc: "Vernetze dich mit anderen",
         profile: {
             title: "Mein Profil",
             streak: "Tages-Serie",
@@ -1063,13 +1123,13 @@ export const translations: Record<string, any> = {
         },
         updatesList: [
             { version: "1.7.0", date: "14.12.2025", title: "Neues Dashboard", changes: ["Startseite hinzugefügt", "Verbesserte Navigation"] },
-            { version: "1.6.0", date: "12-12-2025", title: "Bibel-Reader Update", changes: ["Laden der rumänischen Bibel behoben", "Sofortiger Kapitelwechsel", "Offline-verfügbarer Text"] },
+            { version: "1.6.0", date: "12.12.2025", title: "Bibel-Reader Update", changes: ["Laden der rumänischen Bibel behoben", "Sofortiger Kapitelwechsel", "Offline-verfügbarer Text"] },
             { version: "1.5.0", date: "11.12.2025", title: "Quiz & Erfolge", changes: ["Bibel Trivia Modus", "Erfolge für Punkte", "Freunde-Streaks ansehen", "Fortschrittstracking"] },
-            { version: "1.4.0", date: "10.12.2025", title: "Graffiti Perfektion", changes: ["Speicherprobleme behoben", "Weicheres Zeichnen", "Upload Zuverlässigkeit"] },
+            { version: "1.4.0", date: "10-12-2025", title: "Graffiti Perfektion", changes: ["Speicherprobleme behoben", "Weicheres Zeichnen", "Upload Zuverlässigkeit"] },
             { version: "1.3.0", date: "09.12.2025", title: "Sozialer Chat", changes: ["Echtzeit-Nachrichten", "Fotos teilen", "Sprachnachrichten", "Online Status"] },
             { version: "1.2.0", date: "09.12.2025", title: "Winter Update", changes: ["Wintermodus hinzugefügt", "Verbesserte Visuals", "API Fixes"] },
             { version: "1.1.0", date: "08.12.2025", title: "Bibel-Reader", changes: ["Vollständiger Bibel-Reader", "Markierungen", "Verse speichern"] },
-            { version: "1.0.0", date: "08.12.2025", title: "Start", changes: ["Shepherd KI Chat", "Integrare Supabase"] }
+            { version: "1.0.0", date: "08.12.2025", title: "Start", changes: ["Shepherd KI Chat", "Supabase Integration"] }
         ],
         achievementList: {
             'perfect-easy': { title: "Bibelgelehrter", description: "Erziele 100% im einfachen Modus" },

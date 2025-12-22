@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Key, ExternalLink, ChevronDown, ChevronUp, Snowflake, Camera, Trash2, AlignLeft, CloudSnow, Sparkles, Droplets, Crown, Heart } from 'lucide-react';
-import { UserPreferences } from '../types.ts';
-import { translations } from '../utils/translations.ts';
+import { UserPreferences } from '../types';
+import { translations } from '../utils/translations';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -34,9 +35,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isEditingBio, setIsEditingBio] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Custom API Key State
+  const [customKey, setCustomKey] = useState('');
+  const [isEditingKey, setIsEditingKey] = useState(false);
+  const [showKeyTutorial, setShowKeyTutorial] = useState(false);
 
   useEffect(() => {
       if (isOpen) {
+          const storedKey = localStorage.getItem('custom_api_key') || '';
+          setCustomKey(storedKey);
           setTempBio(preferences.bio || '');
       }
   }, [isOpen, preferences.bio]);
@@ -55,17 +63,31 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setIsEditingBio(false);
   }
 
+  const handleSaveKey = () => {
+      localStorage.setItem('custom_api_key', customKey.trim());
+      setIsEditingKey(false);
+  };
+
+  const handleClearKey = () => {
+      localStorage.removeItem('custom_api_key');
+      setCustomKey('');
+      setIsEditingKey(false);
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Compress and resize image
       const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_SIZE = 200; 
+          const MAX_SIZE = 200; // Resize to 200x200 max
+          
           let width = img.width;
           let height = img.height;
+
           if (width > height) {
             if (width > MAX_SIZE) {
               height *= MAX_SIZE / width;
@@ -77,11 +99,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               height = MAX_SIZE;
             }
           }
+
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
+            // Export as JPEG with 0.8 quality
             const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
             onUpdatePreference('avatar', dataUrl);
           }
@@ -104,11 +128,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity animate-fade-in"
         onClick={onClose}
       />
+
+      {/* Modal */}
       <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden animate-scale-in border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+        
+        {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex-shrink-0">
           <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 font-serif-text">
             {t.title}
@@ -120,11 +149,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <X size={20} />
           </button>
         </div>
+
+        {/* Content */}
         <div className="p-6 space-y-6 overflow-y-auto">
+          
+          {/* Preferences Section */}
           <section>
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
               {t.preferences}
             </h3>
+            
+            {/* System Language */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
                 <Globe size={16} className="text-indigo-500" />
@@ -142,6 +177,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 ))}
               </select>
             </div>
+
+            {/* Appearance */}
             <div className="mb-4">
                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
                   {preferences.theme === 'dark' ? <Moon size={16} className="text-indigo-500"/> : <Sun size={16} className="text-amber-500"/>}
@@ -162,6 +199,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                </div>
             </div>
+
+            {/* Winter Mode Toggle */}
             <div className="mb-4 space-y-2">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-3">
@@ -177,6 +216,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </span>
                         </div>
                     </div>
+                    
                     <button 
                         onClick={() => onUpdatePreference('winterTheme', !preferences.winterTheme)}
                         className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${preferences.winterTheme ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
@@ -184,6 +224,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${preferences.winterTheme ? 'translate-x-6' : 'translate-x-0'}`}></div>
                     </button>
                 </div>
+
+                {/* Sub-toggles for Winter Mode - REMOVED ANIMATION CLASS to prevent lag on toggle */}
                 {preferences.winterTheme && (
                     <div className="pl-14 space-y-2">
                         <div className="flex items-center justify-between">
@@ -225,13 +267,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                 )}
             </div>
+
+            {/* PRINCESS MODE TOGGLE */}
             <div className="mb-2 space-y-2">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-pink-50 dark:bg-slate-800/50 border border-pink-100 dark:border-slate-800">
                     <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-full ${preferences.princessTheme ? 'bg-pink-100 text-pink-500 dark:bg-pink-900/30 dark:text-pink-400' : 'bg-slate-200 text-slate-400 dark:bg-slate-700'}`}>
-                            <div className="w-[18px] h-[18px] flex items-center justify-center">
-                                <Crown size={18} />
-                            </div>
+                            <Crown size={18} />
                         </div>
                         <div>
                             <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -242,6 +284,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </span>
                         </div>
                     </div>
+                    
                     <button 
                         onClick={() => onUpdatePreference('princessTheme', !preferences.princessTheme)}
                         className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${preferences.princessTheme ? 'bg-pink-500' : 'bg-slate-300 dark:bg-slate-600'}`}
@@ -249,6 +292,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${preferences.princessTheme ? 'translate-x-6' : 'translate-x-0'}`}></div>
                     </button>
                 </div>
+
+                {/* Sub-toggles for Princess Mode - REMOVED ANIMATION CLASS to prevent lag */}
                 {preferences.princessTheme && (
                     <div className="pl-14 space-y-2">
                         <div className="flex items-center justify-between">
@@ -278,13 +323,93 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                 )}
             </div>
+
           </section>
+
           <hr className="border-slate-100 dark:border-slate-800" />
+
+          {/* ADVANCED: CUSTOM API KEY */}
+          <section>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                 <Key size={12} />
+                 {t.apiKey.title}
+              </h3>
+              
+              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 leading-relaxed">
+                      {t.apiKey.desc}
+                  </p>
+
+                  {isEditingKey ? (
+                      <div className="flex gap-2 mb-3">
+                           <input 
+                              type="password"
+                              value={customKey}
+                              onChange={(e) => setCustomKey(e.target.value)}
+                              placeholder="Paste API Key here..."
+                              className="flex-1 p-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded outline-none text-slate-800 dark:text-slate-200"
+                           />
+                           <button onClick={handleSaveKey} className="p-2 bg-emerald-600 text-white rounded hover:bg-emerald-700">
+                               <Check size={14} />
+                           </button>
+                           <button onClick={() => { setIsEditingKey(false); setCustomKey(localStorage.getItem('custom_api_key') || ''); }} className="p-2 bg-slate-200 dark:bg-slate-700 text-slate-600 rounded">
+                               <X size={14} />
+                           </button>
+                      </div>
+                  ) : (
+                      <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                             <div className={`w-2 h-2 rounded-full ${customKey ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
+                             <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                 {customKey ? t.apiKey.custom : t.apiKey.shared}
+                             </span>
+                          </div>
+                          <div className="flex gap-2">
+                              {customKey && (
+                                  <button onClick={handleClearKey} className="text-xs text-red-500 hover:text-red-600 underline">Remove</button>
+                              )}
+                              <button onClick={() => setIsEditingKey(true)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+                                  {customKey ? t.apiKey.change : t.apiKey.add}
+                              </button>
+                          </div>
+                      </div>
+                  )}
+                  
+                  {/* Tutorial Dropdown */}
+                  <div className="mt-2">
+                      <button 
+                        onClick={() => setShowKeyTutorial(!showKeyTutorial)}
+                        className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-indigo-500 font-medium transition-colors"
+                      >
+                         {showKeyTutorial ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
+                         {t.apiKey.howTo}
+                      </button>
+                      
+                      {showKeyTutorial && (
+                          <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-950 p-3 rounded border border-slate-100 dark:border-slate-800 animate-fade-in">
+                              <ol className="list-decimal ml-4 space-y-2">
+                                  <li>{t.apiKey.step1} <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline inline-flex items-center gap-0.5"><ExternalLink size={10}/></a></li>
+                                  <li>{t.apiKey.step2}</li>
+                                  <li><strong>{t.apiKey.step3}</strong></li>
+                                  <li className="text-slate-400 italic">{t.apiKey.step4}</li>
+                                  <li>{t.apiKey.step5}</li>
+                              </ol>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          </section>
+
+          <hr className="border-slate-100 dark:border-slate-800" />
+
+          {/* Account Section */}
           <section>
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
               {t.account}
             </h3>
+            
             <div className="flex items-start gap-4 mb-4">
+                 {/* Profile Picture Upload */}
                  <div className="relative group cursor-pointer mt-1" onClick={triggerFileUpload}>
                      <div className={`w-16 h-16 rounded-full flex items-center justify-center overflow-hidden border-2 ${preferences.avatar ? 'border-indigo-600' : 'border-slate-200 dark:border-slate-700 bg-indigo-100 dark:bg-slate-700 text-indigo-600 dark:text-slate-300'}`}>
                          {preferences.avatar ? (
@@ -304,7 +429,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         className="hidden" 
                      />
                  </div>
+
                  <div className="flex-1 space-y-3">
+                     {/* Name */}
                      <div>
                         <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t.displayName}</label>
                         <div className="flex gap-2">
@@ -333,6 +460,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             )}
                         </div>
                      </div>
+
+                     {/* BIO SECTION */}
                      <div>
                         <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
                             <AlignLeft size={10} /> {t.bio}
@@ -365,7 +494,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </div>
                         )}
                      </div>
+
                      <div className="text-xs text-slate-500">{userEmail || 'Not logged in'}</div>
+                     
                      {preferences.avatar && (
                          <button onClick={(e) => { e.stopPropagation(); handleRemoveAvatar(); }} className="mt-2 text-[10px] text-red-500 hover:underline flex items-center gap-1">
                              <Trash2 size={10} /> Remove Picture
@@ -373,6 +504,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                      )}
                  </div>
             </div>
+
             <button
               onClick={() => {
                 onLogout();
@@ -384,7 +516,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               {t.signOut}
             </button>
           </section>
+
           <hr className="border-slate-100 dark:border-slate-800" />
+
+          {/* About Section */}
           <section>
              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">
                <Info size={12} />
@@ -396,6 +531,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </p>
              </div>
           </section>
+
         </div>
       </div>
     </div>

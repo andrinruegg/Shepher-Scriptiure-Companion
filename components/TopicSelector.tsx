@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Heart, CloudRain, Sun, Smile, Shield, HeartHandshake, Anchor, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { translations } from '../utils/translations.ts';
+import { translations } from '../utils/translations';
 
 interface TopicSelectorProps {
   onSelectTopic: (topic: string, hiddenContext?: string) => void;
@@ -13,6 +14,7 @@ const TopicSelector: React.FC<TopicSelectorProps> = ({ onSelectTopic, language }
   const t = translations[language]?.topics || translations['English'].topics;
 
   // SUB-TOPIC ENGINE
+  // Instead of sending the same prompt every time, we randomly select a specific angle.
   const subTopics: Record<string, string[]> = {
     anxiety: [
       "peace that transcends understanding",
@@ -91,11 +93,20 @@ const TopicSelector: React.FC<TopicSelectorProps> = ({ onSelectTopic, language }
   ];
 
   const handleSelect = (topicId: string) => {
+      // 1. Get the translation query base (e.g., "Ich brauche Hoffnung...")
       const baseQuery = translations[language]?.topics[topicId]?.query || translations['English'].topics[topicId].query;
+      
+      // 2. Randomly select a sub-topic angle (e.g., "hope during suffering")
       const specificAngles = subTopics[topicId] || [];
       const randomAngle = specificAngles[Math.floor(Math.random() * specificAngles.length)];
+
+      // 3. Construct visible prompt (Pure language)
       const visiblePrompt = baseQuery;
+
+      // 4. Construct HIDDEN context with specific instructions (English/Logic)
+      // This tells the AI: "Even though they asked generally, please focus on X"
       const hiddenContext = `Context-Seed-${uuidv4()}. The user specifically needs a verse regarding: "${randomAngle}". Ensure this is different from previous generic answers.`;
+      
       onSelectTopic(visiblePrompt, hiddenContext);
   };
 

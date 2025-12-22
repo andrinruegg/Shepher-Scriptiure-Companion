@@ -1,5 +1,6 @@
-import { supabase } from './supabase.ts';
-import { ChatSession, Message, SavedItem, BibleHighlight, UserProfile, FriendRequest, DirectMessage, Achievement } from '../types.ts';
+
+import { supabase } from './supabase';
+import { ChatSession, Message, SavedItem, BibleHighlight, UserProfile, FriendRequest, DirectMessage, Achievement } from '../types';
 
 const ensureSupabase = () => {
     if (!supabase) throw new Error("Database not connected.");
@@ -257,6 +258,7 @@ export const db = {
           );
 
           // 2. Fetch ALL prayers (limit to recent 100)
+          // RLS POLICY MUST ALLOW SELECT ON type='prayer' FOR THIS TO WORK
           // @ts-ignore
           const { data, error } = await supabase
               .from('saved_items')
@@ -279,17 +281,21 @@ export const db = {
               
               let isVisible = false;
 
+              // Always see my own prayers
               if (ownerId === user.id) {
                   isVisible = true;
               } 
+              // Public prayers
               else if (vis === 'public') {
                   isVisible = true;
               } 
+              // Friends only prayers
               else if (vis === 'friends') {
                   if (friendIds.includes(ownerId)) {
                       isVisible = true;
                   }
               } 
+              // Specific people
               else if (vis === 'specific' && meta.allowed_users) {
                   if (Array.isArray(meta.allowed_users) && meta.allowed_users.includes(user.id)) {
                       isVisible = true;
@@ -395,7 +401,9 @@ export const db = {
           // @ts-ignore
           const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
           if (error) {
-              console.error("Streak sync failed", error);
+              if (error.code === 'PGRST204' || error.message.includes('achievements')) {
+                  console.error("CRITICAL SQL FIX REQUIRED: Please run 'ALTER TABLE profiles ADD COLUMN achievements jsonb DEFAULT '[]'::jsonb;' in your Supabase SQL Editor.");
+              }
           }
       },
       
@@ -409,6 +417,7 @@ export const db = {
           const { data } = await supabase.from('profiles').select('achievements').eq('id', user.id).single();
           const current: Achievement[] = data?.achievements || [];
           
+          // Avoid duplicates
           if (current.some(a => a.id === achievement.id)) return;
           
           const newSet = [...current, achievement];
@@ -416,18 +425,26 @@ export const db = {
           // @ts-ignore
           const { error } = await supabase.from('profiles').update({ achievements: newSet }).eq('id', user.id);
           
-          if (error) throw error;
+          if (error) {
+               if (error.code === 'PGRST204' || error.message.includes('achievements')) {
+                  console.error("CRITICAL SQL FIX REQUIRED: Please run 'ALTER TABLE profiles ADD COLUMN achievements jsonb DEFAULT '[]'::jsonb;' in your Supabase SQL Editor.");
+              }
+              throw error;
+          }
           return newSet;
       },
 
       async getUserProfile(userId: string): Promise<UserProfile | null> {
           ensureSupabase();
+          
+          // TRY 1: Get Everything
           try {
               // @ts-ignore
               const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle(); 
               if (!error && data) return data as UserProfile;
           } catch (e) {}
 
+          // TRY 2: Fallback (If achievements column missing, select only base fields)
           try {
               // @ts-ignore
               const { data, error } = await supabase.from('profiles')
@@ -436,6 +453,8 @@ export const db = {
                   .maybeSingle();
                   
               if (error || !data) return null;
+              
+              // Return mock empty achievements to satisfy type
               return { ...data, achievements: [] } as UserProfile;
           } catch (e) {
               console.error("Failed to load profile", e);
@@ -599,6 +618,8 @@ export const db = {
 
       async uploadMedia(file: Blob, path: string): Promise<string> {
           ensureSupabase();
+          // @ts-ignore
+          // Explicitly define Content-Type based on blob type or fallback
           const fileOptions = {
               upsert: true,
               contentType: file.type || 'application/octet-stream',
@@ -609,13 +630,36 @@ export const db = {
           const { data, error } = await supabase.storage.from('chat-media').upload(path, file, fileOptions);
           
           if (error) {
-              try {
-                  // @ts-ignore
-                  await supabase.storage.from('chat-media').remove([path]);
-                  // @ts-ignore
-                  const { error: retryError } = await supabase.storage.from('chat-media').upload(path, file, fileOptions);
-                  if (retryError) throw retryError;
-              } catch (fallbackError: any) {
+              console.error("Storage upload error:", error);
+              const msg = error.message || "Unknown Upload Error";
+              
+              // Handle "Unexpected token <" (HTML error) which implies bad session or 403
+              if (msg.includes('<') || msg.includes('html') || msg.includes('row-level security')) {
+                  // Fallback: If Overwrite failed (Permission Denied for UPDATE), try Deleting then Re-uploading (INSERT)
+                  try {
+                      console.log("Attempting overwrite fallback (Delete then Insert)...");
+                      // @ts-ignore
+                      await supabase.storage.from('chat-media').remove([path]);
+                      // Retry upload
+                      // @ts-ignore
+                      const { error: retryError } = await supabase.storage.from('chat-media').upload(path, file, fileOptions);
+                      if (retryError) throw retryError;
+                  } catch (fallbackError: any) {
+                      // CRITICAL: If still failing with HTML/Token error, user session is corrupt.
+                      if (msg.includes('<') || msg.includes('html')) {
+                          // Force logout if we can access auth, otherwise throw specific error
+                          // @ts-ignore
+                          if (supabase?.auth) {
+                              console.warn("Session expired. Signing out.");
+                              // @ts-ignore
+                              await supabase.auth.signOut();
+                              window.location.reload();
+                          }
+                          throw new Error("Your session has expired. Please sign in again.");
+                      }
+                      throw new Error(`Permission Denied.`);
+                  }
+              } else {
                   throw new Error(`Upload Failed.`);
               }
           }
@@ -640,9 +684,31 @@ export const db = {
           // @ts-ignore
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) throw new Error("Not authenticated");
+          if (!friendId) throw new Error("Invalid friend ID for drawing");
+
           const ids = [user.id, friendId].sort();
           const friendshipFileId = `${ids[0]}_${ids[1]}`;
+          
+          // FIX: Clean up any old files from this specific user for this pair to save space
+          // Note: We can only delete files WE own. 
+          try {
+              // List files that look like our pattern
+              // @ts-ignore
+              const { data: oldFiles } = await supabase.storage.from('chat-media').list('graffiti', { search: friendshipFileId });
+              if (oldFiles && oldFiles.length > 0) {
+                  const filesToDelete = oldFiles.map((f: any) => `graffiti/${f.name}`);
+                  // Best effort delete - if we don't own them, this will fail silently/gracefully usually
+                  // @ts-ignore
+                  await supabase.storage.from('chat-media').remove(filesToDelete);
+              }
+          } catch (cleanupError) {
+              console.warn("Cleanup failed (likely permission), proceeding to upload new file", cleanupError);
+          }
+
+          // FIX: Use Unique Timestamp to bypass "Overwrite" permission lock
+          // This forces a "Create" action which is always allowed.
           const path = `graffiti/${friendshipFileId}_${Date.now()}.png`;
+
           return this.uploadMedia(blob, path);
       },
 
@@ -651,22 +717,33 @@ export const db = {
           // @ts-ignore
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return null;
+
           const ids = [user.id, friendId].sort();
           const friendshipFileId = `${ids[0]}_${ids[1]}`;
+
           try {
+              // Search for ANY file starting with this pair ID
               // @ts-ignore
               const { data: list, error } = await supabase.storage.from('chat-media').list('graffiti', {
                   limit: 10,
-                  sortBy: { column: 'created_at', order: 'desc' },
+                  sortBy: { column: 'created_at', order: 'desc' }, // Get newest first
                   search: friendshipFileId
               });
-              if (error || !list || list.length === 0) return null;
+              
+              if (error) return null;
+              if (!list || list.length === 0) return null;
+              
+              // The first one is the newest
               const fileMetadata = list[0];
               const path = `graffiti/${fileMetadata.name}`;
+              
               // @ts-ignore
               const { data: urlData } = supabase.storage.from('chat-media').getPublicUrl(path);
+              
+              // Force cache bust
               return `${urlData.publicUrl}?t=${new Date(fileMetadata.created_at).getTime()}`;
           } catch (e) {
+              console.warn("Error fetching graffiti", e);
               return null;
           }
       }

@@ -1,30 +1,30 @@
 
 import React, { useState, useEffect } from 'react';
-import ChatInterface from './components/ChatInterface.tsx';
-import Sidebar from './components/Sidebar.tsx';
-import Login from './components/Login.tsx';
-import SetupScreen from './components/SetupScreen.tsx';
-import SettingsModal from './components/SettingsModal.tsx';
-import DailyVerseModal from './components/DailyVerseModal.tsx';
-import BibleReader from './components/BibleReader.tsx';
-import SavedCollection from './components/SavedCollection.tsx';
-import PrayerList from './components/PrayerList.tsx';
-import Sanctuary from './components/Sanctuary.tsx';
-import WinterOverlay from './components/WinterOverlay.tsx';
-import PrincessOverlay from './components/PrincessOverlay.tsx';
-import SocialModal from './components/SocialModal.tsx';
-import QuizMode from './components/QuizMode.tsx';
-import PasswordResetModal from './components/PasswordResetModal.tsx';
-import VisualComposerModal from './components/VisualComposerModal.tsx'; 
-import StoriesTab from './components/StoriesTab.tsx';
-import HomeView from './components/HomeView.tsx'; 
-import { Message, ChatSession, UserPreferences, AppView, SavedItem, BibleHighlight, SocialTab } from './types.ts';
+import ChatInterface from './components/ChatInterface';
+import Sidebar from './components/Sidebar';
+import Login from './components/Login';
+import SetupScreen from './components/SetupScreen';
+import SettingsModal from './components/SettingsModal';
+import DailyVerseModal from './components/DailyVerseModal';
+import BibleReader from './components/BibleReader';
+import SavedCollection from './components/SavedCollection';
+import PrayerList from './components/PrayerList';
+import Sanctuary from './components/Sanctuary';
+import WinterOverlay from './components/WinterOverlay';
+import PrincessOverlay from './components/PrincessOverlay';
+import SocialModal from './components/SocialModal';
+import QuizMode from './components/QuizMode';
+import PasswordResetModal from './components/PasswordResetModal';
+import VisualComposerModal from './components/VisualComposerModal'; 
+import StoriesTab from './components/StoriesTab';
+import HomeView from './components/HomeView'; 
+import { Message, ChatSession, UserPreferences, AppView, SavedItem, BibleHighlight, SocialTab } from './types';
 import { v4 as uuidv4 } from 'uuid';
-import { sendMessageStream, generateChatTitle } from './services/geminiService.ts';
-import { supabase } from './services/supabase.ts';
-import { db } from './services/db.ts';
-import { updateStreak } from './services/dailyVerseService.ts';
-import { translations } from './utils/translations.ts';
+import { sendMessageStream, generateChatTitle } from './services/geminiService';
+import { supabase } from './services/supabase';
+import { db } from './services/db';
+import { updateStreak } from './services/dailyVerseService';
+import { translations } from './utils/translations';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -587,13 +587,16 @@ const App: React.FC = () => {
         const rawMsg = error?.message || "Unknown Error";
         let friendlyMessage = rawMsg;
         
-        /* Removed missing API key specific detection to comply with guidelines */
-        if (rawMsg.includes('429') || rawMsg.includes('Quota')) {
-            friendlyMessage = "⚠️ **High Traffic / Daily Limit Reached**\n\nPlease wait a moment.";
+        // --- Detect Missing API Key ---
+        if (rawMsg.includes("NO_API_KEY") || rawMsg.includes("API_KEY_LEAKED") || rawMsg.includes("API key not valid")) {
+             friendlyMessage = "MISSING_API_KEY_TEMPLATE";
+        } 
+        else if (rawMsg.includes('429') || rawMsg.includes('Quota')) {
+            friendlyMessage = "⚠️ **High Traffic / Daily Limit Reached**\n\nPlease wait a moment or add your own free API Key in Settings.";
         } else if (rawMsg.includes('Failed to fetch')) {
             friendlyMessage = "⚠️ **Connection Error**\n\nPlease check your internet connection.";
         } else {
-             friendlyMessage = `⚠️ **Error Details:**\n\n\`${rawMsg}\`\n\n(Please verify your Network)`;
+             friendlyMessage = `⚠️ **Error Details:**\n\n\`${rawMsg}\`\n\n(Please verify your API Key or Network)`;
         }
         
         setChats(prevChats => prevChats.map(chat => {
