@@ -170,24 +170,16 @@ export interface BibleStory {
     role: string;
     image: string;
     
-    // Detailed biographical data
+    // Static initial bio
+    biography: string[]; 
+
+    // Detailed metadata (fetched via AI API)
     meaningOfName?: string;
-    timeline?: string; // e.g., "c. 1000 BC" or "1st Century AD"
-    
-    family?: {
-        parents?: string;
-        spouse?: string;
-        children?: string;
-        siblings?: string;
-    };
-    
+    timeline?: string;
     traits?: string[];
-    
     keyVerses?: Array<{
         ref: string;
         text: string;
     }>;
-    
-    // Array of paragraphs for formatted reading
-    biography: string[]; 
+    fullHistory?: string[]; // Multiple paragraphs
 }

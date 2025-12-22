@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Message, QuizQuestion } from "../types.ts";
 
@@ -143,4 +144,51 @@ export const getBibleChapterFromAI = async (
         }
     });
     return JSON.parse(response.text || "[]");
+};
+
+/**
+ * Fetches a comprehensive detailed biography for a biblical figure using the Gemini API.
+ */
+export const getDetailedBiography = async (name: string, language: string) => {
+    const prompt = `Provide a comprehensive, detailed biography for the biblical figure "${name}" in ${language}.
+    Include historical context, theological significance, and a life timeline.
+    Return strictly JSON with the following structure:
+    {
+        "meaningOfName": string,
+        "timeline": string,
+        "traits": string[],
+        "keyVerses": Array<{ "ref": string, "text": string }>,
+        "fullHistory": string[] (Array of 4-6 detailed paragraphs)
+    }`;
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+        config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    meaningOfName: { type: Type.STRING },
+                    timeline: { type: Type.STRING },
+                    traits: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    keyVerses: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                ref: { type: Type.STRING },
+                                text: { type: Type.STRING }
+                            },
+                            required: ['ref', 'text']
+                        }
+                    },
+                    fullHistory: { type: Type.ARRAY, items: { type: Type.STRING } }
+                },
+                required: ['meaningOfName', 'timeline', 'traits', 'keyVerses', 'fullHistory']
+            }
+        }
+    });
+
+    return JSON.parse(response.text || "{}");
 };

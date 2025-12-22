@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface.tsx';
 import Sidebar from './components/Sidebar.tsx';
@@ -586,16 +587,13 @@ const App: React.FC = () => {
         const rawMsg = error?.message || "Unknown Error";
         let friendlyMessage = rawMsg;
         
-        // --- Detect Missing API Key ---
-        if (rawMsg.includes("NO_API_KEY") || rawMsg.includes("API_KEY_LEAKED") || rawMsg.includes("API key not valid")) {
-             friendlyMessage = "MISSING_API_KEY_TEMPLATE";
-        } 
-        else if (rawMsg.includes('429') || rawMsg.includes('Quota')) {
-            friendlyMessage = "⚠️ **High Traffic / Daily Limit Reached**\n\nPlease wait a moment or add your own free API Key in Settings.";
+        /* Removed missing API key specific detection to comply with guidelines */
+        if (rawMsg.includes('429') || rawMsg.includes('Quota')) {
+            friendlyMessage = "⚠️ **High Traffic / Daily Limit Reached**\n\nPlease wait a moment.";
         } else if (rawMsg.includes('Failed to fetch')) {
             friendlyMessage = "⚠️ **Connection Error**\n\nPlease check your internet connection.";
         } else {
-             friendlyMessage = `⚠️ **Error Details:**\n\n\`${rawMsg}\`\n\n(Please verify your API Key or Network)`;
+             friendlyMessage = `⚠️ **Error Details:**\n\n\`${rawMsg}\`\n\n(Please verify your Network)`;
         }
         
         setChats(prevChats => prevChats.map(chat => {
