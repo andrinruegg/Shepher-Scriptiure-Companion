@@ -87,9 +87,9 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
     let intro = "";
     
     if (persona.id === 'peter') {
-        intro = `Peace be with you, friend. I am Simon, though the Master named me Petrus. I was just cleaning my nets... the sea is quiet today. What brings you to these shores? Come, sit.`;
+        intro = language === 'Romanian' ? `Pacea fie cu tine, prietene. Sunt Simon, deși Învățătorul m-a numit Petrus. Tocmai îmi curățam mrejele... marea este liniștită astăzi. Ce te aduce pe aceste țărmuri? Vino, șezi.` : language === 'German' ? `Friede sei mit dir, Freund. Ich bin Simon, obwohl der Meister mich Petrus nannte. Ich habe gerade meine Netze gereinigt... die See ist heute ruhig. Was führt dich an diese Ufer? Komm, setz dich.` : `Peace be with you, friend. I am Simon, though the Master named me Petrus. I was just cleaning my nets... the sea is quiet today. What brings you to these shores? Come, sit.`;
     } else if (persona.id === 'paul') {
-        intro = `The grace of our Lord Jesus be with you. I was just finishing a scroll for the brothers in Galatia. My eyes are weary, but my heart is full. Who is it that comes to discuss the Way with me?`;
+        intro = language === 'Romanian' ? `Harul Domnului nostru Isus să fie cu tine. Tocmai terminam un pergament pentru frații din Galatia. Ochii mei sunt obosiți, dar inima îmi este plină. Cine este cel care vine să discute despre Cale cu mine?` : language === 'German' ? `Die Gnade unseres Herrn Jesus sei mit dir. Ich habe gerade eine Schriftrolle für die Brüder in Galatien fertiggestellt. Meine Augen sind müde, aber mein Herz ist voll. Wer kommt, um mit mir über den Weg zu sprechen?` : `The grace of our Lord Jesus be with you. I was just finishing a scroll for the brothers in Galatia. My eyes are weary, but my heart is full. Who is it that comes to discuss the Way with me?`;
     }
 
     const firstMsg: Message = {
@@ -101,7 +101,7 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
     const newEncounter: Encounter = {
         id: newId,
         personaId: persona.id,
-        title: `${persona.name} Encounter ${encounters.filter(e => e.personaId === persona.id).length + 1}`,
+        title: language === 'Romanian' ? `Întâlnirea cu ${persona.name} ${encounters.filter(e => e.personaId === persona.id).length + 1}` : language === 'German' ? `Begegnung mit ${persona.name} ${encounters.filter(e => e.personaId === persona.id).length + 1}` : `${persona.name} Encounter ${encounters.filter(e => e.personaId === persona.id).length + 1}`,
         messages: [firstMsg],
         timestamp: Date.now()
     };
@@ -237,11 +237,11 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
                                     ? 'bg-slate-800 text-slate-100 border-slate-700 rounded-tr-none' 
                                     : 'bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-800 italic rounded-tl-none'}
                                 `}>
-                                  {msg.text === '' && isLoading ? (
-                                      <div className="flex gap-1.5 h-4 items-center px-2">
-                                          <div className={`w-2 h-2 ${theme.accent} rounded-full animate-bounce`}></div>
-                                          <div className={`w-2 h-2 ${theme.accent} rounded-full animate-bounce [animation-delay:0.2s]`}></div>
-                                          <div className={`w-2 h-2 ${theme.accent} rounded-full animate-bounce [animation-delay:0.4s]`}></div>
+                                  {msg.text === '' && msg.role === 'model' && isLoading ? (
+                                      <div className="flex items-center space-x-1.5 h-6 px-2">
+                                          <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                          <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                          <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
                                       </div>
                                   ) : (
                                       <div className="prose dark:prose-invert prose-slate max-w-none text-lg leading-relaxed">
@@ -343,7 +343,7 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
                                    </div>
                                    <p className="text-slate-600 dark:text-slate-400 italic line-clamp-2 mb-6">"{fig.biography[0]}"</p>
                                    <div className="flex items-center justify-between text-amber-600 font-bold text-sm">
-                                       <span>View Details</span>
+                                       <span>{t.viewDetails}</span>
                                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                    </div>
                                </div>
@@ -364,7 +364,7 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
 
                       <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl mb-8">
                           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                              <BookOpen size={16} /> History
+                              <BookOpen size={16} /> {t.history}
                           </h3>
                           <div className="space-y-6">
                              {selectedPersona.biography.map((p, i) => (
@@ -375,7 +375,7 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
 
                       {/* Previous Encounters for this persona */}
                       <div className="space-y-4">
-                          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] px-2 mb-4">Past Conversations</h3>
+                          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] px-2 mb-4">{t.pastConversations}</h3>
                           {encounters.filter(e => e.personaId === selectedPersona.id).length === 0 ? (
                               <button 
                                 onClick={() => createEncounter(selectedPersona)}

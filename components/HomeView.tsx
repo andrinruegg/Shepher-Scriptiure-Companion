@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Book, Feather, Brain, ArrowRight, Flame, Settings, Bell, Headphones, Heart, User, Users, Sparkles, MessageSquare, Scroll } from 'lucide-react';
+import { MessageCircle, Book, Feather, Brain, ArrowRight, Flame, Settings, Bell, Headphones, Heart, User, Users, Sparkles, MessageSquare, Scroll, Compass } from 'lucide-react';
 import { AppView } from '../types';
 import { translations } from '../utils/translations';
 import { getDailyVerse } from '../services/dailyVerseService';
@@ -55,7 +55,7 @@ const HomeView: React.FC<HomeViewProps> = ({
         { id: 'prayer', label: t.prayerTitle, sub: t.prayerDesc, icon: Feather, bg: 'from-blue-500 to-indigo-600', iconColor: 'text-white', delay: '0.25s' },
         { id: 'quiz', label: t.quizTitle, sub: t.quizDesc, icon: Brain, bg: 'from-purple-500 to-violet-600', iconColor: 'text-white', delay: '0.3s' },
         { id: 'friends', label: t.friendsTitle || 'Friends', sub: t.friendsDesc || 'Connect', icon: Users, bg: 'from-pink-500 to-rose-600', iconColor: 'text-white', delay: '0.35s', action: onOpenFriends },
-        { id: 'saved', label: t.favoritesTitle || 'Saved', sub: t.favoritesSub || 'Collection', icon: Heart, bg: 'from-rose-500 to-pink-600', iconColor: 'text-white', delay: '0.4s' }
+        { id: 'saved', label: t.favoritesTitle || 'Favorites', sub: t.favoritesDesc || 'Saved Verses', icon: Heart, bg: 'from-rose-500 to-pink-600', iconColor: 'text-white', delay: '0.4s' }
     ];
 
     return (
@@ -156,7 +156,6 @@ const HomeView: React.FC<HomeViewProps> = ({
                     <button 
                         onClick={() => onNavigate('stories')}
                         className="p-1 rounded-3xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 shadow-xl shadow-amber-500/10 group hover:shadow-2xl transition-all animate-slide-up"
-                        style={{ animationDelay: '0.1s' }}
                     >
                         <div className="bg-white dark:bg-slate-900/90 h-full rounded-[20px] p-6 flex items-center justify-between backdrop-blur-xl transition-colors group-hover:bg-opacity-90 dark:group-hover:bg-opacity-80">
                             <div className="flex flex-col items-start gap-4">

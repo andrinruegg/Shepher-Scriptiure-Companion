@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&display=swap');
 
 @tailwind base;
@@ -6,12 +5,9 @@
 @tailwind utilities;
 
 :root {
-  /* LIGHT MODE: Brighter, warmer, cleaner */
   --glass-bg-light: rgba(255, 255, 255, 0.9);
   --glass-border-light: rgba(255, 255, 255, 0.6);
   --glass-shadow-light: 0 8px 30px rgba(0, 0, 0, 0.04);
-  
-  /* DARK MODE: Deep, transparent, glowing */
   --glass-bg-dark: rgba(15, 23, 42, 0.65);
   --glass-border-dark: rgba(255, 255, 255, 0.08);
   --glass-shadow-dark: 0 8px 30px rgba(0, 0, 0, 0.4);
@@ -20,14 +16,13 @@
 body {
   font-family: 'Inter', sans-serif;
   transition: background-color 0.5s ease, color 0.5s ease;
-  /* Premium Light Mode: Very subtle warm/cool mix, brighter than before */
   background: radial-gradient(circle at 50% 0%, #fffbf0 0%, #f8fafc 60%, #f1f5f9 100%);
   background-attachment: fixed;
   color: #0f172a;
+  overflow: hidden;
 }
 
 .dark body {
-  /* Dark Mode: Deep Space */
   background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 100%);
   color: #f8fafc;
 }
@@ -36,85 +31,7 @@ body {
   font-family: 'Merriweather', serif;
 }
 
-/* --- GLASSMORPHISM UTILITIES --- */
-.glass-panel {
-  @apply backdrop-blur-xl transition-all duration-300;
-  background-color: var(--glass-bg-light);
-  border: 1px solid rgba(226, 232, 240, 0.6);
-  box-shadow: var(--glass-shadow-light);
-}
-
-.dark .glass-panel {
-  background-color: var(--glass-bg-dark);
-  border: 1px solid var(--glass-border-dark);
-  box-shadow: var(--glass-shadow-dark);
-}
-
-.glass-header {
-  @apply backdrop-blur-lg sticky top-0 z-20 transition-all duration-300;
-  background-color: rgba(255, 255, 255, 0.85);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-}
-
-.dark .glass-header {
-  background-color: rgba(2, 6, 23, 0.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-.dark ::-webkit-scrollbar-thumb {
-  background: #475569;
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
-}
-
-/* Prevent touch scrolling for drawing canvas */
-.touch-none {
-  touch-action: none;
-}
-
-/* Shared Canvas Overlay Styling */
-.graffiti-overlay {
-    pointer-events: none;
-    mix-blend-mode: normal; 
-    min-height: 100%;
-}
-
-.graffiti-layer {
-    z-index: 10;
-    pointer-events: none;
-}
-
-/* --- ANIMATIONS (RESTORED EXACTLY) --- */
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-@keyframes popIn { 0% { opacity: 0; transform: scale(0.8) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
-@keyframes slideInRight { 0% { transform: translateX(20px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-
-.animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
-.animate-scale-in { animation: scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-slide-up { animation: slideUp 0.8s ease-out 0.2s forwards; opacity: 0; }
-.animate-pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-.animate-slide-in-right { animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-float { animation: float 6s ease-in-out infinite; }
-
-/* Aurora & Splash */
+/* --- SPLASH ANIMATIONS --- */
 @keyframes aurora {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -137,7 +54,6 @@ body {
   0% { transform: rotateZ(360deg) rotateX(45deg) rotateY(45deg); }
   100% { transform: rotateZ(0deg) rotateX(45deg) rotateY(45deg); }
 }
-
 .animate-orbit-x { animation: orbit-x 8s linear infinite; }
 .animate-orbit-y { animation: orbit-y 12s linear infinite; }
 .animate-orbit-z { animation: orbit-z 15s linear infinite; }
@@ -161,21 +77,9 @@ body {
   animation: tracking-expand 1.5s ease-out 0.8s forwards;
 }
 
-@keyframes twinkle {
-  0%, 100% { opacity: 0.2; transform: scale(0.5); }
-  50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 8px rgba(255, 255, 255, 0.6); }
-}
-.animate-twinkle {
-  animation: twinkle 3s ease-in-out infinite;
-}
-
-.perspective-1000 { perspective: 1000px; }
-.preserve-3d { transform-style: preserve-3d; }
-
 @keyframes cross-pulse {
-  0% { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)); transform: scale(1); opacity: 0.9; }
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)); transform: scale(1); opacity: 0.9; }
   50% { filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.8)); transform: scale(1.05); opacity: 1; }
-  100% { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)); transform: scale(1); opacity: 0.9; }
 }
 .animate-cross-pulse { animation: cross-pulse 4s ease-in-out infinite; }
 
@@ -198,53 +102,39 @@ body {
   animation: sheep-bounce 0.6s infinite ease-in-out;
 }
 
-/* Winter Mode */
-@keyframes snowfall {
-  0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 0; }
-  10% { opacity: 1; }
-  100% { transform: translateY(110vh) translateX(20px) rotate(360deg); opacity: 0; }
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
-.animate-snow { animation: snowfall linear infinite; }
+.animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
 
-@keyframes light-glow {
-  0%, 100% { opacity: 0.6; transform: scale(1); filter: brightness(1); box-shadow: 0 0 5px currentColor; }
-  50% { opacity: 1; transform: scale(1.2); filter: brightness(1.5); box-shadow: 0 0 15px currentColor; }
+/* --- WORLD ANIMATIONS --- */
+@keyframes waves {
+  from { background-position: 0 0; }
+  to { background-position: 100px 50px; }
 }
-.animate-light-glow { animation: light-glow 2.5s ease-in-out infinite; }
-
-.frost-vignette {
-  background: radial-gradient(circle at center, transparent 50%, rgba(255, 255, 255, 0.4) 100%);
-  pointer-events: none;
-}
-.dark .frost-vignette {
-  background: radial-gradient(circle at center, transparent 50%, rgba(199, 210, 254, 0.15) 100%);
+.animate-waves {
+  animation: waves 15s linear infinite;
 }
 
-/* Princess Mode */
-@keyframes floatHeart {
-  0% { transform: translateY(0) scale(0.5); opacity: 0; }
-  10% { opacity: 1; }
-  100% { transform: translateY(-120vh) scale(1.2) rotate(360deg); opacity: 0; }
+@keyframes pixel-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
-.animate-float-heart { animation: floatHeart linear infinite; will-change: transform, opacity; }
-
-@keyframes aurora-shift {
-  0% { background-position: 0% 50%; opacity: 0.6; }
-  50% { background-position: 100% 50%; opacity: 0.8; }
-  100% { background-position: 0% 50%; opacity: 0.6; }
-}
-.animate-sparkly-aurora {
-  background: linear-gradient(270deg, rgba(236, 72, 153, 0.2), rgba(167, 139, 250, 0.2), rgba(251, 207, 232, 0.3), rgba(244, 114, 182, 0.2));
-  background-size: 400% 400%;
-  animation: aurora-shift 12s ease infinite;
+.animate-pixel-bob {
+  animation: pixel-bob 1.5s ease-in-out infinite;
 }
 
-/* --- PRINCESS MODE OVERRIDES --- */
-.princess-mode {
-  background: linear-gradient(135deg, #fff1f2 0%, #fff 100%) !important;
-  color: #881337 !important;
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
-.princess-mode .glass-panel {
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    border-color: #fbcfe8 !important;
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
 }
+
+@keyframes popIn { 0% { opacity: 0; transform: scale(0.8) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+.animate-pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+.perspective-1000 { perspective: 1000px; }
+.preserve-3d { transform-style: preserve-3d; }
