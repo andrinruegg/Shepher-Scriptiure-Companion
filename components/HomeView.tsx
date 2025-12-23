@@ -134,24 +134,21 @@ const HomeView: React.FC<HomeViewProps> = ({
                     <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1 opacity-50"></div>
                 </div>
 
-                {/* PREMIUM AI TOOLS AT TOP OF LIBRARY */}
+                {/* AI TOOLS AT TOP OF LIBRARY */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <button 
                         onClick={() => onNavigate('chat')}
                         className="p-1 rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shadow-xl shadow-indigo-500/10 group hover:shadow-2xl transition-all animate-slide-up"
                     >
                         <div className="bg-white dark:bg-slate-900/90 h-full rounded-[20px] p-6 flex items-center justify-between backdrop-blur-xl transition-colors group-hover:bg-opacity-90 dark:group-hover:bg-opacity-80">
-                            <div className="flex items-center gap-5">
-                                <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                                    <MessageCircle size={28} />
+                            <div className="flex flex-col items-start gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                    <MessageCircle size={24} />
                                 </div>
                                 <div className="text-left">
-                                    <h4 className="text-xl font-bold text-slate-900 dark:text-white">{t.chatTitle}</h4>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">{t.chatDesc}</p>
+                                    <h4 className="text-lg font-bold text-slate-900 dark:text-white">{t.chatTitle}</h4>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{t.chatDesc}</p>
                                 </div>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-indigo-400 group-hover:text-indigo-600 transition-colors">
-                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                             </div>
                         </div>
                     </button>
@@ -162,17 +159,14 @@ const HomeView: React.FC<HomeViewProps> = ({
                         style={{ animationDelay: '0.1s' }}
                     >
                         <div className="bg-white dark:bg-slate-900/90 h-full rounded-[20px] p-6 flex items-center justify-between backdrop-blur-xl transition-colors group-hover:bg-opacity-90 dark:group-hover:bg-opacity-80">
-                            <div className="flex items-center gap-5">
-                                <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                                    <Scroll size={28} className="animate-pulse" />
+                            <div className="flex flex-col items-start gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                    <Scroll size={24} className="animate-pulse" />
                                 </div>
                                 <div className="text-left">
-                                    <h4 className="text-xl font-bold text-slate-900 dark:text-white">{t.roleplayTitle}</h4>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">{t.roleplayDesc}</p>
+                                    <h4 className="text-lg font-bold text-slate-900 dark:text-white">{t.roleplayTitle}</h4>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{t.roleplayDesc}</p>
                                 </div>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-amber-400 group-hover:text-amber-600 transition-colors">
-                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                             </div>
                         </div>
                     </button>

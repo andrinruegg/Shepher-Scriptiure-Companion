@@ -18,8 +18,8 @@ export const translations: Record<string, any> = {
         jumpTo: "Library",
         chatTitle: "Ask Shepherd",
         chatDesc: "Get spiritual guidance",
-        roleplayTitle: "Walk with Petrus",
-        roleplayDesc: "First Century Roleplay",
+        roleplayTitle: "Bible Roleplay",
+        roleplayDesc: "Walk with the Apostles",
         bibleTitle: "Read Bible",
         bibleDesc: "Explore the scriptures",
         prayerTitle: "Prayer Journal",
@@ -34,9 +34,9 @@ export const translations: Record<string, any> = {
         feedback: "Share Feedback"
     },
     stories: {
-        title: "AI Roleplay",
-        subtitle: "Experience the First Century",
-        disclaimer: "Petrus speaks as a witness of 2000 years ago. He refers to Jesus as the Master.",
+        title: "Bible Roleplay",
+        subtitle: "First Century Encounters",
+        disclaimer: "These voices represent the first century. They refer to Jesus as The Master or The Lord.",
         startRoleplay: "Enter the Encounter",
         newEncounter: "New Encounter",
         history: "Encounters",
@@ -84,7 +84,7 @@ export const translations: Record<string, any> = {
         }
     },
     common: { translate: "Translate", translated: "Translated", translating: "Translating...", original: "Show Original", loading: "Loading...", newChat: "New Chat" },
-    chat: { subtitle: "Scripture Companion", placeholder: "Ask Shepherd for guidance...", regenerate: "Regenerate", retry: "Retry", paintMode: "Paint Mode", placeholderShort: "Ask Shepherd...", missingKeyTitle: "API Key Required", missingKeyDesc: "API Key needed.", setupKey: "Setup" },
+    chat: { subtitle: "Scripture Companion", placeholder: "Ask Shepherd for guidance...", regenerate: "Regenerate", retry: "Retry", paintMode: "Paint Mode", placeholderShort: "Ask Shepherd..." },
     bible: { selectBook: "Select Book", chapter: "Chapter", oldTestament: "Old Testament", newTestament: "New Testament", searchBooks: "Search books...", loading: "Loading...", error: "Error.", highlight: "Highlight", colors: { yellow: "Yellow", green: "Green", blue: "Blue", pink: "Pink", remove: "Remove" }, save: "Save", read: "Read", prev: "Prev", next: "Next", audio: { play: "Listen", pause: "Pause" } },
     saved: { title: "Saved", empty: "Empty.", filterAll: "All", filterVerse: "Verses", filterChat: "Chat", filterPrayer: "Prayers", remove: "Remove", bibleVerse: "Verse", chatMessage: "AI", prayerItem: "Prayer", date: "Date" },
     prayer: { title: "Prayers", tabs: { journal: "Journal", community: "Wall" }, newPrayer: "New", placeholder: "On your heart?", markAnswered: "Answered", answered: "Answered", empty: "Empty.", active: "Active", privacy: { label: "Privacy", private: "Private", friends: "Friends", specific: "Specific", public: "Public", selectFriends: "Select", anonymous: "Anon", publicId: "ID" }, amen: "Amen" },
@@ -103,14 +103,7 @@ export const translations: Record<string, any> = {
         status: { online: "Online", offline: "Offline", activeNow: "Active", lastSeen: "Last seen", ago: "ago" }, 
         updatesList: [
             { version: "1.8.0", date: "Today", title: "Eyewitness Restoration", changes: ["Petrus Persona complete rewrite (forbidden from citations/emojis)", "Premium UI effects restored for AI tools", "Library layout re-architected", "Bible fetch error handling improved"] },
-            { version: "1.7.0", date: "14.12.2025", title: "New Dashboard", changes: ["Home page added", "Improved navigation", "Quick actions"] },
-            { version: "1.6.0", date: "12.12.2025", title: "Bible Reader Update", changes: ["Fixed Romanian Bible loading", "Instant chapter switching", "Offline-available text"] },
-            { version: "1.5.0", date: "11.12.2025", title: "Quiz & Achievements", changes: ["Bible Trivia mode", "Achievements for scores", "View friends streaks", "Progress tracking"] },
-            { version: "1.4.0", date: "10.12.2025", title: "Graffiti Perfection", changes: ["Fixed save issues", "Smoother drawing", "Upload reliability"] },
-            { version: "1.3.0", date: "09.12.2025", title: "Social Chat", changes: ["Real-time messaging", "Photo sharing", "Voice messages", "Online status"] },
-            { version: "1.2.0", date: "09.12.2025", title: "Winter Update", changes: ["Winter mode added", "Improved visuals", "API fixes"] },
-            { version: "1.1.0", date: "08.12.2025", title: "Bible Reader", changes: ["Full Bible reader", "Highlights", "Save verses"] },
-            { version: "1.0.0", date: "08.12.2025", title: "Launch", changes: ["Shepherd AI Chat", "Supabase integration"] }
+            { version: "1.7.0", date: "14.12.2025", title: "New Dashboard", changes: ["Home page added", "Improved navigation", "Quick actions"] }
         ], 
         achievementList: {
             "perfect-easy": { title: "Bible Scholar", description: "Completed Easy Quiz with 100% accuracy!" },
@@ -158,8 +151,8 @@ export const translations: Record<string, any> = {
         jumpTo: "Librărie",
         chatTitle: "Întreabă Păstorul",
         chatDesc: "Ghidare spirituală",
-        roleplayTitle: "Mergi cu Petru",
-        roleplayDesc: "Joc de rol istoric",
+        roleplayTitle: "Joc de Rol Biblic",
+        roleplayDesc: "Mergi cu Apostolii",
         bibleTitle: "Citește Biblia",
         bibleDesc: "Explorează scripturile",
         prayerTitle: "Rugăciune",
@@ -174,9 +167,9 @@ export const translations: Record<string, any> = {
         feedback: "Feedback"
     },
     stories: {
-        title: "AI Roleplay",
-        subtitle: "Trăiește Secolul Întâi",
-        disclaimer: "Petru vorbește ca un martor de acum 2000 de ani. Îl numește pe Isus Învățătorul.",
+        title: "Joc de Rol Biblic",
+        subtitle: "Întâlniri cu Martori",
+        disclaimer: "Aceste voci reprezintă secolul întâi. Îl numesc pe Isus Învățătorul sau Domnul.",
         startRoleplay: "Intră în Întâlnire",
         newEncounter: "Întâlnire Nouă",
         history: "Istoric",
@@ -236,11 +229,7 @@ export const translations: Record<string, any> = {
         profile: { title: "Profil", streak: "Serie", achievements: "Insigne", locked: "Blocat", about: "Despre", message: "Mesaj", unfriend: "Șterge", addFriend: "Adaugă" }, 
         status: { online: "Online", offline: "Offline", activeNow: "Activ", lastSeen: "Văzut", ago: "în urmă" }, 
         updatesList: [
-            { version: "1.8.0", date: "Azi", title: "Restaurare Divină", changes: ["Rescris persona lui Petru (fără citate/emoji)", "Restaurat efectele premium pentru unelte", "Reorganizat layout-ul Librăriei", "Îmbunătățit erorile de descărcare Biblie"] },
-            { version: "1.7.0", date: "14.12.2025", title: "Tablou de Bord Nou", changes: ["Pagina principală adăugată", "Navigare îmbunătățită"] },
-            { version: "1.6.0", date: "12.12.2025", title: "Update Bible Reader", changes: ["Rezolvat încărcarea Bibliei române", "Schimbare instantanee a capitolelor"] },
-            { version: "1.5.0", date: "11.12.2025", title: "Quiz & Realizări", changes: ["Mod Trivia Biblică", "Insigne pentru scoruri"] },
-            { version: "1.0.0", date: "08.12.2025", title: "Start", changes: ["Chat Shepherd AI", "Integrare Supabase"] }
+            { version: "1.8.0", date: "Azi", title: "Restaurare Divină", changes: ["Rescris persona lui Petru (fără citate/emoji)", "Restaurat efectele premium pentru unelte", "Reorganizat layout-ul Librăriei", "Îmbunătățit erorile de descărcare Biblie"] }
         ], 
         achievementList: {
             "perfect-easy": { title: "Savant Biblic", description: "Test ușor finalizat cu 100%!" }
@@ -283,8 +272,8 @@ export const translations: Record<string, any> = {
         jumpTo: "Bibliothek",
         chatTitle: "Frag Hirte",
         chatDesc: "Geistliche Führung",
-        roleplayTitle: "Mit Petrus gehen",
-        roleplayDesc: "Historisches Rollenspiel",
+        roleplayTitle: "Bibel-Rollenspiel",
+        roleplayDesc: "Mit den Aposteln gehen",
         bibleTitle: "Bibel lesen",
         bibleDesc: "Die Schrift erkunden",
         prayerTitle: "Gebete",
@@ -299,9 +288,9 @@ export const translations: Record<string, any> = {
         feedback: "Feedback"
     },
     stories: {
-        title: "KI Rollenspiel",
-        subtitle: "Erlebe das erste Jahrhundert",
-        disclaimer: "Petrus spricht als Zeuge von vor 2000 Jahren. Er nennt Jesus den Meister.",
+        title: "Bibel-Rollenspiel",
+        subtitle: "Augenzeugenbegegnungen",
+        disclaimer: "Diese Stimmen stammen aus dem ersten Jahrhundert. Sie nennen Jesus den Meister oder den Herrn.",
         startRoleplay: "Begegnung beginnen",
         newEncounter: "Neue Begegnung",
         history: "Verlauf",
@@ -351,7 +340,7 @@ export const translations: Record<string, any> = {
     sanctuary: { title: "Heiligtum", rain: "Regen", fire: "Feuer", stream: "Bach", volume: "Lautstärke" },
     quiz: { title: "Quiz", start: "Start", difficulty: "Schwierigkeit", easy: "Einfach", medium: "Mittel", hard: "Schwer", score: "Punktzahl", next: "Weiter", correct: "Richtig!", incorrect: "Falsch", explanation: "Erklärung", results: "Ergebnisse", accuracy: "Genauigkeit", playAgain: "Nochmal", home: "Start", mode: "Modus", question: "Frage" },
     topics: { title: "Themen", anxiety: { label: "Angst", query: "Hilfe bei Angst." }, love: { label: "Liebe", query: "Über die Liebe." }, hope: { label: "Hoffnung", query: "Hoffnung." }, sadness: { label: "Trauer", query: "Bin trauerig." }, gratitude: { label: "Dankbarkeit", query: "Dankbarkeit." }, strength: { label: "Stärke", query: "Sei stark." }, joy: { label: "Freude", query: "Freude." }, forgiveness: { label: "Vergebung", query: "Vergebung." } },
-    settings: { title: "Einstellungen", preferences: "Präferenzen", language: "Sprache", appearance: "Design", light: "Hell", dark: "Dunkel", winter: { title: "Winter", desc: "Schnee", snow: "Schnee", lights: "Lichter", icicles: "Eiszapfen" }, princess: { title: "Prinzessin", desc: "Magie", hearts: "Herzen", aurora: "Aurora" }, account: "Konto", loggedIn: "Angemeldet", signOut: "Abmelden", about: "Über", aboutText: "Shepherd Begleiter.", displayName: "Name", bio: "Bio", noBio: "Leer." },
+    settings: { title: "Einstellungen", preferences: "Präferenzen", language: "Sprache", appearance: "Design", light: "Hell", dark: "Dunkel", winter: { title: "Winter", desc: "Schnee", snow: "Schnee", lights: "Lichter", icicles: "Eiszapfen" }, princess: { title: "Prinzessin", desc: "Magic", hearts: "Herzen", aurora: "Aurora" }, account: "Konto", loggedIn: "Angemeldet", signOut: "Abmelden", about: "Über", aboutText: "Shepherd Begleiter.", displayName: "Name", bio: "Bio", noBio: "Leer." },
     social: { 
         title: "Soziales", 
         tabs: { inbox: "Inbox", friends: "Freunde", add: "Hinzufügen", me: "Ich" }, 
@@ -361,11 +350,7 @@ export const translations: Record<string, any> = {
         profile: { title: "Profil", streak: "Serie", achievements: "Abzeichen", locked: "Gesperrt", about: "Über", message: "Nachricht", unfriend: "Löschen", addFriend: "Hinzufügen" }, 
         status: { online: "Online", offline: "Offline", activeNow: "Aktiv", lastSeen: "Zuletzt gesehen", ago: "vor" }, 
         updatesList: [
-            { version: "1.8.0", date: "Heute", title: "Göttliche Wiederherstellung", changes: ["Petrus-Persona überarbeitet (keine Zitate/Emojis)", "Premium UI-Effekte wiederhergestellt", "Librärie-Layout verbessert", "Bibel-Ladefehler behoben"] },
-            { version: "1.7.0", date: "14.12.2025", title: "Neues Dashboard", changes: ["Startseite hinzugefügt", "Verbesserte Navigation"] },
-            { version: "1.6.0", date: "12.12.2025", title: "Bibel-Reader Update", changes: ["Laden der rumänischen Bibel behoben", "Sofortiger Kapitelwechsel", "Offline-verfügbarer Text"] },
-            { version: "1.5.0", date: "11.12.2025", title: "Quiz & Erfolge", changes: ["Bibel Trivia Modus", "Erfolge für Punkte", "Freunde-Streaks ansehen", "Fortschrittstracking"] },
-            { version: "1.0.0", date: "08.12.2025", title: "Start", changes: ["Shepherd KI Chat", "Supabase Integration"] }
+            { version: "1.8.0", date: "Heute", title: "Göttliche Wiederherstellung", changes: ["Petrus-Persona überarbeitet (keine Zitate/Emojis)", "Premium UI-Effekte wiederhergestellt", "Librärie-Layout verbessert", "Bibel-Ladefehler behoben"] }
         ], 
         achievementList: {
             "perfect-easy": { title: "Bibelgelehrter", description: "Einfaches Quiz zu 100 % abgeschlossen!" }
