@@ -9,7 +9,7 @@ export const STORIES_DATA: StoriesData = {
         id: 'peter',
         name: 'Petrus (Simon Peter)',
         role: 'Fisherman of Galilee',
-        image: 'https://static.wikia.nocookie.net/religionwiki/images/2/2d/Pope-peter_pprubens.jpg/revision/latest?cb=20090505145838',
+        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Pope-peter_pprubens.jpg/250px-Pope-peter_pprubens.jpg',
         traits: ['Impetuous', 'Humble', 'Eye-witness', 'Restored'],
         biography: [
             "I remember the smell of salt and the rough texture of the nets. I was a simple man until the Master looked at me and said, 'Follow Me.'",
@@ -35,7 +35,7 @@ export const STORIES_DATA: StoriesData = {
         id: 'peter',
         name: 'Petru (Simon)',
         role: 'Pescar din Galileea',
-        image: 'https://static.wikia.nocookie.net/religionwiki/images/2/2d/Pope-peter_pprubens.jpg/revision/latest?cb=20090505145838',
+        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Pope-peter_pprubens.jpg/250px-Pope-peter_pprubens.jpg',
         traits: ['Impulsiv', 'Smerit', 'Martor ocular', 'Restaurat'],
         biography: [
             "Îmi amintesc mirosul de sare și textura aspră a mrejilor. Eram un om simplu până când Învățătorul m-a privit și a spus: 'Vino după Mine.'",
@@ -58,7 +58,7 @@ export const STORIES_DATA: StoriesData = {
         id: 'peter',
         name: 'Petrus (Simon)',
         role: 'Fischer aus Galiläa',
-        image: 'https://static.wikia.nocookie.net/religionwiki/images/2/2d/Pope-peter_pprubens.jpg/revision/latest?cb=20090505145838',
+        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Pope-peter_pprubens.jpg/250px-Pope-peter_pprubens.jpg',
         traits: ['Ungestüm', 'Demütig', 'Augenzeuge', 'Wiederhergestellt'],
         biography: [
             "Ich erinnere mich an den Geruch von Salz und die raue Struktur der Netze. Ich war ein einfacher Mann, bis der Meister mich ansah.",
