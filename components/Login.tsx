@@ -114,7 +114,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc] dark:bg-slate-950 flex flex-col items-center justify-center p-4 transition-all duration-700 relative overflow-hidden">
+    <div className="min-h-screen bg-[#f8f9fc] dark:bg-slate-950 flex flex-col items-center justify-center p-4 py-12 transition-all duration-700 relative overflow-y-auto overflow-x-hidden">
         
         {/* Advanced Ambient Background for Light Mode */}
         <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] rounded-full bg-indigo-100/50 dark:bg-indigo-500/10 blur-[120px] animate-pulse pointer-events-none"></div>
@@ -155,7 +155,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
             </button>
         </div>
 
-        <div className="w-full max-w-md bg-white/80 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[3rem] shadow-[0_40px_120px_-20px_rgba(79,70,229,0.12)] dark:shadow-none overflow-hidden border border-white/90 dark:border-slate-800 relative z-20 animate-scale-in">
+        <div className="w-full max-w-md bg-white/80 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[3rem] shadow-[0_40px_120px_-20px_rgba(79,70,229,0.12)] dark:shadow-none overflow-hidden border border-white/90 dark:border-slate-800 relative z-20 animate-scale-in my-auto">
             {isVerified && (
                 <div className="bg-emerald-500 text-white p-5 flex items-center gap-4 animate-slide-up">
                     <div className="bg-white/20 p-2 rounded-full">
@@ -310,7 +310,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
         </div>
 
         {/* Footer Disclaimer */}
-        <div className="mt-10 flex items-center gap-2 text-slate-400 dark:text-slate-600 animate-fade-in delay-500">
+        <div className="mt-10 flex items-center gap-2 text-slate-400 dark:text-slate-600 animate-fade-in delay-500 pb-8">
             <Sparkles size={14} className="text-indigo-300 dark:text-indigo-500 animate-pulse" />
             <p className="text-[10px] uppercase font-black tracking-[0.5em] ml-1">{language === 'Romanian' ? "Ghidat de credință" : "Guided by faith"}</p>
         </div>

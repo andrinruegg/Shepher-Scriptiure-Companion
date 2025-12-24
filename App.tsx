@@ -440,7 +440,7 @@ const App: React.FC = () => {
   const activeMessages = activeChat ? activeChat.messages.map(m => ({ ...m, timestamp: new Date(m.timestamp) })) : [];
 
   return (
-    <div className={`${isDarkMode ? 'dark' : ''} animate-fade-in h-screen overflow-hidden`}>
+    <div className={`${isDarkMode ? 'dark' : ''} animate-fade-in ${session ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       
       {/* --- RESTORED SPLASH SCREEN OVERLAY --- */}
       <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden bg-black transition-all duration-1000 ease-[cubic-bezier(0.76,0,0.24,1)] ${!showSplash ? 'opacity-0 scale-110 pointer-events-none blur-2xl' : 'opacity-100 scale-100 blur-0'}`}>
@@ -557,6 +557,7 @@ const App: React.FC = () => {
           <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} language={language} />
           <VisualComposerModal isOpen={!!composerData} onClose={() => setComposerData(null)} initialText={composerData?.text || ''} initialReference={composerData?.reference} language={language} />
           <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} preferences={{ bibleTranslation, theme: isDarkMode ? 'dark' : 'light', winterTheme: isWinterMode, winterSnow: isWinterSnow, winterLights: isWinterLights, winterIcicles: isWinterIcicles, princessTheme: isPrincessMode, princessHearts: isPrincessHearts, princessSparkles: isPrincessSparkles, language, displayName, avatar, bio }} onUpdatePreference={handleUpdatePreference} userEmail={session.user.email} userId={session.user.id} onLogout={handleLogout} />
+          <DailyVerseModal isOpen={isDailyVerseOpen} onClose={() => setIsDailyVerseOpen(false)} isDarkMode={isDarkMode} language={language} onOpenComposer={(text, ref) => setComposerData({ text, reference: ref })} />
           <DailyVerseModal isOpen={isDailyVerseOpen} onClose={() => setIsDailyVerseOpen(false)} isDarkMode={isDarkMode} language={language} onOpenComposer={(text, ref) => setComposerData({ text, reference: ref })} />
           <SocialModal isOpen={isSocialOpen} onClose={() => setIsSocialOpen(false)} initialTab={socialInitialTab} currentUserShareId={shareId} isDarkMode={isDarkMode} onUpdateNotifications={loadSocialNotifications} language={language} />
           <PasswordResetModal isOpen={isPasswordResetOpen} onClose={() => setIsPasswordResetOpen(false)} />
