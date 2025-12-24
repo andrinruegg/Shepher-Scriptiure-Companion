@@ -86,40 +86,40 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const placeholderText = isMobile ? (t.placeholderShort || "Ask Shepherd...") : t.placeholder;
 
   return (
-    <div className="flex flex-col h-full relative overflow-hidden">
-      {/* Header with Glass Effect */}
-      <header className="glass-header p-4 flex items-center justify-between shadow-sm">
+    <div className="flex flex-col h-full relative overflow-hidden bg-transparent">
+      {/* Header with Glass Effect - Improved for Light Mode */}
+      <header className="glass-header p-4 flex items-center justify-between shadow-sm bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border-b border-slate-100/50 dark:border-white/5 relative z-40">
         <div className="flex items-center gap-3">
-          <button onClick={onMenuClick} className="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors">
+          <button onClick={onMenuClick} className="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-400 hover:bg-black/5 rounded-xl transition-colors">
             <Menu size={24} />
           </button>
           
           <div className="flex items-center gap-3 select-none">
-              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl text-white hidden md:block shadow-md shadow-indigo-500/20">
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl text-white hidden md:block shadow-lg shadow-indigo-500/20 transform hover:scale-105 transition-transform">
                 <ShepherdLogo size={24} className="text-white" />
               </div>
               <div className="hidden md:block">
-                <h1 className="text-xl font-bold text-slate-800 dark:text-white font-serif-text">Shepherd</h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">{t.subtitle}</p>
+                <h1 className="text-xl font-bold text-slate-800 dark:text-white font-serif-text leading-tight">Shepherd</h1>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em]">{t.subtitle}</p>
               </div>
-              <div className="md:hidden font-serif-text font-bold text-lg text-slate-800 dark:text-white">Shepherd</div>
+              <div className="md:hidden font-serif-text font-bold text-xl text-slate-800 dark:text-white">Shepherd</div>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
             <button 
                 onClick={onNewChat}
-                className="p-2 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl transition-colors flex items-center gap-2 border border-indigo-200/50 dark:border-indigo-800/50"
+                className="p-2.5 text-indigo-600 bg-indigo-50/80 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl transition-all flex items-center gap-2 border border-indigo-100 dark:border-indigo-800/50 shadow-sm active:scale-95"
                 title={commonT.newChat}
             >
-                <Plus size={20} />
-                <span className="text-sm font-medium hidden md:inline">{commonT.newChat}</span>
+                <Plus size={20} strokeWidth={2.5} />
+                <span className="text-sm font-bold hidden md:inline">{commonT.newChat}</span>
             </button>
             
             {onDeleteCurrentChat && (
                 <button 
                     onClick={onDeleteCurrentChat}
-                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+                    className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
                     title="Delete Conversation"
                 >
                     <Trash2 size={20} />
@@ -152,7 +152,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           ))}
           
           {isInitialState && !isLoading && (
-            <div className="flex-1 flex flex-col justify-center pb-10">
+            <div className="flex-1 flex flex-col justify-center py-10">
                <TopicSelector onSelectTopic={onSendMessage} language={language} />
             </div>
           )}
@@ -161,12 +161,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </main>
 
-      {/* Input Area - Floating Glass */}
-      <footer className="p-4 md:p-6 pb-6 bg-transparent">
+      {/* Input Area - Floating Glass Overhaul */}
+      <footer className="p-4 md:p-8 pb-8 bg-transparent">
         <div className="max-w-3xl mx-auto relative">
           <form 
             onSubmit={handleSubmit} 
-            className="relative flex items-end gap-2 bg-white/70 dark:bg-slate-900/80 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[2rem] p-2 shadow-2xl shadow-indigo-900/5 focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all focus-within:bg-white/90 dark:focus-within:bg-slate-900/95"
+            className="relative flex items-end gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white dark:border-white/10 rounded-[2.25rem] p-2.5 shadow-[0_15px_50px_-10px_rgba(0,0,0,0.1)] dark:shadow-none focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all duration-500 focus-within:bg-white dark:focus-within:bg-slate-900"
           >
             <textarea
               ref={inputRef}
@@ -174,20 +174,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onChange={adjustTextareaHeight}
               onKeyDown={handleKeyDown}
               placeholder={placeholderText}
-              className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-[120px] min-h-[44px] py-3 px-4 text-slate-800 dark:text-slate-100 placeholder-slate-400 leading-relaxed"
+              className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-[120px] min-h-[48px] py-3.5 px-5 text-slate-800 dark:text-slate-100 placeholder-slate-400 leading-relaxed font-medium"
               rows={1}
             />
             <button
               type="submit"
               disabled={isLoading || !inputValue.trim()}
               className={`
-                p-3 rounded-full mb-1 flex-shrink-0 transition-all duration-300
+                p-3.5 rounded-full mb-1 flex-shrink-0 transition-all duration-300
                 ${isLoading || !inputValue.trim() 
-                  ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:scale-105 active:scale-95'}
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 transform hover:scale-105 active:scale-95'}
               `}
             >
-              <Send size={18} strokeWidth={2.5} />
+              <Send size={20} strokeWidth={2.5} />
             </button>
           </form>
         </div>

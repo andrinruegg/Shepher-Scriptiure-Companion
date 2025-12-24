@@ -216,7 +216,9 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
                           <h2 className={`font-bold ${theme.accent} dark:text-slate-200 text-lg leading-tight`}>{currentFigure.name}</h2>
                           <div className="flex items-center gap-1.5">
                               <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
-                              <span className={`text-[10px] uppercase font-bold opacity-70 tracking-widest`}>Encounter</span>
+                              <span className={`text-[10px] uppercase font-bold opacity-70 tracking-widest`}>
+                                {t.encounterLabel}
+                              </span>
                           </div>
                       </div>
                   </div>
@@ -271,7 +273,7 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
                               e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
                           }}
                           onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-                          placeholder={`Speak to the witness...`}
+                          placeholder={t.inputPlaceholder}
                           rows={1}
                           className="flex-1 bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-lg focus:ring-2 focus:ring-slate-400 outline-none resize-none dark:text-white placeholder-slate-400 shadow-inner"
                       />

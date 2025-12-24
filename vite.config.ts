@@ -1,22 +1,16 @@
-
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Load env file based on `mode` in the current working directory.
+  // Fix: Cast process to any to access cwd() as it might not be properly typed in this build context
   const env = loadEnv(mode, (process as any).cwd(), '')
   
-  // SYSTEM KEY ROTATION
-  // Keys have been removed for security. 
-  // Users must provide their own API Key in Settings or set VITE_API_KEY in environment.
-  const MULTI_KEYS = "";
-
   return {
-    // Expose the API Key(s) to the client-side code
     define: {
-      'process.env.API_KEY': JSON.stringify(MULTI_KEYS)
+      // This ensures process.env.API_KEY is available in the browser
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || '')
     },
     plugins: [
       react(),

@@ -159,7 +159,9 @@ export const translations: Record<string, any> = {
         disclaimer: "You are speaking with an AI representation of this Biblical figure.",
         history: "Biography",
         pastConversations: "Past Conversations",
-        viewDetails: "View Details"
+        viewDetails: "View Details",
+        encounterLabel: "Encounter",
+        inputPlaceholder: "Speak to the witness..."
     },
     chat: {
       subtitle: "Scripture Companion",
@@ -564,7 +566,9 @@ export const translations: Record<string, any> = {
         disclaimer: "Vorbești cu o reprezentare AI a acestei figuri biblice.",
         history: "Biografie",
         pastConversations: "Conversații Anterioare",
-        viewDetails: "Vezi Detalii"
+        viewDetails: "Vezi Detalii",
+        encounterLabel: "Întâlnire",
+        inputPlaceholder: "Vorbește cu martorul..."
     },
     chat: {
       subtitle: "Partener Scriptural",
@@ -969,7 +973,9 @@ export const translations: Record<string, any> = {
         disclaimer: "Du sprichst mit einer KI-Darstellung dieser biblischen Figur.",
         history: "Biografie",
         pastConversations: "Frühere Gespräche",
-        viewDetails: "Details ansehen"
+        viewDetails: "Details ansehen",
+        encounterLabel: "Begegnung",
+        inputPlaceholder: "Sprich mit dem Zeugen..."
     },
     chat: {
       subtitle: "Schriftbegleiter",

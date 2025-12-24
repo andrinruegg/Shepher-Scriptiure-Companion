@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&display=swap');
 
 @tailwind base;
@@ -5,9 +6,9 @@
 @tailwind utilities;
 
 :root {
-  --glass-bg-light: rgba(255, 255, 255, 0.9);
-  --glass-border-light: rgba(255, 255, 255, 0.6);
-  --glass-shadow-light: 0 8px 30px rgba(0, 0, 0, 0.04);
+  --glass-bg-light: rgba(255, 255, 255, 0.75);
+  --glass-border-light: rgba(255, 255, 255, 0.9);
+  --glass-shadow-light: 0 10px 40px -10px rgba(0, 0, 0, 0.04);
   --glass-bg-dark: rgba(15, 23, 42, 0.65);
   --glass-border-dark: rgba(255, 255, 255, 0.08);
   --glass-shadow-dark: 0 8px 30px rgba(0, 0, 0, 0.4);
@@ -15,10 +16,11 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  transition: background-color 0.5s ease, color 0.5s ease;
-  background: radial-gradient(circle at 50% 0%, #fffbf0 0%, #f8fafc 60%, #f1f5f9 100%);
+  transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s ease;
+  /* Sophisticated Light Mode Gradient - Warm Silk to Cold Air */
+  background: radial-gradient(circle at 50% 0%, #fffcf5 0%, #f7f9fc 70%, #f0f2f5 100%);
   background-attachment: fixed;
-  color: #0f172a;
+  color: #1e293b;
   overflow: hidden;
 }
 
@@ -31,7 +33,37 @@ body {
   font-family: 'Merriweather', serif;
 }
 
-/* --- SPLASH ANIMATIONS --- */
+/* Glass Panels - Upgraded for ultra-clean light mode */
+.glass-panel {
+  @apply backdrop-blur-2xl border transition-all duration-500;
+  background-color: var(--glass-bg-light);
+  border-color: var(--glass-border-light);
+  box-shadow: var(--glass-shadow-light);
+}
+
+.dark .glass-panel {
+  background-color: var(--glass-bg-dark);
+  border-color: var(--glass-border-dark);
+  box-shadow: var(--glass-shadow-dark);
+}
+
+/* Soft Light-Mode Accent Blobs */
+.light-glow-blob {
+  @apply absolute rounded-full blur-[120px] pointer-events-none opacity-40 mix-blend-multiply;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 dark:bg-slate-800 rounded-full;
+}
+
+/* --- SPLASH ANIMATIONS (NEVER REMOVE OR CHANGE) --- */
 @keyframes aurora {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -107,31 +139,6 @@ body {
   50% { opacity: 1; transform: scale(1.2); }
 }
 .animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
-
-/* --- WORLD ANIMATIONS --- */
-@keyframes waves {
-  from { background-position: 0 0; }
-  to { background-position: 100px 50px; }
-}
-.animate-waves {
-  animation: waves 15s linear infinite;
-}
-
-@keyframes pixel-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
-.animate-pixel-bob {
-  animation: pixel-bob 1.5s ease-in-out infinite;
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.animate-spin-slow {
-  animation: spin-slow 12s linear infinite;
-}
 
 @keyframes popIn { 0% { opacity: 0; transform: scale(0.8) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
 .animate-pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
