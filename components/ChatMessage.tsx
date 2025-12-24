@@ -85,16 +85,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             flex-shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center shadow-lg mb-2
             bg-gradient-to-br from-indigo-500 to-indigo-600 text-white transform transition-transform hover:scale-110
           `}>
-            <ShepherdLogo size={18} className="text-white" />
+            <ShepherdLogo size={18} />
           </div>
         )}
 
         <div className={`flex flex-col min-w-0 ${isUser ? 'items-end' : 'items-start'}`}>
           <div className={`
-            px-6 py-5 shadow-sm text-sm md:text-base leading-relaxed break-words w-full relative
+            px-6 py-5 shadow-[0_10px_30px_-10px_rgba(79,70,229,0.08)] text-sm md:text-base leading-relaxed break-words w-full relative
             ${isUser 
               ? 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-[1.75rem] rounded-tr-none shadow-indigo-500/20' 
-              : 'bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-slate-100 rounded-[1.75rem] rounded-tl-none font-serif-text border border-white dark:border-white/10 backdrop-blur-md shadow-[0_15px_30px_-10px_rgba(0,0,0,0.05)] dark:shadow-none border-b-indigo-100 dark:border-b-indigo-900/30'}
+              : 'bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-slate-100 rounded-[1.75rem] rounded-tl-none font-serif-text border border-white/60 dark:border-white/10 backdrop-blur-md shadow-[0_15px_30px_-10px_rgba(0,0,0,0.04)] dark:shadow-none border-b-indigo-100/50 dark:border-b-indigo-900/30'}
             ${message.isError ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 border-red-100' : ''}
             transition-all duration-300
           `}>
@@ -147,7 +147,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                   <button
                       onClick={handleTranslate}
                       disabled={isTranslating}
-                      className={`p-2 rounded-xl bg-white/80 dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 transition-all ${isTranslating ? 'text-indigo-400 animate-pulse' : 'text-slate-400 dark:text-slate-500 hover:text-indigo-500'}`}
+                      className={`p-2 rounded-xl bg-white/60 dark:bg-slate-800 shadow-sm border border-white/60 dark:border-slate-700 backdrop-blur-md transition-all ${isTranslating ? 'text-indigo-400 animate-pulse' : 'text-slate-400 dark:text-slate-500 hover:text-indigo-500'}`}
                       title="Translate"
                   >
                       <Languages size={15} />
@@ -157,7 +157,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               {!isThinking && !isUser && message.text && (
                   <button
                       onClick={handleOpenComposer}
-                      className="p-2 rounded-xl bg-white/80 dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 transition-all text-slate-400 dark:text-slate-500 hover:text-purple-500"
+                      className="p-2 rounded-xl bg-white/60 dark:bg-slate-800 shadow-sm border border-white/60 dark:border-slate-700 backdrop-blur-md transition-all text-slate-400 dark:text-slate-500 hover:text-purple-500"
                       title="Create Image"
                   >
                       <Image size={15} />
@@ -167,7 +167,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               {!isThinking && onSave && (
                   <button
                       onClick={handleSave}
-                      className={`p-2 rounded-xl bg-white/80 dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 transition-all ${isSaved ? 'text-rose-500 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-rose-400'}`}
+                      className={`p-2 rounded-xl bg-white/60 dark:bg-slate-800 shadow-sm border border-white/60 dark:border-slate-700 backdrop-blur-md transition-all ${isSaved ? 'text-rose-500 scale-110' : 'text-slate-400 dark:text-slate-500 hover:text-rose-400'}`}
                       title="Save to Collection"
                   >
                       <Heart size={15} className={isSaved ? 'fill-rose-500' : ''} />
@@ -178,7 +178,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                   <button 
                      onClick={onRegenerate}
                      disabled={isRegenerating}
-                     className="p-2 rounded-xl bg-white/80 dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 transition-all text-slate-400 dark:text-slate-500 hover:text-indigo-500"
+                     className="p-2 rounded-xl bg-white/60 dark:bg-slate-800 shadow-sm border border-white/60 dark:border-slate-700 backdrop-blur-md transition-all text-slate-400 dark:text-slate-500 hover:text-indigo-500"
                   >
                      <RotateCw size={15} className={isRegenerating ? 'animate-spin' : ''} />
                   </button>

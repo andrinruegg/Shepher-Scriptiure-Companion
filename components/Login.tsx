@@ -72,7 +72,6 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
 
     try {
         if (authMode === 'forgot') {
-             // FIX: Corrected supabase.auth access for Build Error
              const { error } = await supabase.auth.resetPasswordForEmail(email, {
                  redirectTo: redirectUrl,
              });
@@ -115,19 +114,19 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
   ];
 
   return (
-    <div className="min-h-screen bg-[#fcfcf9] dark:bg-slate-950 flex flex-col items-center justify-center p-4 transition-all duration-700 relative overflow-hidden">
+    <div className="min-h-screen bg-[#f8f9fc] dark:bg-slate-950 flex flex-col items-center justify-center p-4 transition-all duration-700 relative overflow-hidden">
         
-        {/* Light Mode Specific Glowing Blobs - Replicates the cool dark mode lights but for light theme */}
-        <div className="absolute top-[-5%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 dark:bg-indigo-500/10 blur-[120px] animate-pulse pointer-events-none"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-100/40 dark:bg-purple-500/10 blur-[120px] animate-pulse pointer-events-none" style={{animationDelay: '1.5s'}}></div>
-        <div className="absolute top-[20%] right-[-20%] w-[40%] h-[40%] rounded-full bg-emerald-50/40 dark:bg-emerald-500/5 blur-[100px] animate-pulse pointer-events-none" style={{animationDelay: '3s'}}></div>
+        {/* Advanced Ambient Background for Light Mode */}
+        <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] rounded-full bg-indigo-100/50 dark:bg-indigo-500/10 blur-[120px] animate-pulse pointer-events-none"></div>
+        <div className="absolute bottom-[-15%] right-[-10%] w-[70%] h-[70%] rounded-full bg-rose-50/50 dark:bg-purple-500/10 blur-[120px] animate-pulse pointer-events-none" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-[20%] right-[-30%] w-[50%] h-[50%] rounded-full bg-emerald-50/50 dark:bg-emerald-500/5 blur-[100px] animate-pulse pointer-events-none" style={{animationDelay: '4s'}}></div>
 
         {/* Header Controls */}
         <div className="absolute top-6 right-6 flex gap-2 z-30">
             <div className="relative">
                 <button 
                     onClick={() => setShowLangMenu(!showLangMenu)}
-                    className="p-2.5 rounded-full bg-white/80 dark:bg-slate-800 backdrop-blur-md text-slate-500 dark:text-slate-400 shadow-sm border border-white dark:border-slate-700 hover:shadow-md transition-all flex items-center gap-2"
+                    className="p-2.5 rounded-full bg-white/60 dark:bg-slate-800 backdrop-blur-md text-slate-500 dark:text-slate-400 shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-white dark:border-slate-700 hover:shadow-md transition-all flex items-center gap-2"
                 >
                     <Globe size={18} />
                     <span className="text-xs font-black uppercase hidden md:inline tracking-tighter">{language.substring(0, 3)}</span>
@@ -150,13 +149,13 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
 
             <button 
                 onClick={toggleDarkMode}
-                className="p-2.5 rounded-full bg-white/80 dark:bg-slate-800 backdrop-blur-md text-slate-500 dark:text-slate-400 shadow-sm border border-white dark:border-slate-700 hover:shadow-md transition-all"
+                className="p-2.5 rounded-full bg-white/60 dark:bg-slate-800 backdrop-blur-md text-slate-500 dark:text-slate-400 shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-white dark:border-slate-700 hover:shadow-md transition-all"
             >
                 {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
         </div>
 
-        <div className="w-full max-w-md bg-white/90 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.06)] dark:shadow-none overflow-hidden border border-white dark:border-slate-800 relative z-20 animate-scale-in">
+        <div className="w-full max-w-md bg-white/80 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[3rem] shadow-[0_40px_120px_-20px_rgba(79,70,229,0.12)] dark:shadow-none overflow-hidden border border-white/90 dark:border-slate-800 relative z-20 animate-scale-in">
             {isVerified && (
                 <div className="bg-emerald-500 text-white p-5 flex items-center gap-4 animate-slide-up">
                     <div className="bg-white/20 p-2 rounded-full">
@@ -211,7 +210,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
                                     required
                                     value={displayName}
                                     onChange={(e) => setDisplayName(e.target.value)}
-                                    className="w-full pl-12 pr-5 py-4 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400/50 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-slate-900 dark:text-white"
+                                    className="w-full pl-12 pr-5 py-4 bg-slate-50/30 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400/50 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-slate-900 dark:text-white"
                                     placeholder={t.namePlaceholder || "Your Name"}
                                 />
                             </div>
@@ -227,7 +226,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-12 pr-5 py-4 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400/50 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-slate-900 dark:text-white"
+                                className="w-full pl-12 pr-5 py-4 bg-slate-50/30 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400/50 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-slate-900 dark:text-white"
                                 placeholder={t.emailPlaceholderExample || "name@example.com"}
                             />
                         </div>
@@ -242,7 +241,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-12 pr-12 py-4 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400/50 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-slate-900 dark:text-white"
+                                className="w-full pl-12 pr-12 py-4 bg-slate-50/30 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400/50 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-slate-900 dark:text-white"
                                 placeholder={t.passwordPlaceholderExample || "••••••••"}
                                 minLength={6}
                             />

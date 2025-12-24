@@ -58,7 +58,14 @@ const App: React.FC = () => {
   const [avatar, setAvatar] = useState<string | undefined>(() => localStorage.getItem('userAvatar') || undefined);
   const [bio, setBio] = useState<string | undefined>(() => localStorage.getItem('userBio') || undefined);
 
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') return true;
+    if (savedTheme === 'light') return false;
+    // Default to system preference if no localStorage value exists
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
   const [isWinterMode, setIsWinterMode] = useState(() => localStorage.getItem('winterMode') === 'true');
   const [isWinterSnow, setIsWinterSnow] = useState(() => localStorage.getItem('winterSnow') !== 'false');
   const [isWinterLights, setIsWinterLights] = useState(() => localStorage.getItem('winterLights') !== 'false');

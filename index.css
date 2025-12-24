@@ -6,9 +6,9 @@
 @tailwind utilities;
 
 :root {
-  --glass-bg-light: rgba(255, 255, 255, 0.85);
+  --glass-bg-light: rgba(255, 255, 255, 0.75);
   --glass-border-light: rgba(255, 255, 255, 0.9);
-  --glass-shadow-light: 0 20px 50px -12px rgba(0, 0, 0, 0.04);
+  --glass-shadow-light: 0 20px 40px -12px rgba(79, 70, 229, 0.06);
   --glass-bg-dark: rgba(15, 23, 42, 0.65);
   --glass-border-dark: rgba(255, 255, 255, 0.08);
   --glass-shadow-dark: 0 8px 30px rgba(0, 0, 0, 0.4);
@@ -17,8 +17,8 @@
 body {
   font-family: 'Inter', sans-serif;
   transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s ease;
-  /* Premium Light Mode Gradient - Silk Texture */
-  background: radial-gradient(circle at 50% 0%, #fffcf5 0%, #f7f9fc 50%, #f0f2f5 100%);
+  /* Premium Light Mode Gradient - Silk & Ivory Texture */
+  background: radial-gradient(circle at 50% 0%, #fffdf9 0%, #f4f7fb 50%, #eff2f6 100%);
   background-attachment: fixed;
   color: #1e293b;
   overflow: hidden;
