@@ -72,7 +72,8 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
 
     try {
         if (authMode === 'forgot') {
-             const { error } = await supabase.resetPasswordForEmail(email, {
+             // FIX: Corrected supabase.auth access for Build Error
+             const { error } = await supabase.auth.resetPasswordForEmail(email, {
                  redirectTo: redirectUrl,
              });
              if (error) throw error;
@@ -116,17 +117,17 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
   return (
     <div className="min-h-screen bg-[#fcfcf9] dark:bg-slate-950 flex flex-col items-center justify-center p-4 transition-all duration-700 relative overflow-hidden">
         
-        {/* Light Mode Specific Decorative Glowing Blobs - Replicates the cool dark mode lights but for light theme */}
-        <div className="absolute top-[-5%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 dark:bg-indigo-500/10 blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-100/40 dark:bg-purple-500/10 blur-[120px] animate-pulse" style={{animationDelay: '1.5s'}}></div>
-        <div className="absolute top-[20%] right-[-20%] w-[40%] h-[40%] rounded-full bg-emerald-50/40 dark:bg-emerald-500/5 blur-[100px] animate-pulse" style={{animationDelay: '3s'}}></div>
+        {/* Light Mode Specific Glowing Blobs - Replicates the cool dark mode lights but for light theme */}
+        <div className="absolute top-[-5%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-100/40 dark:bg-indigo-500/10 blur-[120px] animate-pulse pointer-events-none"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-100/40 dark:bg-purple-500/10 blur-[120px] animate-pulse pointer-events-none" style={{animationDelay: '1.5s'}}></div>
+        <div className="absolute top-[20%] right-[-20%] w-[40%] h-[40%] rounded-full bg-emerald-50/40 dark:bg-emerald-500/5 blur-[100px] animate-pulse pointer-events-none" style={{animationDelay: '3s'}}></div>
 
         {/* Header Controls */}
         <div className="absolute top-6 right-6 flex gap-2 z-30">
             <div className="relative">
                 <button 
                     onClick={() => setShowLangMenu(!showLangMenu)}
-                    className="p-2.5 rounded-full bg-white/80 dark:bg-slate-800 backdrop-blur-md text-slate-500 dark:text-slate-400 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all flex items-center gap-2"
+                    className="p-2.5 rounded-full bg-white/80 dark:bg-slate-800 backdrop-blur-md text-slate-500 dark:text-slate-400 shadow-sm border border-white dark:border-slate-700 hover:shadow-md transition-all flex items-center gap-2"
                 >
                     <Globe size={18} />
                     <span className="text-xs font-black uppercase hidden md:inline tracking-tighter">{language.substring(0, 3)}</span>
@@ -149,7 +150,7 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
 
             <button 
                 onClick={toggleDarkMode}
-                className="p-2.5 rounded-full bg-white/80 dark:bg-slate-800 backdrop-blur-md text-slate-500 dark:text-slate-400 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all"
+                className="p-2.5 rounded-full bg-white/80 dark:bg-slate-800 backdrop-blur-md text-slate-500 dark:text-slate-400 shadow-sm border border-white dark:border-slate-700 hover:shadow-md transition-all"
             >
                 {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>

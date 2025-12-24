@@ -6,9 +6,9 @@
 @tailwind utilities;
 
 :root {
-  --glass-bg-light: rgba(255, 255, 255, 0.75);
+  --glass-bg-light: rgba(255, 255, 255, 0.85);
   --glass-border-light: rgba(255, 255, 255, 0.9);
-  --glass-shadow-light: 0 10px 40px -10px rgba(0, 0, 0, 0.04);
+  --glass-shadow-light: 0 20px 50px -12px rgba(0, 0, 0, 0.04);
   --glass-bg-dark: rgba(15, 23, 42, 0.65);
   --glass-border-dark: rgba(255, 255, 255, 0.08);
   --glass-shadow-dark: 0 8px 30px rgba(0, 0, 0, 0.4);
@@ -17,8 +17,8 @@
 body {
   font-family: 'Inter', sans-serif;
   transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s ease;
-  /* Sophisticated Light Mode Gradient - Warm Silk to Cold Air */
-  background: radial-gradient(circle at 50% 0%, #fffcf5 0%, #f7f9fc 70%, #f0f2f5 100%);
+  /* Premium Light Mode Gradient - Silk Texture */
+  background: radial-gradient(circle at 50% 0%, #fffcf5 0%, #f7f9fc 50%, #f0f2f5 100%);
   background-attachment: fixed;
   color: #1e293b;
   overflow: hidden;
@@ -33,9 +33,9 @@ body {
   font-family: 'Merriweather', serif;
 }
 
-/* Glass Panels - Upgraded for ultra-clean light mode */
+/* Enhanced Glass Panels */
 .glass-panel {
-  @apply backdrop-blur-2xl border transition-all duration-500;
+  @apply backdrop-blur-3xl border transition-all duration-500;
   background-color: var(--glass-bg-light);
   border-color: var(--glass-border-light);
   box-shadow: var(--glass-shadow-light);
@@ -45,11 +45,6 @@ body {
   background-color: var(--glass-bg-dark);
   border-color: var(--glass-border-dark);
   box-shadow: var(--glass-shadow-dark);
-}
-
-/* Soft Light-Mode Accent Blobs */
-.light-glow-blob {
-  @apply absolute rounded-full blur-[120px] pointer-events-none opacity-40 mix-blend-multiply;
 }
 
 /* Custom Scrollbar */
