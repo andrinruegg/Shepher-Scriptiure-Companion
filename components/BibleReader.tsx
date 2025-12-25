@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Book, ChevronLeft, ChevronRight, Heart, X, ArrowLeft, Volume2, Pause, Volume1, Image, Loader2, Info } from 'lucide-react';
+import { Book, ChevronLeft, ChevronRight, Heart, X, ArrowLeft, Volume2, Pause, Volume1, Image, Loader2, Info, AlertTriangle } from 'lucide-react';
 import { BIBLE_BOOKS, fetchChapter } from '../services/bibleService';
 import { BibleChapter, SavedItem, BibleHighlight } from '../types';
 import { translations } from '../utils/translations';
@@ -14,7 +13,8 @@ interface BibleReaderProps {
   highlights: BibleHighlight[];
   onAddHighlight: (highlight: BibleHighlight) => void;
   onRemoveHighlight: (ref: string) => void;
-  onOpenComposer: (text: string, reference: string) => void; 
+  onOpenComposer: (text: string, reference: string) => void;
+  hasApiKey: boolean; 
 }
 
 // RAW PCM Decoding Logic for Gemini API
@@ -29,7 +29,6 @@ function base64ToUint8Array(base64: string) {
 }
 
 // --- CONFIG ---
-// Increased to 10 verses per chunk to reduce AI voice context switching
 const VERSES_PER_CHUNK = 10;
 
 const BibleReader: React.FC<BibleReaderProps> = ({ 
@@ -39,7 +38,8 @@ const BibleReader: React.FC<BibleReaderProps> = ({
     highlights, 
     onAddHighlight, 
     onRemoveHighlight,
-    onOpenComposer
+    onOpenComposer,
+    hasApiKey
 }) => {
   const [selectedBookId, setSelectedBookId] = useState('JHN');
   const [chapter, setChapter] = useState(1);
@@ -52,6 +52,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({
   const [currentChunkIndex, setCurrentChunkIndex] = useState<number | null>(null);
   const [audioLoading, setAudioLoading] = useState(false);
   const [showBufferingWarning, setShowBufferingWarning] = useState(false);
+  const [showNoKeyError, setShowNoKeyError] = useState(false);
   
   // Refs for buffering logic
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -63,6 +64,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({
   const pendingRequestsRef = useRef<Set<number>>(new Set());
   
   const t = translations[language]?.bible || translations['English'].bible;
+  const commonT = translations[language]?.common || translations['English'].common;
   const selectedBook = BIBLE_BOOKS.find(b => b.id === selectedBookId) || BIBLE_BOOKS[0];
   
   const getLocalizedBookName = (book: typeof BIBLE_BOOKS[0]) => {
@@ -144,6 +146,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({
   const preloadChunk = async (chunkIndex: number, verses: any[]) => {
       const totalChunks = Math.ceil(verses.length / VERSES_PER_CHUNK);
       if (chunkIndex >= totalChunks) return;
+      if (!hasApiKey) return;
       
       // If already cached or pending, skip
       if (audioCacheRef.current.has(chunkIndex) || pendingRequestsRef.current.has(chunkIndex)) return;
@@ -173,7 +176,6 @@ const BibleReader: React.FC<BibleReaderProps> = ({
       setCurrentChunkIndex(chunkIndex);
       
       // Aggressive Preload: Start fetching next 2 chunks immediately
-      // This buffers ahead more aggressively to prevent stops
       preloadChunk(chunkIndex + 1, data.verses);
       preloadChunk(chunkIndex + 2, data.verses);
 
@@ -220,6 +222,12 @@ const BibleReader: React.FC<BibleReaderProps> = ({
   };
 
   const toggleAudio = () => {
+      if (!hasApiKey) {
+          setShowNoKeyError(true);
+          setTimeout(() => setShowNoKeyError(false), 4000);
+          return;
+      }
+
       if (isPlaying) {
           stopAudio();
       } else {
@@ -350,6 +358,17 @@ const BibleReader: React.FC<BibleReaderProps> = ({
            </div>
        </header>
 
+       {/* Error: No Key Toast */}
+       {showNoKeyError && (
+           <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl animate-pop-in">
+               <AlertTriangle size={20} />
+               <div className="flex flex-col">
+                   <span className="text-xs font-bold">{commonT.warning}</span>
+                   <span className="text-xs opacity-90">{t.needKey}</span>
+               </div>
+           </div>
+       )}
+
        {/* Buffering Indicator Toast */}
        {showBufferingWarning && (
            <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 bg-indigo-900/90 text-white px-4 py-2 rounded-full flex items-center gap-3 shadow-xl backdrop-blur-sm animate-scale-in">
@@ -377,8 +396,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({
                        
                        {data.verses.map((v) => {
                            const highlightColor = getHighlightColor(v.verse);
-                           // Calculate which chunk this verse belongs to
-                           const thisChunkIndex = Math.floor((v.verse - 1) / VERSES_PER_CHUNK); // verse is 1-based, index 0-based
+                           const thisChunkIndex = Math.floor((v.verse - 1) / VERSES_PER_CHUNK);
                            const isReading = currentChunkIndex === thisChunkIndex && isPlaying;
                            
                            return (

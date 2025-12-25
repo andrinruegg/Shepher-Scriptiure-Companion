@@ -1,4 +1,3 @@
-
 export const translations: Record<string, any> = {
   English: {
     home: {
@@ -35,7 +34,8 @@ export const translations: Record<string, any> = {
         translating: "Translating...",
         original: "Show Original",
         loading: "Loading...",
-        newChat: "New Chat"
+        newChat: "New Chat",
+        warning: "Warning"
     },
     composer: {
         title: "Visual Composer",
@@ -161,7 +161,8 @@ export const translations: Record<string, any> = {
         pastConversations: "Past Conversations",
         viewDetails: "View Details",
         encounterLabel: "Encounter",
-        inputPlaceholder: "Speak to the witness..."
+        inputPlaceholder: "Speak to the witness...",
+        needKey: "To chat with witnesses, please setup your API key in Settings or Chat."
     },
     chat: {
       subtitle: "Scripture Companion",
@@ -171,7 +172,8 @@ export const translations: Record<string, any> = {
       paintMode: "Paint Mode",
       placeholderShort: "Ask Shepherd...",
       missingKeyTitle: "API Key Required",
-      missingKeyDesc: "To chat with Shepherd, you need to provide a free Google Gemini API Key.",
+      missingKeyDesc: "To chat with Shepherd at high speed without limits, you need to provide your own free Google Gemini API key.",
+      disclaimer: "Don't worry, your key stays in your browser and is only used to speak with Shepherd.",
       setupKey: "Setup API Key"
     },
     bible: {
@@ -197,7 +199,8 @@ export const translations: Record<string, any> = {
         audio: {
             play: "Listen",
             pause: "Pause"
-        }
+        },
+        needKey: "To use the AI voice, please setup your API key in Settings or Chat."
     },
     saved: {
         title: "Saved Favorites",
@@ -297,14 +300,16 @@ export const translations: Record<string, any> = {
           title: "Princess Mode",
           desc: "Hearts, pink themes & magic",
           hearts: "Floating Hearts",
-          aurora: "Magic Aurora"
+          aurora: "Magic Aurora",
+          lightOnly: "Only available in Light Mode",
+          activateHint: "Activating this will switch to Light Mode"
       },
 
       account: "Account",
       loggedIn: "Logged in via Supabase",
       signOut: "Sign Out",
       about: "About",
-      aboutText: "Shepherd Scripture Companion was developed by Andrin Rüegg, an 18-year-old developer from Switzerland.\n\nAs a Christian, he built this tool to help himself and his girlfriend, Alexia, grow closer to God through Scripture. It stands as a testament to his love for her and the eternal truth that Jesus loves her.",
+      aboutText: "Shepherd Scripture Companion was developed with the mission to help people grow closer to God through His Word. It was built as a labor of love and faith, designed to provide a peaceful space for spiritual guidance and encouragement for everyone on their journey with Christ.",
       displayName: "Display Name",
       description: "Bio / Description",
       noBio: "No description yet.",
@@ -315,6 +320,7 @@ export const translations: Record<string, any> = {
           custom: "Custom Key Active",
           add: "Add Key",
           change: "Change Key",
+          billing: "Learn about Gemini billing",
           howTo: "How to get a free API Key",
           step1: "Go to Google AI Studio.",
           step2: "Click the blue 'Create API Key' button.",
@@ -442,7 +448,8 @@ export const translations: Record<string, any> = {
         translating: "Traducere...",
         original: "Arată Originalul",
         loading: "Se încarcă...",
-        newChat: "Chat Nou"
+        newChat: "Chat Nou",
+        warning: "Avertizare"
     },
     composer: {
         title: "Compozitor Vizual",
@@ -568,7 +575,8 @@ export const translations: Record<string, any> = {
         pastConversations: "Conversații Anterioare",
         viewDetails: "Vezi Detalii",
         encounterLabel: "Întâlnire",
-        inputPlaceholder: "Vorbește cu martorul..."
+        inputPlaceholder: "Vorbește cu martorul...",
+        needKey: "Pentru a discuta cu martorii, te rugăm să configurezi cheia API în Setări sau Chat."
     },
     chat: {
       subtitle: "Partener Scriptural",
@@ -578,7 +586,8 @@ export const translations: Record<string, any> = {
       paintMode: "Mod Pictură",
       placeholderShort: "Întreabă Păstorul...",
       missingKeyTitle: "Cheie API Necesară",
-      missingKeyDesc: "Pentru a discuta cu Păstorul, trebuie să furnizezi o cheie gratuită Google Gemini API.",
+      missingKeyDesc: "Pentru a discuta cu Păstorul la viteză mare și fără limite, trebuie să furnizezi propria cheie gratuită Google Gemini API.",
+      disclaimer: "Nu te îngrijora, cheia ta rămâne în browser și este folosită doar pentru a vorbi cu Păstorul.",
       setupKey: "Setare Cheie API"
     },
     bible: {
@@ -604,7 +613,8 @@ export const translations: Record<string, any> = {
         audio: {
             play: "Ascultă",
             pause: "Pauză"
-        }
+        },
+        needKey: "Pentru a utiliza vocea AI, te rugăm să configurezi cheia API în Setări sau Chat."
     },
     saved: {
         title: "Favorite Salvate",
@@ -620,7 +630,7 @@ export const translations: Record<string, any> = {
         date: "Dată"
     },
     prayer: {
-        title: "Jurnal de Rugăciune",
+        title: "Însoțitor Scriptural",
         tabs: {
             journal: "Jurnalul Meu",
             community: "Zidul Rugăciunii"
@@ -704,14 +714,16 @@ export const translations: Record<string, any> = {
           title: "Mod Prințesă",
           desc: "Inimi, roz și magie",
           hearts: "Inimi Plutitoare",
-          aurora: "Auroră Magică"
+          aurora: "Auroră Magică",
+          lightOnly: "Disponibil doar în Modul Luminos",
+          activateHint: "Activarea acestui mod va trece la Modul Luminos"
       },
 
       account: "Cont",
       loggedIn: "Autentificat prin Supabase",
       signOut: "Deconectare",
       about: "Despre",
-      aboutText: "Shepherd Scripture Companion a fost dezvoltat de Andrin Rüegg, un dezvoltator de 18 ani din Elveția.\n\nCa creștin, a construit acest instrument pentru a se ajuta pe sine și pe prietena sa, Alexia, să se apropie de Dumnezeu prin Scriptură. Este un testament al dragostei sale pentru ea și al adevărului etern că Isus o iubește.",
+      aboutText: "Shepherd Scripture Companion a fost dezvoltat cu misiunea de a ajuta oamenii să se apropie de Dumnezeu prin Cuvântul Său. A fost creat ca o lucrare din dragoste și credință, menită să ofere un spațiu liniștit pentru îndrumare spirituală și încurajare pentru toți cei aflați în călătoria lor cu Hristos.",
       displayName: "Nume Afișat",
       description: "Bio / Descriere",
       noBio: "Nicio descriere.",
@@ -722,6 +734,7 @@ export const translations: Record<string, any> = {
           custom: "Cheie Personală Activă",
           add: "Adaugă Cheie",
           change: "Schimbă Cheia",
+          billing: "Află mai multe despre facturarea Gemini",
           howTo: "Cum să obții o cheie API gratuită",
           step1: "Mergi la Google AI Studio.",
           step2: "Apasă butonul albastru 'Create API Key'.",
@@ -755,7 +768,7 @@ export const translations: Record<string, any> = {
             yourId: "ID-ul Tău de Partajare",
             shareText: "Distribuie acest ID prietenilor pentru a te adăuga.",
             enterId: "Introdu ID Prieten",
-            search: "Caută"
+            search: "Search"
         },
         profile: {
             title: "Profilul Meu",
@@ -849,7 +862,8 @@ export const translations: Record<string, any> = {
         translating: "Übersetzen...",
         original: "Original anzeigen",
         loading: "Lädt...",
-        newChat: "Neuer Chat"
+        newChat: "Neuer Chat",
+        warning: "Warnung"
     },
     composer: {
         title: "Visueller Komponist",
@@ -918,7 +932,7 @@ export const translations: Record<string, any> = {
       passwordPlaceholderExample: "••••••••",
       namePlaceholder: "Dein Name",
       displayName: "Anzeigename",
-      rememberMe: "Angemeldet bleiben",
+      rememberMe: "Angetmeldet bleiben",
       signInBtn: "Anmelden",
       signUpBtn: "Registrieren",
       noAccount: "Kein Konto? Registrieren",
@@ -975,7 +989,8 @@ export const translations: Record<string, any> = {
         pastConversations: "Frühere Gespräche",
         viewDetails: "Details ansehen",
         encounterLabel: "Begegnung",
-        inputPlaceholder: "Sprich mit dem Zeugen..."
+        inputPlaceholder: "Sprich mit dem Zeugen...",
+        needKey: "Um mit Zeugen zu sprechen, richte bitte deinen API-Schlüssel in den Einstellungen oder im Chat ein."
     },
     chat: {
       subtitle: "Schriftbegleiter",
@@ -985,7 +1000,8 @@ export const translations: Record<string, any> = {
       paintMode: "Malmodus",
       placeholderShort: "Frag Hirte...",
       missingKeyTitle: "API-Schlüssel erforderlich",
-      missingKeyDesc: "Um mit Hirte zu chatten, musst du einen kostenlosen Google Gemini API-Schlüssel angeben.",
+      missingKeyDesc: "Um mit Hirte ohne Limits und in hoher Geschwindigkeit zu chatten, musst du deinen eigenen kostenlosen Google Gemini API-Schlüssel hinzufügen.",
+      disclaimer: "Keine Sorge, dein Schlüssel bleibt in deinem Browser und wird nur für Gespräche mit Hirte verwendet.",
       setupKey: "API-Schlüssel einrichten"
     },
     bible: {
@@ -1011,7 +1027,8 @@ export const translations: Record<string, any> = {
         audio: {
             play: "Anhören",
             pause: "Pause"
-        }
+        },
+        needKey: "Um die KI-Stimme zu nutzen, richte bitte deinen API-Schlüssel in den Einstellungen oder im Chat ein."
     },
     saved: {
         title: "Gespeicherte Favoriten",
@@ -1027,7 +1044,7 @@ export const translations: Record<string, any> = {
         date: "Datum"
     },
     prayer: {
-        title: "Gebetstagebuch",
+        title: "Schriftbegleiter",
         tabs: {
             journal: "Mein Tagebuch",
             community: "Gebetswand"
@@ -1111,14 +1128,16 @@ export const translations: Record<string, any> = {
           title: "Prinzessinnen-Modus",
           desc: "Herzen, Pink & Magie",
           hearts: "Schwebende Herzen",
-          aurora: "Magische Aurora"
+          aurora: "Magische Aurora",
+          lightOnly: "Nur im hellen Modus verfügbar",
+          activateHint: "Die Aktivierung wechselt zum hellen Modus"
       },
 
       account: "Konto",
       loggedIn: "Eingeloggt über Supabase",
       signOut: "Abmelden",
       about: "Über",
-      aboutText: "Shepherd Scripture Companion wurde von Andrin Rüegg entwickelt, einem 18-jährigen Entwickler aus der Schweiz.\n\nAls Christ baute er dieses Werkzeug, um sich selbst und seiner Freundin Alexia zu helfen, durch die Heilige Schrift näher zu Gott zu wachsen. Es steht als Zeugnis seiner Liebe zu ihr und der ewigen Wahrheit, dass Jesus sie liebt.",
+      aboutText: "Shepherd Scripture Companion wurde mit der Mission entwickelt, Menschen zu helfen, Gott durch Sein Wort näher zu kommen. Es wurde als ein Werk aus Liebe und Glauben geschaffen, um einen friedvollen Ort für geistliche Führung und Ermutigung für jeden auf seinem Weg mit Christus zu bieten.",
       displayName: "Anzeigename",
       description: "Bio / Beschreibung",
       noBio: "Noch keine Beschreibung.",
@@ -1129,6 +1148,7 @@ export const translations: Record<string, any> = {
           custom: "Eigener Schlüssel aktiv",
           add: "Schlüssel hinzufügen",
           change: "Schlüssel ändern",
+          billing: "Mehr über Gemini-Abrechnung erfahren",
           howTo: "Wie man einen kostenlosen API-Schlüssel erhält",
           step1: "Gehe zu Google AI Studio.",
           step2: "Klicke den blauen 'Create API Key' Button.",

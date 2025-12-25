@@ -2,10 +2,6 @@
 import { GoogleGenAI, GenerateContentResponse, Content, Type, Modality } from "@google/genai";
 import { Message, QuizQuestion } from "../types";
 
-const getAi = (): GoogleGenAI => {
-    return new GoogleGenAI({ apiKey: process.env.API_KEY });
-};
-
 const BASE_SYSTEM_INSTRUCTION = `
 You are "Shepherd", a warm, friendly, and encouraging Scripture Companion.
 Your visual identity is a Shepherd's Staff and a Book.
@@ -43,13 +39,32 @@ const makeRequestWithRetry = async <T>(
     retries = 3, 
     initialDelay = 1500
 ): Promise<T> => {
+    // CRITICAL: Ensure the user has actually selected a key before proceeding.
+    // If hasSelectedApiKey returns false, we should NOT make the request with the default key.
+    if (window.aistudio) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+            throw new Error("NO_API_KEY_SELECTED");
+        }
+    }
+
     try {
-        const ai = getAi();
+        // ALWAYS create a new instance right before making an API call
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         return await operation(ai);
     } catch (error: any) {
         const errorMessage = error?.message || "";
         const status = error?.status;
         const code = error?.code;
+
+        // If the request fails with this specific message, reset key state
+        if (errorMessage.includes("Requested entity was not found.")) {
+            if (window.aistudio) {
+                await window.aistudio.openSelectKey();
+            }
+            throw new Error("API_KEY_INVALID");
+        }
+
         if (status === 403 || code === 403 || errorMessage.includes('PERMISSION_DENIED')) {
             throw new Error("PERMISSION_DENIED");
         }
@@ -95,14 +110,13 @@ export const sendMessageStream = async (
   onChunk: (text: string) => void,
   onComplete: () => void,
   onError: (error: any) => void,
-  systemOverride?: string // Added parameter to bypass standard Shepherd rules
+  systemOverride?: string 
 ) => {
   try {
     const recentHistory = history.length > 10 ? history.slice(history.length - 10) : history;
     const formattedHistory = mapHistoryToContent(recentHistory);
     const userLanguage = language || "English";
 
-    // If override is provided (for Petrus), we ignore all Shepherd rules
     const finalSystemInstruction = systemOverride ? systemOverride : `${BASE_SYSTEM_INSTRUCTION}
     
     IMPORTANT PREFERENCES:
@@ -121,7 +135,7 @@ export const sendMessageStream = async (
             history: formattedHistory,
             config: {
                 systemInstruction: finalSystemInstruction,
-                temperature: systemOverride ? 0.9 : 1.0, // Slightly more stable for roleplay
+                temperature: systemOverride ? 0.9 : 1.0, 
             },
         });
         

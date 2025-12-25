@@ -49,6 +49,7 @@ const App: React.FC = () => {
   const [dailyStreak, setDailyStreak] = useState(0);
   const [shareId, setShareId] = useState<string>('');
   const [totalNotifications, setTotalNotifications] = useState(0);
+  const [hasApiKey, setHasApiKey] = useState<boolean>(false); 
 
   const bibleTranslation = 'NIV';
 
@@ -61,7 +62,6 @@ const App: React.FC = () => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') return true;
     if (savedTheme === 'light') return false;
-    // Default to system preference if no localStorage value exists
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
@@ -74,8 +74,30 @@ const App: React.FC = () => {
   const [isPrincessHearts, setIsPrincessHearts] = useState(() => localStorage.getItem('princessHearts') !== 'false');
   const [isPrincessSparkles, setIsPrincessSparkles] = useState(() => localStorage.getItem('princessSparkles') !== 'false');
 
-  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
-  const [highlights, setHighlights] = useState<BibleHighlight[]>([]);
+  // Verify API Key on start and periodically
+  const verifyKey = async () => {
+    if (window.aistudio) {
+      const hasKey = await window.aistudio.hasSelectedApiKey();
+      setHasApiKey(hasKey);
+      return hasKey;
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    verifyKey();
+    // Poll occasionally to stay synced with external dialog state
+    const interval = setInterval(verifyKey, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSelectApiKey = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      // Fix: Mitigate race condition by assuming success after triggering the selection dialog.
+      setHasApiKey(true);
+    }
+  };
 
   // SPLASH REVEAL TIMER
   useEffect(() => {
@@ -142,6 +164,9 @@ const App: React.FC = () => {
       setHighlights([]);
     }
   }, [session]);
+
+  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
+  const [highlights, setHighlights] = useState<BibleHighlight[]>([]);
 
   const loadCloudData = async () => {
     try {
@@ -246,23 +271,59 @@ const App: React.FC = () => {
   const handleUpdatePreference = (key: keyof UserPreferences, value: string | boolean) => {
     if (key === 'theme') {
       const isDark = value === 'dark';
+      setIsDarkMode(isDark);
+      updateCloudPreference('theme', value as string);
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+
       if (isDark && isPrincessMode) {
         setIsPrincessMode(false);
         localStorage.setItem('princessMode', 'false');
         updateCloudPreference('princessMode', false);
       }
-      setIsDarkMode(isDark);
-      updateCloudPreference('theme', value as string);
     } else if (key === 'winterTheme') {
       const isWinter = value === true;
       setIsWinterMode(isWinter);
       localStorage.setItem('winterMode', String(isWinter));
       updateCloudPreference('winterMode', isWinter);
+      
+      if (isWinter && isPrincessMode) {
+        setIsPrincessMode(false);
+        localStorage.setItem('princessMode', 'false');
+        updateCloudPreference('princessMode', false);
+      }
+    } else if (key === 'winterSnow') {
+      setIsWinterSnow(value as boolean);
+      localStorage.setItem('winterSnow', String(value));
+    } else if (key === 'winterLights') {
+      setIsWinterLights(value as boolean);
+      localStorage.setItem('winterLights', String(value));
+    } else if (key === 'winterIcicles') {
+      setIsWinterIcicles(value as boolean);
+      localStorage.setItem('winterIcicles', String(value));
     } else if (key === 'princessTheme') {
       const isPrincess = value === true;
+      
+      if (isPrincess && isDarkMode) {
+          setIsDarkMode(false);
+          localStorage.setItem('theme', 'light');
+          updateCloudPreference('theme', 'light');
+      }
+
       setIsPrincessMode(isPrincess);
       localStorage.setItem('princessMode', String(isPrincess));
       updateCloudPreference('princessMode', isPrincess);
+
+      if (isPrincess && isWinterMode) {
+          setIsWinterMode(false);
+          localStorage.setItem('winterMode', 'false');
+          updateCloudPreference('winterMode', false);
+      }
+    } else if (key === 'princessHearts') {
+      setIsPrincessHearts(value as boolean);
+      localStorage.setItem('princessHearts', String(value));
+    } else if (key === 'princessSparkles') {
+      setIsPrincessSparkles(value as boolean);
+      localStorage.setItem('princessSparkles', String(value));
     } else if (key === 'language') {
       setLanguage(value as string);
       localStorage.setItem('language', value as string);
@@ -348,6 +409,14 @@ const App: React.FC = () => {
 
   const handleSendMessage = async (text: string, hiddenContext?: string) => {
     if (!activeChatId) return;
+
+    // Fix: Rely on hasApiKey state which is maintained by polling and assumption logic
+    // to avoid race conditions described in the Gemini API integration guidelines.
+    if (!hasApiKey) {
+      handleSelectApiKey();
+      return;
+    }
+
     let currentChatId = activeChatId;
     const currentChat = chats.find(c => c.id === currentChatId);
     if (!currentChat) return;
@@ -374,14 +443,23 @@ const App: React.FC = () => {
       await db.addMessage(currentChatId, userMessage);
       const historyPayload = [...currentChat.messages, userMessage];
       await streamAIResponse(currentChatId, aiMessageId, historyPayload, text, hiddenContext, initialAiMessage);
-    } catch (e) { 
+    } catch (e: any) { 
       console.error(e);
       setIsLoading(false);
+      // Reset API key state if error was about key
+      if (e.message === 'API_KEY_INVALID' || e.message === 'NO_API_KEY_SELECTED') setHasApiKey(false);
     }
   };
 
   const handleRegenerate = async () => {
     if (!activeChatId) return;
+
+    // Fix: Rely on state variable to avoid blocking due to race conditions during selection.
+    if (!hasApiKey) {
+      handleSelectApiKey();
+      return;
+    }
+
     const currentChat = chats.find(c => c.id === activeChatId);
     if (!currentChat) return;
     const msgs = currentChat.messages;
@@ -421,6 +499,7 @@ const App: React.FC = () => {
       },
       (error) => {
         setIsLoading(false);
+        if (error.message === 'API_KEY_INVALID' || error.message === 'NO_API_KEY_SELECTED') setHasApiKey(false);
       }
     );
   };
@@ -531,13 +610,24 @@ const App: React.FC = () => {
                           onSaveMessage={handleSaveMessage} onOpenComposer={(text) => setComposerData({ text })}
                           onOpenSettings={() => setIsSettingsOpen(true)} 
                           onNavigateHome={() => setCurrentView('home')}
+                          hasApiKey={hasApiKey}
+                          onSelectApiKey={handleSelectApiKey}
                       />
                   </div>
               </div>
           )}
           {currentView === 'bible' && ( 
               <div className="flex-1 w-full h-full">
-                  <BibleReader language={language} onSaveItem={handleSaveItem} onMenuClick={() => setCurrentView('home')} highlights={highlights} onAddHighlight={handleAddHighlight} onRemoveHighlight={handleRemoveHighlight} onOpenComposer={(text, ref) => setComposerData({ text, reference: ref })} /> 
+                  <BibleReader 
+                    language={language} 
+                    onSaveItem={handleSaveItem} 
+                    onMenuClick={() => setCurrentView('home')} 
+                    highlights={highlights} 
+                    onAddHighlight={handleAddHighlight} 
+                    onRemoveHighlight={handleRemoveHighlight} 
+                    onOpenComposer={(text, ref) => setComposerData({ text, reference: ref })} 
+                    hasApiKey={hasApiKey}
+                  /> 
               </div>
           )}
           {currentView === 'saved' && ( 
@@ -551,12 +641,30 @@ const App: React.FC = () => {
               </div>
           )}
           {currentView === 'quiz' && ( <div className="flex-1 w-full h-full"><QuizMode language={language} onMenuClick={() => setCurrentView('home')} /></div> )}
-          {currentView === 'stories' && ( <div className="flex-1 w-full h-full"><RoleplayView language={language} onMenuClick={() => setCurrentView('home')} /></div> )}
+          {currentView === 'stories' && ( 
+              <div className="flex-1 w-full h-full">
+                  <RoleplayView 
+                    language={language} 
+                    onMenuClick={() => setCurrentView('home')} 
+                    hasApiKey={hasApiKey}
+                  />
+              </div> 
+          )}
           
           <Sanctuary isOpen={isSanctuaryOpen} onClose={() => setIsSanctuaryOpen(false)} language={language} />
           <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} language={language} />
           <VisualComposerModal isOpen={!!composerData} onClose={() => setComposerData(null)} initialText={composerData?.text || ''} initialReference={composerData?.reference} language={language} />
-          <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} preferences={{ bibleTranslation, theme: isDarkMode ? 'dark' : 'light', winterTheme: isWinterMode, winterSnow: isWinterSnow, winterLights: isWinterLights, winterIcicles: isWinterIcicles, princessTheme: isPrincessMode, princessHearts: isPrincessHearts, princessSparkles: isPrincessSparkles, language, displayName, avatar, bio }} onUpdatePreference={handleUpdatePreference} userEmail={session.user.email} userId={session.user.id} onLogout={handleLogout} />
+          <SettingsModal 
+            isOpen={isSettingsOpen} 
+            onClose={() => setIsSettingsOpen(false)} 
+            preferences={{ bibleTranslation, theme: isDarkMode ? 'dark' : 'light', winterTheme: isWinterMode, winterSnow: isWinterSnow, winterLights: isWinterLights, winterIcicles: isWinterIcicles, princessTheme: isPrincessMode, princessHearts: isPrincessHearts, princessSparkles: isPrincessSparkles, language, displayName, avatar, bio }} 
+            onUpdatePreference={handleUpdatePreference} 
+            userEmail={session.user.email} 
+            userId={session.user.id} 
+            onLogout={handleLogout} 
+            hasApiKey={hasApiKey}
+            onSelectApiKey={handleSelectApiKey}
+          />
           <DailyVerseModal isOpen={isDailyVerseOpen} onClose={() => setIsDailyVerseOpen(false)} isDarkMode={isDarkMode} language={language} onOpenComposer={(text, ref) => setComposerData({ text, reference: ref })} />
           <SocialModal isOpen={isSocialOpen} onClose={() => setIsSocialOpen(false)} initialTab={socialInitialTab} currentUserShareId={shareId} isDarkMode={isDarkMode} onUpdateNotifications={loadSocialNotifications} language={language} />
           <PasswordResetModal isOpen={isPasswordResetOpen} onClose={() => setIsPasswordResetOpen(false)} />

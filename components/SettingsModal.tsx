@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, AlignLeft, CloudSnow, Sparkles, Droplets, Crown, Heart, Camera, Trash2, Snowflake } from 'lucide-react';
+import { X, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, AlignLeft, CloudSnow, Sparkles, Droplets, Crown, Heart, Camera, Trash2, Snowflake, AlertCircle, Key, ShieldCheck, ExternalLink } from 'lucide-react';
 import { UserPreferences } from '../types';
 import { translations } from '../utils/translations';
 
@@ -12,6 +11,8 @@ interface SettingsModalProps {
   userEmail?: string;
   userId?: string; 
   onLogout: () => void;
+  hasApiKey: boolean;
+  onSelectApiKey: () => void;
 }
 
 const LANGUAGES = [
@@ -27,7 +28,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdatePreference,
   userEmail,
   userId,
-  onLogout
+  onLogout,
+  hasApiKey,
+  onSelectApiKey
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(preferences.displayName || '');
@@ -59,13 +62,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Compress and resize image
       const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_SIZE = 200; // Resize to 200x200 max
+          const MAX_SIZE = 200; 
           
           let width = img.width;
           let height = img.height;
@@ -87,7 +89,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            // Export as JPEG with 0.8 quality
             const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
             onUpdatePreference('avatar', dataUrl);
           }
@@ -107,6 +108,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleRemoveAvatar = () => {
       onUpdatePreference('avatar', '');
   };
+
+  const isDarkMode = preferences.theme === 'dark';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -163,23 +166,68 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             {/* Appearance */}
             <div className="mb-4">
                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
-                  {preferences.theme === 'dark' ? <Moon size={16} className="text-indigo-500"/> : <Sun size={16} className="text-amber-500"/>}
+                  {isDarkMode ? <Moon size={16} className="text-indigo-500"/> : <Sun size={16} className="text-amber-500"/>}
                   {t.appearance}
                </label>
                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                   <button
                     onClick={() => onUpdatePreference('theme', 'light')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${preferences.theme === 'light' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${!isDarkMode ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                   >
                     <Sun size={14} /> {t.light}
                   </button>
                   <button
                     onClick={() => onUpdatePreference('theme', 'dark')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${preferences.theme === 'dark' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${isDarkMode ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                   >
                     <Moon size={14} /> {t.dark}
                   </button>
                </div>
+            </div>
+
+            {/* API KEY SECTION */}
+            <div className="mb-4 space-y-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                    <Key size={16} className="text-indigo-500" />
+                    {t.apiKey.title}
+                </label>
+                <div className={`p-4 rounded-xl border ${hasApiKey ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/50' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800'}`}>
+                    <div className="flex items-start justify-between mb-3">
+                        <div>
+                            <p className={`text-xs font-bold ${hasApiKey ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
+                                {hasApiKey ? t.apiKey.custom : t.apiKey.shared}
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed pr-4">
+                                {hasApiKey ? "Your individual API key is currently in use for all AI features." : t.apiKey.desc}
+                            </p>
+                        </div>
+                        {hasApiKey ? (
+                            <div className="bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 p-1.5 rounded-full">
+                                <ShieldCheck size={14} />
+                            </div>
+                        ) : (
+                            <AlertCircle size={14} className="text-slate-300 mt-1" />
+                        )}
+                    </div>
+
+                    <button
+                        onClick={onSelectApiKey}
+                        className={`w-full py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${hasApiKey ? 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'}`}
+                    >
+                        {hasApiKey ? t.apiKey.change : t.apiKey.add}
+                    </button>
+                    
+                    {!hasApiKey && (
+                        <a 
+                            href="https://ai.google.dev/gemini-api/docs/billing" 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="mt-3 text-[10px] text-slate-400 flex items-center gap-1 hover:text-indigo-500 transition-colors mx-auto w-fit"
+                        >
+                            {t.apiKey.billing} <ExternalLink size={10} />
+                        </a>
+                    )}
+                </div>
             </div>
 
             {/* Winter Mode Toggle */}
@@ -208,7 +256,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {preferences.winterTheme && (
-                    <div className="pl-14 space-y-2">
+                    <div className="pl-14 space-y-2 animate-slide-up">
                         <div className="flex items-center justify-between">
                             <label htmlFor="winter-snow" className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
                                 <CloudSnow size={12} className="text-slate-400"/> {t.winter.snow}
@@ -230,7 +278,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="checkbox" 
                                 checked={preferences.winterLights ?? true} 
                                 onChange={(e) => onUpdatePreference('winterLights', e.target.checked)}
-                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 cursor-pointer"
+                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 cursor-pointer"
                             />
                         </div>
                         <div className="flex items-center justify-between">
@@ -242,7 +290,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="checkbox" 
                                 checked={preferences.winterIcicles ?? true} 
                                 onChange={(e) => onUpdatePreference('winterIcicles', e.target.checked)}
-                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 cursor-pointer"
+                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 cursor-pointer"
                             />
                         </div>
                     </div>
@@ -251,7 +299,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
             {/* PRINCESS MODE TOGGLE */}
             <div className="mb-2 space-y-2">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-pink-50 dark:bg-slate-800/50 border border-pink-100 dark:border-slate-800">
+                <div className={`flex items-center justify-between p-3 rounded-lg border transition-all ${preferences.princessTheme ? 'bg-pink-50 border-pink-100 dark:bg-pink-900/10' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800'}`}>
                     <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-full ${preferences.princessTheme ? 'bg-pink-100 text-pink-500 dark:bg-pink-900/30 dark:text-pink-400' : 'bg-slate-200 text-slate-400 dark:bg-slate-700'}`}>
                             <Crown size={18} />
@@ -261,7 +309,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 {t.princess.title}
                             </span>
                             <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                                {t.princess.desc}
+                                {isDarkMode ? t.princess.lightOnly : t.princess.desc}
                             </span>
                         </div>
                     </div>
@@ -275,7 +323,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {preferences.princessTheme && (
-                    <div className="pl-14 space-y-2">
+                    <div className="pl-14 space-y-2 animate-slide-up">
                         <div className="flex items-center justify-between">
                             <label htmlFor="princess-hearts" className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
                                 <Heart size={12} className="text-pink-400 fill-pink-400"/> {t.princess.hearts}
@@ -301,6 +349,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             />
                         </div>
                     </div>
+                )}
+                
+                {isDarkMode && !preferences.princessTheme && (
+                     <div className="flex items-center gap-2 px-3 text-[10px] text-indigo-500 font-bold uppercase tracking-wider animate-pulse">
+                        <Info size={12} />
+                        {t.princess.activateHint}
+                     </div>
                 )}
             </div>
 

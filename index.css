@@ -79,6 +79,38 @@ body {
   padding-top: env(safe-area-inset-top);
 }
 
+/* --- WINTER MODE ANIMATIONS --- */
+@keyframes snow {
+  0% { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+  25% { transform: translateY(20vh) translateX(15px) rotate(90deg); }
+  50% { transform: translateY(50vh) translateX(-15px) rotate(180deg); }
+  75% { transform: translateY(80vh) translateX(15px) rotate(270deg); }
+  100% { transform: translateY(110vh) translateX(0) rotate(360deg); }
+}
+
+.animate-snow {
+  animation: snow linear infinite;
+  will-change: transform;
+}
+
+@keyframes light-glow {
+  0%, 100% { opacity: 0.5; filter: brightness(1) drop-shadow(0 0 2px currentColor); transform: scale(1); }
+  50% { opacity: 1; filter: brightness(1.6) drop-shadow(0 0 8px currentColor); transform: scale(1.1); }
+}
+
+.animate-light-glow {
+  animation: light-glow 2s ease-in-out infinite;
+}
+
+.frost-vignette {
+  background: radial-gradient(circle, transparent 50%, rgba(255, 255, 255, 0.05) 80%, rgba(200, 230, 255, 0.15) 100%);
+  mix-blend-mode: screen;
+}
+
+.dark .frost-vignette {
+  background: radial-gradient(circle, transparent 50%, rgba(255, 255, 255, 0.02) 80%, rgba(100, 150, 255, 0.08) 100%);
+}
+
 /* --- PRINCESS MODE ANIMATIONS --- */
 @keyframes float-heart {
   0% { transform: translateY(0) rotate(0deg) translateX(0); opacity: 0; }

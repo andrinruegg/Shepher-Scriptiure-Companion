@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowRight, Scroll, MessageCircle, Send, Plus, Trash2, Edit2, Check, X, User, History, PenLine, Sparkles, BookOpen } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Scroll, MessageCircle, Send, Plus, Trash2, Edit2, Check, X, User, History, PenLine, Sparkles, BookOpen, AlertTriangle } from 'lucide-react';
 import { STORIES_DATA } from '../data/storiesData';
 import { translations } from '../utils/translations';
 import { Message, BibleStory } from '../types';
@@ -19,9 +18,10 @@ interface Encounter {
 interface RoleplayViewProps {
   language: string;
   onMenuClick: () => void;
+  hasApiKey: boolean; 
 }
 
-const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) => {
+const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick, hasApiKey }) => {
   const [encounters, setEncounters] = useState<Encounter[]>(() => {
       try {
           const saved = localStorage.getItem('figure_encounters');
@@ -37,6 +37,7 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
   const [view, setView] = useState<'hub' | 'detail' | 'chat'>('hub');
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showNoKeyError, setShowNoKeyError] = useState(false);
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -46,6 +47,7 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
   
   const figures = STORIES_DATA[language] || STORIES_DATA['English'];
   const t = translations[language]?.stories || translations['English'].stories;
+  const commonT = translations[language]?.common || translations['English'].common;
 
   // Persist encounters whenever they change
   useEffect(() => {
@@ -83,6 +85,12 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
   const theme = getTheme(currentFigure?.id);
 
   const createEncounter = (persona: BibleStory) => {
+    if (!hasApiKey) {
+        setShowNoKeyError(true);
+        setTimeout(() => setShowNoKeyError(false), 4000);
+        return;
+    }
+
     const newId = uuidv4();
     let intro = "";
     
@@ -139,6 +147,12 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputValue.trim() || isLoading || !activeEncounterId || !currentFigure) return;
+    
+    if (!hasApiKey) {
+        setShowNoKeyError(true);
+        setTimeout(() => setShowNoKeyError(false), 4000);
+        return;
+    }
 
     const userText = inputValue.trim();
     const userMsg: Message = { id: uuidv4(), role: 'user', text: userText, timestamp: new Date().toISOString() };
@@ -184,7 +198,6 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
             },
             () => {
                 setIsLoading(false);
-                // Force a final update to ensure local storage sync on completion
                 setEncounters(prev => [...prev]);
             },
             (err) => {
@@ -223,6 +236,17 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
                       </div>
                   </div>
               </header>
+
+              {/* Error: No Key Toast in Chat */}
+              {showNoKeyError && (
+                  <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl animate-pop-in">
+                      <AlertTriangle size={20} />
+                      <div className="flex flex-col">
+                          <span className="text-xs font-bold">{commonT.warning}</span>
+                          <span className="text-xs opacity-90">{t.needKey}</span>
+                      </div>
+                  </div>
+              )}
 
               <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-10 bg-[url('https://www.transparenttextures.com/patterns/old-paper.png')] scroll-smooth">
                   {activeEncounter.messages.map((msg) => (
@@ -317,6 +341,17 @@ const RoleplayView: React.FC<RoleplayViewProps> = ({ language, onMenuClick }) =>
             </button>
           )}
       </header>
+
+      {/* Error: No Key Toast in Hub/Detail */}
+      {showNoKeyError && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl animate-pop-in">
+              <AlertTriangle size={20} />
+              <div className="flex flex-col">
+                  <span className="text-xs font-bold">{commonT.warning}</span>
+                  <span className="text-xs opacity-90">{t.needKey}</span>
+              </div>
+          </div>
+      )}
 
       <main className="flex-1 overflow-y-auto p-6 scroll-smooth">
           <div className="max-w-6xl mx-auto">

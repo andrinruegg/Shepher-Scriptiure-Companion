@@ -1,11 +1,16 @@
 
+
+
+
+
+
 export interface Message {
   id: string;
   role: 'user' | 'model';
   text: string;
-  timestamp: Date | string; // Allow string for JSON parsing
+  timestamp: Date | string; 
   isError?: boolean;
-  hiddenContext?: string; // Used to send unique IDs/instructions to AI without showing user
+  hiddenContext?: string; 
 }
 
 export interface ChatSession {
@@ -13,7 +18,7 @@ export interface ChatSession {
   title: string;
   messages: Message[];
   createdAt: number;
-  isTemp?: boolean; // New flag: If true, this chat hasn't been saved to DB yet
+  isTemp?: boolean; 
 }
 
 export interface ChatState {
@@ -23,28 +28,24 @@ export interface ChatState {
 }
 
 export interface UserPreferences {
-  bibleTranslation: string; // e.g., 'NIV', 'ESV', 'KJV'
+  bibleTranslation: string; 
   theme: 'light' | 'dark';
   
-  // Winter Theme
   winterTheme?: boolean; 
   winterSnow?: boolean;    
   winterLights?: boolean;  
   winterIcicles?: boolean; 
 
-  // Princess Theme
   princessTheme?: boolean;
-  princessHearts?: boolean;   // Sub Toggle: Floating Hearts
-  princessSparkles?: boolean; // Sub Toggle: Shiny Sparkles
+  princessHearts?: boolean;   
+  princessSparkles?: boolean; 
 
   language: string;
   displayName?: string;
-  avatar?: string; // NEW: Base64 string for profile picture
-  bio?: string; // NEW: User description
+  avatar?: string; 
+  bio?: string; 
   savedVerses?: SavedItem[];
 }
-
-// --- NEW TYPES FOR SOCIAL FEATURES ---
 
 export interface Achievement {
   id: string;
@@ -60,12 +61,11 @@ export interface UserProfile {
   share_id: string;
   display_name: string;
   avatar?: string;
-  bio?: string; // NEW: User description
-  last_seen?: string; // ISO Date string for online status
-  unread_count?: number; // Number of unread messages from this user
-  last_message_at?: string; // Timestamp of last message for sorting
+  bio?: string; 
+  last_seen?: string; 
+  unread_count?: number; 
+  last_message_at?: string; 
   
-  // NEW STATS
   streak?: number;
   achievements?: Achievement[];
 }
@@ -88,21 +88,19 @@ export interface DirectMessage {
   id: string;
   sender_id: string;
   receiver_id: string;
-  content: string; // Text or URL
+  content: string; 
   message_type: 'text' | 'image' | 'audio';
   created_at: string;
-  read_at?: string | null; // Null if unread
+  read_at?: string | null; 
 }
 
 export type SocialTab = 'inbox' | 'friends' | 'add' | 'profile';
 
-// --- NEW TYPES FOR BIBLE READER & SAVED ITEMS ---
-
 export type AppView = 'home' | 'chat' | 'bible' | 'saved' | 'prayer' | 'quiz' | 'stories';
 
 export interface BibleBook {
-  id: string;   // e.g. 'GEN'
-  name: string; // e.g. 'Genesis'
+  id: string;   
+  name: string; 
   chapters: number;
   testament: 'OT' | 'NT';
 }
@@ -124,7 +122,7 @@ export interface BibleChapter {
 
 export interface BibleHighlight {
   id: string;
-  ref: string; // e.g., "JHN 3:16"
+  ref: string; 
   color: 'yellow' | 'green' | 'blue' | 'pink';
 }
 
@@ -133,24 +131,24 @@ export type PrayerVisibility = 'private' | 'friends' | 'specific' | 'public';
 export interface PrayerInteraction {
     type: 'amen';
     count: number;
-    user_ids: string[]; // IDs of users who clicked Amen
+    user_ids: string[]; 
 }
 
 export interface SavedItem {
   id: string;
-  user_id?: string; // Added to track ownership
+  user_id?: string; 
   type: 'verse' | 'chat' | 'prayer'; 
-  content: string;        // The text content
-  reference?: string;     // e.g. "John 3:16" (Only for verses)
-  date: number;           // Timestamp
+  content: string;        
+  reference?: string;     
+  date: number;           
   tags?: string[];
   metadata?: {
       answered?: boolean;
       visibility?: PrayerVisibility;
-      allowed_users?: string[]; // IDs for specific sharing
-      is_anonymous?: boolean;   // NEW: Anonymous toggle
-      author_name?: string;     // Snapshot of name
-      author_avatar?: string;   // Snapshot of avatar
+      allowed_users?: string[]; 
+      is_anonymous?: boolean;   
+      author_name?: string;     
+      author_avatar?: string;   
       interactions?: PrayerInteraction;
       [key: string]: any;
   };         
@@ -164,7 +162,6 @@ export interface QuizQuestion {
   reference: string;
 }
 
-// Fix: Add missing BibleStory interface used by StoriesTab and StoriesData
 export interface BibleStory {
   id: string;
   name: string;
@@ -179,4 +176,18 @@ export interface BibleStory {
   };
   keyVerses?: { ref: string; text: string }[];
   biography: string[];
+}
+
+declare global {
+  // Define AIStudio interface to prevent type clash with pre-defined environment types
+  interface AIStudio {
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
+  }
+
+  interface Window {
+    // Fix: All declarations of 'aistudio' must have identical modifiers. 
+    // Match the host environment's declaration to avoid TypeScript conflicts.
+    aistudio: AIStudio;
+  }
 }

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, Menu, Trash2, Plus, ArrowLeft } from 'lucide-react';
+import { Send, Menu, Trash2, Plus, ArrowLeft, Key, ExternalLink, ShieldCheck, Sparkles } from 'lucide-react';
 import { Message } from '../types';
 import ChatMessage from './ChatMessage';
 import TopicSelector from './TopicSelector';
@@ -20,6 +20,8 @@ interface ChatInterfaceProps {
   onOpenComposer: (text: string) => void; 
   onOpenSettings: () => void; 
   onNavigateHome: () => void;
+  hasApiKey: boolean;
+  onSelectApiKey: () => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
@@ -35,7 +37,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSaveMessage,
   onOpenComposer,
   onOpenSettings,
-  onNavigateHome
+  onNavigateHome,
+  hasApiKey,
+  onSelectApiKey
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -46,6 +50,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   
   const t = translations[language]?.chat || translations['English'].chat;
   const commonT = translations[language]?.common || translations['English'].common;
+  const settingsT = translations[language]?.settings || translations['English'].settings;
 
   useEffect(() => {
     const handleResize = () => { setIsMobile(window.innerWidth < 768); };
@@ -64,6 +69,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputValue.trim() || isLoading) return;
+    if (!hasApiKey) {
+        onSelectApiKey();
+        return;
+    }
     onSendMessage(inputValue.trim());
     setInputValue('');
     if (inputRef.current) inputRef.current.style.height = 'auto';
@@ -91,7 +100,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Header */}
       <header className="glass-header p-4 pt-safe flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.03)] bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border-b border-white/80 dark:border-white/5 relative z-40">
         <div className="flex items-center gap-1">
-          {/* Hamburger Menu - ONLY on mobile */}
           <button 
             onClick={onMenuClick} 
             className="p-2 -ml-2 text-slate-600 dark:text-slate-400 hover:bg-black/5 rounded-xl transition-colors md:hidden"
@@ -141,25 +149,75 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div ref={messagesTopRef} /> 
         <div className="max-w-3xl mx-auto h-full flex flex-col">
           
-          {safeMessages.map((msg, index) => (
-            <ChatMessage 
-                key={msg.id} 
-                message={msg} 
-                isLast={index === safeMessages.length - 1}
-                onRegenerate={index > 0 ? onRegenerate : undefined}
-                isRegenerating={isLoading}
-                userAvatar={userAvatar}
-                onSave={() => onSaveMessage(msg)}
-                language={language}
-                onOpenComposer={onOpenComposer}
-                onOpenSettings={onOpenSettings} 
-            />
-          ))}
-          
-          {isInitialState && !isLoading && (
-            <div className="flex-1 flex flex-col justify-center py-6 md:py-10">
-               <TopicSelector onSelectTopic={onSendMessage} language={language} />
-            </div>
+          {!hasApiKey ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-10 animate-fade-in">
+                  <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl max-w-lg w-full text-center relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+                      
+                      <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-3xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 mx-auto mb-6">
+                          <Key size={32} />
+                      </div>
+
+                      <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3 font-serif-text">
+                        {t.missingKeyTitle || "Unlimited Access Required"}
+                      </h2>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
+                        {t.missingKeyDesc || "To chat with Shepherd at high speed without limits, you need to provide your own free Google Gemini API key."}
+                      </p>
+
+                      <div className="space-y-4 text-left mb-8">
+                          <div className="flex gap-4 items-start">
+                              <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 shrink-0 mt-0.5">1</div>
+                              <div className="text-xs text-slate-600 dark:text-slate-300">
+                                  {settingsT.apiKey.step1} <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer" className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline inline-flex items-center gap-1">AI Studio <ExternalLink size={10}/></a>
+                              </div>
+                          </div>
+                          <div className="flex gap-4 items-start">
+                              <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 shrink-0 mt-0.5">2</div>
+                              <div className="text-xs text-slate-600 dark:text-slate-300">{settingsT.apiKey.step2}</div>
+                          </div>
+                          <div className="flex gap-4 items-start">
+                              <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 shrink-0 mt-0.5">3</div>
+                              <div className="text-xs text-slate-600 dark:text-slate-300">{settingsT.apiKey.step3}</div>
+                          </div>
+                      </div>
+
+                      <button 
+                        onClick={onSelectApiKey}
+                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-500/20 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3"
+                      >
+                          <ShieldCheck size={20} />
+                          {t.setupKey || "Setup API Key"}
+                      </button>
+                      
+                      <p className="mt-4 text-[10px] text-slate-400 italic">
+                          {t.disclaimer}
+                      </p>
+                  </div>
+              </div>
+          ) : (
+            <>
+              {safeMessages.map((msg, index) => (
+                <ChatMessage 
+                    key={msg.id} 
+                    message={msg} 
+                    isLast={index === safeMessages.length - 1}
+                    onRegenerate={index > 0 ? onRegenerate : undefined}
+                    isRegenerating={isLoading}
+                    userAvatar={userAvatar}
+                    onSave={() => onSaveMessage(msg)}
+                    language={language}
+                    onOpenComposer={onOpenComposer}
+                    onOpenSettings={onOpenSettings} 
+                />
+              ))}
+              
+              {isInitialState && !isLoading && (
+                <div className="flex-1 flex flex-col justify-center py-6 md:py-10">
+                   <TopicSelector onSelectTopic={onSendMessage} language={language} />
+                </div>
+              )}
+            </>
           )}
           
           <div ref={messagesEndRef} className="h-4" /> 
@@ -184,15 +242,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             />
             <button
               type="submit"
-              disabled={isLoading || !inputValue.trim()}
+              disabled={isLoading || (!inputValue.trim() && hasApiKey)}
               className={`
                 p-3.5 rounded-full mb-1 flex-shrink-0 transition-all duration-300
-                ${isLoading || !inputValue.trim() 
+                ${isLoading || (!inputValue.trim() && hasApiKey) 
                   ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed' 
                   : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:scale-105 active:scale-95'}
               `}
             >
-              <Send size={20} strokeWidth={2.5} />
+              {hasApiKey ? <Send size={20} strokeWidth={2.5} /> : <Key size={20} strokeWidth={2.5} />}
             </button>
           </form>
         </div>
