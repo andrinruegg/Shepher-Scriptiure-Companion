@@ -556,6 +556,7 @@ const App: React.FC = () => {
 
   const handleNavigate = (view: AppView) => {
     if (view === 'chat') {
+        // Always open a new temporary chat when navigating to AI as requested
         createNewChat(true);
     } else {
         setCurrentView(view);

@@ -62,7 +62,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       const code = e.target.value;
       i18n.changeLanguage(code);
-      const mapLegacy: Record<string, string> = { 'en': 'English', 'de': 'German', 'ro': 'Romanian' };
+      const mapLegacy: Record<string, string> = { 
+          'en': 'English', 
+          'de': 'German', 
+          'ro': 'Romanian'
+      };
       onUpdatePreference('language', mapLegacy[code] || 'English');
   };
 
@@ -149,7 +153,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     {preferences.avatar ? <img src={preferences.avatar} className="w-full h-full object-cover" /> : <User size={48} className="text-slate-300 m-auto mt-6" />}
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Camera size={24} className="text-white" /></div>
                 </div>
-                <input type="file" src="" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                 
                 {isEditingName ? (
                     <div className="flex flex-col items-center gap-2">

@@ -29,6 +29,12 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
   const [isEmailSent, setIsEmailSent] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
+  const LANGUAGES = [
+      { id: 'en', label: 'English' },
+      { id: 'ro', label: 'Română' },
+      { id: 'de', label: 'Deutsch' }
+  ];
+
   useEffect(() => {
       if (typeof window !== 'undefined' && window.location.hash) {
            const hash = window.location.hash.substring(1);
@@ -111,15 +117,13 @@ const Login: React.FC<LoginProps> = ({ isDarkMode, toggleDarkMode, language, onS
     }
   };
 
-  const LANGUAGES = [
-      { id: 'en', label: 'English' },
-      { id: 'ro', label: 'Română' },
-      { id: 'de', label: 'Deutsch' }
-  ];
-
   const handleLangSelect = (code: string) => {
       i18n.changeLanguage(code);
-      const map: Record<string, string> = { 'en': 'English', 'ro': 'Romanian', 'de': 'German' };
+      const map: Record<string, string> = { 
+          'en': 'English', 
+          'ro': 'Romanian', 
+          'de': 'German'
+      };
       onSetLanguage(map[code]);
       setShowLangMenu(false);
   };
