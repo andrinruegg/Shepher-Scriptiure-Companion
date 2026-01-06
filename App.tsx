@@ -129,7 +129,11 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-      const langCodeMap: Record<string, string> = { 'English': 'en', 'German': 'de', 'Romanian': 'ro' };
+      const langCodeMap: Record<string, string> = { 
+          'English': 'en', 
+          'German': 'de', 
+          'Romanian': 'ro'
+      };
       const code = langCodeMap[language] || 'en';
       if (i18n.language !== code) {
           i18n.changeLanguage(code);
@@ -379,11 +383,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!supabase) return;
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: any) => {
       setSession(session);
       setLoadingAuth(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: any) => {
       setSession(session);
       if (event === 'PASSWORD_RECOVERY') setIsPasswordResetOpen(true);
     });
@@ -486,7 +490,6 @@ const App: React.FC = () => {
     } catch (e: any) { 
       console.error(e);
       setIsLoading(false);
-      if (e.message === 'API_KEY_INVALID' || e.message === 'NO_API_KEY_SELECTED' || e.message === 'NO_API_KEY_PROVIDED') setHasApiKey(false);
     }
   };
 
@@ -503,11 +506,9 @@ const App: React.FC = () => {
     const msgs = currentChat.messages;
     if (msgs.length < 2) return;
     
-    // Identify messages
     const lastMessage = msgs[msgs.length - 1];
     const lastUserMessage = msgs[msgs.length - 2];
     
-    // Checks
     if (lastMessage.role !== 'model') return;
     if (!lastUserMessage || lastUserMessage.role !== 'user') return;
 
@@ -520,7 +521,6 @@ const App: React.FC = () => {
       return chat;
     }));
 
-    // NEW: Delete from DB
     try {
         await db.deleteMessage(lastMessage.id);
     } catch(e) { console.error("Failed to delete", e); }
@@ -534,11 +534,11 @@ const App: React.FC = () => {
     let accumulatedText = "";
     await sendMessageStream(
       history, prompt, hiddenContext, bibleTranslation, language, displayName, 
-      (chunk) => {
+      (chunk: string) => {
         accumulatedText += chunk;
         setChats(prevChats => prevChats.map(chat => {
           if (chat.id === chatId) {
-            return { ...chat, messages: chat.messages.map(msg => msg.id === messageId ? { ...msg, text: accumulatedText } : msg) };
+            return { ...chat, messages: chat.messages.map((msg: Message) => msg.id === messageId ? { ...msg, text: accumulatedText } : msg) };
           }
           return chat;
         }));
@@ -548,33 +548,25 @@ const App: React.FC = () => {
         const finalAiMessage = { ...baseAiMessage, text: accumulatedText };
         try { await db.addMessage(chatId, finalAiMessage); } catch(e) { console.error(e); }
       },
-      (error) => {
+      (error: any) => {
         setIsLoading(false);
-        if (error.message === 'API_KEY_INVALID' || error.message === 'NO_API_KEY_SELECTED' || error.message === 'NO_API_KEY_PROVIDED') setHasApiKey(false);
       }
     );
   };
 
   const handleNavigate = (view: AppView) => {
     if (view === 'chat') {
-      const existingTempChat = chats.find(c => c.isTemp);
-      if (existingTempChat) {
-        setActiveChatId(existingTempChat.id);
-        setCurrentView('chat');
-      } else {
         createNewChat(true);
-      }
     } else {
-      setCurrentView(view);
+        setCurrentView(view);
     }
   };
 
   if (!supabase) return <div className={isDarkMode ? 'dark' : ''}><SetupScreen /></div>;
 
   const activeChat = chats.find(c => c.id === activeChatId);
-  const activeMessages = activeChat ? activeChat.messages.map(m => ({ ...m, timestamp: new Date(m.timestamp) })) : [];
+  const activeMessages = activeChat ? activeChat.messages.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })) : [];
   
-  // FIX: Brand name should always be 'Shepherd' in the splash screen animation
   const brandName = "Shepherd";
 
   return (
@@ -646,14 +638,14 @@ const App: React.FC = () => {
                     <Sidebar 
                         isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} chats={chats}
                         activeChatId={activeChatId} onSelectChat={(id) => { setActiveChatId(id); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
-                        onNewChat={() => createNewChat(true)} onDeleteChat={(id) => handleDeleteChat(id)}
+                        onNewChat={() => createNewChat(true)} onDeleteChat={(id, e) => handleDeleteChat(id)}
                         onRenameChat={handleRenameChat} language={language} onNavigateHome={() => { setCurrentView('home'); setIsSidebarOpen(false); }}
                     />
                     <div className="flex-1 h-full w-full relative">
                         <ChatInterface 
                             messages={activeMessages} isLoading={isLoading} onSendMessage={handleSendMessage} 
                             onMenuClick={() => setIsSidebarOpen(true)} onRegenerate={handleRegenerate} 
-                            onDeleteCurrentChat={activeChatId ? () => handleDeleteChat(activeChatId) : undefined} 
+                            onDeleteCurrentChat={activeChatId ? (e: any) => handleDeleteChat(activeChatId) : undefined} 
                             onNewChat={() => createNewChat(true)} language={language} userAvatar={avatar}
                             onSaveMessage={handleSaveMessage} onOpenComposer={(text) => setComposerData({ text })}
                             onOpenSettings={() => setIsSettingsOpen(true)} 

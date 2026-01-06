@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, AlignLeft, CloudSnow, Sparkles, Droplets, Crown, Heart, Camera, Trash2, Snowflake, AlertCircle, Key, ShieldCheck, ExternalLink } from 'lucide-react';
+import { X, Moon, Sun, LogOut, User, Globe, Info, Edit2, Check, Camera, Snowflake, Key, ExternalLink, Crown } from 'lucide-react';
 import { UserPreferences } from '../types';
 import { useTranslation } from 'react-i18next';
 
@@ -136,7 +137,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex-shrink-0">
           <h2 className="text-xl font-bold text-slate-800 dark:text-white font-serif-text">{t('settings.title')}</h2>
           <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"><X size={20} /></button>
         </div>
@@ -148,7 +149,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     {preferences.avatar ? <img src={preferences.avatar} className="w-full h-full object-cover" /> : <User size={48} className="text-slate-300 m-auto mt-6" />}
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Camera size={24} className="text-white" /></div>
                 </div>
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                <input type="file" src="" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                 
                 {isEditingName ? (
                     <div className="flex flex-col items-center gap-2">
@@ -166,7 +167,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 )}
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-1">{userEmail}</p>
 
-                {/* BIO SECTION */}
                 <div className="mt-4 w-full text-center">
                     {isEditingBio ? (
                         <div className="flex flex-col gap-2">
@@ -208,17 +208,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         
                         <div className="bg-slate-100 dark:bg-slate-900/50 rounded-xl p-3 mt-4">
                           <p className="text-[10px] font-black text-slate-500 uppercase mb-2">{t('settings.apiKey.howTo')}</p>
-                          <ul className="text-[10px] text-slate-500 space-y-1 ml-1">
-                            <li>{t('settings.apiKey.step1')}</li>
-                            <li>{t('settings.apiKey.step2')}</li>
-                            <li>{t('settings.apiKey.step3')}</li>
-                            <li>{t('settings.apiKey.step4')}</li>
+                          <ul className="text-[10px] text-slate-500 space-y-1.5 ml-1">
+                            <li className="flex gap-2">
+                                <span className="font-bold text-indigo-500">1.</span>
+                                <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noreferrer" className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1">
+                                    Visit Google AI Studio <ExternalLink size={10} />
+                                </a>
+                            </li>
+                            <li className="flex gap-2"><span className="font-bold text-indigo-500">2.</span> Sign in with your account</li>
+                            <li className="flex gap-2"><span className="font-bold text-indigo-500">3.</span> Click 'Get API Key' then 'Create API Key'</li>
+                            <li className="flex gap-2"><span className="font-bold text-indigo-500">4.</span> Copy the code and paste it above</li>
                           </ul>
-                          <div className="pt-3">
-                             <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noreferrer" className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1 hover:underline">
-                                {t('settings.apiKey.openStudio')} <ExternalLink size={10} />
-                            </a>
-                          </div>
                         </div>
                     </form>
                 </div>
@@ -238,7 +238,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                 </div>
 
-                {/* WINTER MODE */}
                 <div className="flex flex-col gap-3">
                     <button onClick={() => onUpdatePreference('winterTheme', !preferences.winterTheme)} className={`p-5 rounded-[2rem] border transition-all flex flex-col items-center gap-2 ${preferences.winterTheme ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-400 text-blue-600' : 'bg-slate-50 dark:bg-slate-800/50 border-transparent text-slate-400'}`}>
                         <Snowflake size={24} /><span className="text-[10px] font-black uppercase tracking-widest">{t('settings.winter.title')}</span>
@@ -253,7 +252,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     )}
                 </div>
 
-                {/* PRINCESS MODE */}
                 <div className="flex flex-col gap-3">
                     <button onClick={() => onUpdatePreference('princessTheme', !preferences.princessTheme)} className={`p-5 rounded-[2rem] border transition-all flex flex-col items-center gap-2 ${preferences.princessTheme ? 'bg-pink-50 dark:bg-pink-900/20 border-pink-400 text-pink-600' : 'bg-slate-50 dark:bg-slate-800/50 border-transparent text-slate-400'}`}>
                         <Crown size={24} /><span className="text-[10px] font-black uppercase tracking-widest">{t('settings.princess.title')}</span>
@@ -278,7 +276,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
              </div>
           </section>
 
-          <button onClick={onLogout} className="w-full p-4 text-red-600 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all active:scale-95">
+          <button onClick={onLogout} className="w-full p-4 text-red-600 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all active:scale-95 flex-shrink-0">
               <LogOut size={16} /> {t('settings.signOut')}
           </button>
         </div>
