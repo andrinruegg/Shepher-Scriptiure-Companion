@@ -77,13 +77,46 @@ body {
   padding-top: env(safe-area-inset-top);
 }
 
-/* Animations kept for UI consistency */
+/* --- WINTER MODE ANIMATIONS --- */
+
 @keyframes snow {
   0% { transform: translateY(-10vh) translateX(0) rotate(0deg); }
   100% { transform: translateY(110vh) translateX(0) rotate(360deg); }
 }
 .animate-snow { animation: snow linear infinite; will-change: transform; }
 
+@keyframes lightGlow {
+  0%, 100% { opacity: 0.4; filter: brightness(1) blur(0px); }
+  50% { opacity: 1; filter: brightness(1.5) blur(2px); }
+}
+.animate-light-glow { animation: lightGlow 2s ease-in-out infinite; }
+
+.frost-vignette {
+  background: radial-gradient(circle, transparent 40%, rgba(200, 230, 255, 0.1) 100%);
+  pointer-events: none;
+}
+
+/* --- PRINCESS MODE ANIMATIONS --- */
+
+@keyframes floatHeart {
+  0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 0; }
+  10% { opacity: var(--tw-heart-opacity, 0.5); }
+  90% { opacity: var(--tw-heart-opacity, 0.5); }
+  100% { transform: translateY(-110vh) scale(1.2) rotate(45deg); opacity: 0; }
+}
+.animate-float-heart { animation: floatHeart linear infinite; will-change: transform; }
+
+@keyframes sparklyAurora {
+  0%, 100% { background: linear-gradient(45deg, rgba(255, 192, 203, 0.2), rgba(255, 105, 180, 0.2), rgba(221, 160, 221, 0.2)); }
+  50% { background: linear-gradient(45deg, rgba(221, 160, 221, 0.2), rgba(255, 192, 203, 0.2), rgba(255, 105, 180, 0.2)); }
+}
+.animate-sparkly-aurora { animation: sparklyAurora 10s ease infinite; }
+
+.princess-mode .markdown-content blockquote {
+  @apply border-pink-300 bg-pink-50/50 text-rose-800;
+}
+
+/* --- COMMON ANIMATIONS --- */
 @keyframes popIn { 0% { opacity: 0; transform: scale(0.8) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
 .animate-pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
