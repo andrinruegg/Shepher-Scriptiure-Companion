@@ -158,7 +158,7 @@ export const sendMessageStream = async (
             },
         });
         
-        const result = await chat.sendMessageStream({ message: { parts } });
+        const result = await chat.sendMessageStream({ message: parts });
         for await (const chunk of result) {
             const responseChunk = chunk as GenerateContentResponse;
             if (responseChunk.text) {
