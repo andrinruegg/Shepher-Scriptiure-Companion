@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, GenerateContentResponse, Content, Type, Modality } from "@google/genai";
 import { Message, QuizQuestion } from "../types";
 
@@ -82,12 +81,22 @@ const cleanJson = (text: string): string => {
     return text.replace(/```json|```/g, '').trim();
 };
 
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, _) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+};
+
 export const generateChatTitle = async (userMessage: string, language: string = 'English'): Promise<string> => {
   try {
     const response = await makeRequestWithRetry(async (ai) => {
         return await ai.models.generateContent({
           model: 'gemini-3-flash-preview',
           contents: `Summarize this user request into a short, elegant 3-5 word title for a journal entry (no quotes).
+          
+          CRITICAL INSTRUCTION: You MUST output the title in the "${language}" language, regardless of the language of the user's message.
           
           User Message: "${userMessage}"`,
           config: {
@@ -112,7 +121,8 @@ export const sendMessageStream = async (
   onChunk: (text: string) => void,
   onComplete: () => void,
   onError: (error: any) => void,
-  systemOverride?: string 
+  systemOverride?: string,
+  imageBlob?: Blob
 ) => {
   try {
     const recentHistory = history.length > 10 ? history.slice(history.length - 10) : history;
@@ -123,13 +133,23 @@ export const sendMessageStream = async (
     
     IMPORTANT PREFERENCES:
     1. QUOTE ALL SCRIPTURE USING THE ${bibleTranslation} TRANSLATION.
-    2. RESPONSE LANGUAGE: You MUST respond in "${userLanguage}". This is non-negotiable.
+    2. RESPONSE LANGUAGE: You must respond in "${userLanguage}".
     ${displayName ? `3. GREETING: Address the user as "${displayName}" naturally.` : ''}
     `;
 
-    const promptToSend = hiddenContext 
-        ? `${newMessage}\n\n[System Note: ${hiddenContext}]` 
-        : newMessage;
+    const textPart = { text: hiddenContext ? `${newMessage}\n\n[System Note: ${hiddenContext}]` : newMessage };
+    const parts: any[] = [textPart];
+
+    if (imageBlob) {
+        const b64 = await blobToBase64(imageBlob);
+        const data = b64.split(',')[1];
+        parts.push({
+            inlineData: {
+                data: data,
+                mimeType: imageBlob.type
+            }
+        });
+    }
 
     await makeRequestWithRetry(async (ai) => {
         const chat = ai.chats.create({
@@ -141,7 +161,9 @@ export const sendMessageStream = async (
             },
         });
         
-        const result = await chat.sendMessageStream({ message: promptToSend });
+        // Fix: Pass 'parts' directly to the message parameter. 
+        // chat.sendMessageStream expects { message: string | Part | Part[] }
+        const result = await chat.sendMessageStream({ message: parts });
         for await (const chunk of result) {
             const responseChunk = chunk as GenerateContentResponse;
             if (responseChunk.text) {
@@ -156,6 +178,26 @@ export const sendMessageStream = async (
     console.error("Gemini API Error:", error);
     onError(error);
   }
+};
+
+export const generateSpeech = async (text: string, language: string): Promise<string> => {
+    return await makeRequestWithRetry(async (ai) => {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash-preview-tts",
+            contents: [{ parts: [{ text: text }] }],
+            config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: { voiceName: 'Fenrir' },
+                    },
+                },
+            },
+        });
+        const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        if (!audioData) throw new Error("No audio data returned");
+        return audioData;
+    });
 };
 
 export const translateContent = async (text: string, targetLanguage: string): Promise<string> => {
@@ -175,7 +217,7 @@ export const generateQuizQuestion = async (
 ): Promise<QuizQuestion> => {
     return await makeRequestWithRetry(async (ai) => {
         const historyContext = history.length > 0 
-            ? `PREVIOUSLY ASKED QUESTIONS: ${JSON.stringify(history.slice(-20))}` 
+            ? `PREVIOUSLY ASKED QUESTIONS (DO NOT REPEAT TOPICS OR VERSES FROM THESE): ${JSON.stringify(history.slice(-20))}` 
             : "";
         const prompt = `Generate a single multiple-choice Bible trivia question.
         Difficulty: ${difficulty}
