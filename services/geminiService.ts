@@ -99,9 +99,6 @@ export const generateChatTitle = async (userMessage: string, language: string = 
           CRITICAL INSTRUCTION: You MUST output the title in the "${language}" language, regardless of the language of the user's message.
           
           User Message: "${userMessage}"`,
-          config: {
-            systemInstruction: `You MUST output the title in the "${language}" language. Do NOT use English if the language is different.`
-          }
         });
     });
     return response.text ? response.text.trim() : 'New Entry';
@@ -161,7 +158,8 @@ export const sendMessageStream = async (
             },
         });
         
-        // Corrected: Pass the parts array directly as the message value
+        // Corrected: Pass the 'parts' array directly to the 'message' property.
+        // The SDK expects 'message' to be a string, a single Part, or an array of Parts.
         const result = await chat.sendMessageStream({ message: parts });
         for await (const chunk of result) {
             const responseChunk = chunk as GenerateContentResponse;
